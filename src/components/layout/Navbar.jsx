@@ -218,7 +218,7 @@ export default function Navbar() {
         <NavLink to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', flexShrink: 0 }}>
           <img
             src="/favicon.png"
-            alt="APEX INTELLIGENCE"
+            alt="PITWALL INTELLIGENCE"
             style={{ width: 34, height: 34, borderRadius: 6, flexShrink: 0, objectFit: 'cover' }}
           />
           <div>
@@ -227,7 +227,7 @@ export default function Navbar() {
               fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)',
               letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1,
             }}>
-              APEX<span style={{ color: 'var(--f1-red)' }}>INTELLIGENCE</span>
+              PITWALL<span style={{ color: 'var(--f1-red)' }}>INTELLIGENCE</span>
             </div>
             {!isTablet && (
               <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>

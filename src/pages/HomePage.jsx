@@ -226,7 +226,7 @@ export default function HomePage() {
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
         }}>
-          APEX INTELLIGENCE
+          PITWALL INTELLIGENCE
         </h1>
         
         <p style={{ 
