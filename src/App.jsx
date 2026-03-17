@@ -18,10 +18,14 @@ class ErrorBoundary extends Component {
 
 function NotFound() {
   return (
-    <div className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', minHeight: '60vh' }}>
-      <p style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--f1-red)' }}>404</p>
-      <p style={{ color: 'var(--text-muted)' }}>Page not found</p>
-      <Link to="/" className="btn">Go to Dashboard</Link>
+    <div className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.25rem', minHeight: '60vh', textAlign: 'center' }}>
+      <p style={{ fontSize: '4rem', fontWeight: 900, color: 'var(--f1-red)', lineHeight: 1 }}>404</p>
+      <p style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1.1rem' }}>Page not found</p>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>The page you're looking for doesn't exist.</p>
+      <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <button className="btn" onClick={() => window.history.back()}>Go back</button>
+        <Link to="/" className="btn">Dashboard</Link>
+      </div>
     </div>
   )
 }
