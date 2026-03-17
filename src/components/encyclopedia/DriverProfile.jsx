@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { MapContainer, TileLayer, CircleMarker, Tooltip as MapTooltip } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 import { statsApi } from '../../services/api'
 
 // Known data coverage thresholds in the Jolpica/Ergast dataset
@@ -61,8 +63,8 @@ function NoPhoto({ driver }) {
       </div>
       <span style={{
         fontSize: '0.62rem', color: 'var(--text-muted)', letterSpacing: '0.05em',
-        background: 'rgba(255,255,255,0.04)', padding: '2px 8px',
-        borderRadius: 99, border: '1px solid rgba(255,255,255,0.08)',
+        background: 'var(--surface-2)', padding: '2px 8px',
+        borderRadius: 99, border: '1px solid var(--border-strong)',
         whiteSpace: 'nowrap',
       }}>
         No photo on record
@@ -81,7 +83,7 @@ function DataNotice({ lastSeason }) {
       padding: '0.75rem 1rem', marginBottom: '0.75rem',
       background: 'rgba(245,158,11,0.06)',
       border: '1px solid rgba(245,158,11,0.2)',
-      borderLeft: '3px solid rgba(245,158,11,0.6)',
+      borderLeft: '3px solid rgba(245,158,11,0.7)',
       borderRadius: 8,
     }}>
       <div style={{ flexShrink: 0, marginTop: 1 }}>
@@ -102,15 +104,20 @@ function DataNotice({ lastSeason }) {
 }
 
 export default function DriverProfile({ driverId }) {
-  const [stats,   setStats] = useState(null)
-  const [loading, setLoad]  = useState(true)
-  const [imgErr,  setImgErr] = useState(false)
+  const [stats,    setStats]    = useState(null)
+  const [circuits, setCircuits] = useState([])
+  const [loading,  setLoad]     = useState(true)
+  const [imgErr,   setImgErr]   = useState(false)
 
   useEffect(() => {
     setLoad(true)
     setImgErr(false)
-    statsApi.driverStats(driverId)
-      .then(setStats)
+    setCircuits([])
+    Promise.all([
+      statsApi.driverStats(driverId),
+      statsApi.driverCircuits(driverId),
+    ])
+      .then(([s, c]) => { setStats(s); setCircuits(c) })
       .catch(() => setStats(null))
       .finally(() => setLoad(false))
   }, [driverId])
@@ -153,7 +160,7 @@ export default function DriverProfile({ driverId }) {
       {/* ── Hero ─────────────────────────────────────────── */}
       <div style={{
         position: 'relative', overflow: 'hidden',
-        background: 'linear-gradient(135deg, rgba(225,6,0,0.08) 0%, rgba(255,255,255,0.02) 100%)',
+        background: 'linear-gradient(135deg, rgba(225,6,0,0.08) 0%, transparent 100%)',
         border: '1px solid rgba(225,6,0,0.2)',
         borderRadius: 14, padding: '1.5rem', marginBottom: '0.75rem',
         display: 'flex', gap: '1.5rem', alignItems: 'flex-start',
@@ -189,7 +196,7 @@ export default function DriverProfile({ driverId }) {
 
         <div style={{ flex: 1, zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
-            <span className="db-badge db-badge--mongo">MongoDB</span>
+            
             {driver.code && (
               <span style={{
                 fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.1em',
@@ -239,10 +246,10 @@ export default function DriverProfile({ driverId }) {
               padding: '0.75rem 0.5rem', textAlign: 'center',
               border: highlight
                 ? '1px solid rgba(245,158,11,0.3)'
-                : missing ? '1px solid rgba(255,255,255,0.04)' : undefined,
+                : missing ? '1px solid var(--border-subtle)' : undefined,
               background: highlight
                 ? 'rgba(245,158,11,0.05)'
-                : missing ? 'rgba(255,255,255,0.01)' : undefined,
+                : missing ? 'var(--surface-1)' : undefined,
               opacity: missing ? 0.6 : 1,
             }}>
               <div style={{
@@ -268,7 +275,7 @@ export default function DriverProfile({ driverId }) {
 
       {/* ── Teams ────────────────────────────────────────── */}
       {teams.length > 0 && (
-        <div className="card" style={{ padding: '0.9rem 1rem' }}>
+        <div className="card" style={{ padding: '0.9rem 1rem', marginBottom: '0.75rem' }}>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '0.6rem' }}>
             TEAMS · {teams.length}
           </div>
@@ -276,7 +283,7 @@ export default function DriverProfile({ driverId }) {
             {teams.map(t => (
               <span key={t} style={{
                 fontSize: '0.77rem', padding: '0.25rem 0.7rem', borderRadius: 99,
-                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                background: 'var(--surface-3)', border: '1px solid var(--border-color)',
                 color: 'var(--text-secondary)',
               }}>
                 {t}
@@ -285,6 +292,91 @@ export default function DriverProfile({ driverId }) {
           </div>
         </div>
       )}
+
+      {/* ── Circuits map ─────────────────────────────────── */}
+      {circuits.length > 0 && (() => {
+        const maxRaces = Math.max(...circuits.map(c => c.races))
+        const validCircuits = circuits.filter(c => c.lat && c.long)
+        return (
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em' }}>
+                CIRCUITS RACED · {validCircuits.length}
+              </span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                {circuits.reduce((s, c) => s + c.races, 0)} total race entries
+              </span>
+            </div>
+
+            <div style={{ height: 380, position: 'relative' }}>
+              <MapContainer
+                center={[20, 10]}
+                zoom={2}
+                style={{ height: '100%', width: '100%', background: '#0d0d0d' }}
+                attributionControl={false}
+                scrollWheelZoom={true}
+              >
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                />
+                {validCircuits.map(c => {
+                  const lat  = parseFloat(c.lat)
+                  const lng  = parseFloat(c.long)
+                  const r    = 3 + Math.round((c.races / maxRaces) * 5)
+                  const pts  = Math.round(c.points * 10) / 10
+                  return (
+                    <CircleMarker
+                      key={c._id}
+                      center={[lat, lng]}
+                      radius={r}
+                      pathOptions={{
+                        color:       c.wins > 0 ? '#f59e0b' : '#e8002d',
+                        fillColor:   c.wins > 0 ? '#f59e0b' : '#e8002d',
+                        fillOpacity: 0.75,
+                        weight:      1.5,
+                      }}
+                    >
+                      <MapTooltip direction="top" offset={[0, -r]} opacity={1}>
+                        <div style={{ fontFamily: 'sans-serif', minWidth: 160 }}>
+                          <div style={{ fontWeight: 700, marginBottom: 4 }}>{c.circuitName}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: 6 }}>
+                            {c.locality}, {c.country}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 12px', fontSize: '0.78rem' }}>
+                            <span style={{ color: '#888' }}>Races</span>
+                            <span style={{ fontWeight: 700 }}>{c.races}</span>
+                            <span style={{ color: '#888' }}>Points</span>
+                            <span style={{ fontWeight: 700 }}>{pts}</span>
+                            <span style={{ color: '#888' }}>Wins</span>
+                            <span style={{ fontWeight: 700, color: c.wins > 0 ? '#f59e0b' : '#fff' }}>{c.wins}</span>
+                            <span style={{ color: '#888' }}>Podiums</span>
+                            <span style={{ fontWeight: 700 }}>{c.podiums}</span>
+                          </div>
+                        </div>
+                      </MapTooltip>
+                    </CircleMarker>
+                  )
+                })}
+              </MapContainer>
+            </div>
+
+            {/* Legend */}
+            <div style={{ padding: '0.6rem 1rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '1.25rem', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e8002d', display: 'inline-block' }} />
+                Raced (no win)
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
+                Win at this circuit
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                Dot size = number of races
+              </span>
+            </div>
+          </div>
+        )
+      })()}
     </motion.div>
   )
 }

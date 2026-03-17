@@ -9,19 +9,19 @@ const sectionLabel = {
   textTransform: 'uppercase',
 }
 
-export default function EgoSidebar({ activeDriver, egoData, loading }) {
+export default function EgoSidebar({ activeDriver, egoData, loading, isMobile = false }) {
   const stats = egoData?.stats
   const debut = egoData?.debut
 
   return (
-    <div style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: 620, overflowY: 'auto' }}>
+    <div style={{ width: isMobile ? '100%' : 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: isMobile ? 'none' : 620, overflowY: isMobile ? 'visible' : 'auto' }}>
 
       {!activeDriver && (
         <div className="card card--dgraph" style={{ padding: '1rem' }}>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.06em', marginBottom: '0.6rem' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
             HOW TO USE
           </div>
-          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+          <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
             1. Type a driver name<br />
             2. Select from the dropdown<br />
             3. Explore their full network of teams and teammates across their career
@@ -55,18 +55,18 @@ export default function EgoSidebar({ activeDriver, egoData, loading }) {
             </div>
 
             <div style={sectionLabel}>CAREER</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.28rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : '1fr 1fr', gap: '0.4rem' }}>
               {[
-                { label: 'Races',         value: stats.races },
-                { label: 'Wins',          value: stats.wins,        hi: true },
-                { label: 'Podiums',       value: stats.podiums },
-                { label: 'Points',        value: stats.points },
-                { label: 'Poles',         value: stats.poles },
-                { label: 'Fastest Laps',  value: stats.fastestLaps },
+                { label: 'Races',        value: stats.races },
+                { label: 'Wins',         value: stats.wins,        hi: true },
+                { label: 'Podiums',      value: stats.podiums },
+                { label: 'Points',       value: stats.points },
+                { label: 'Poles',        value: stats.poles },
+                { label: 'Fastest Laps', value: stats.fastestLaps },
               ].map(({ label, value, hi }) => (
-                <div key={label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 5, padding: '0.3rem 0.45rem' }}>
-                  <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginBottom: 1, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: hi ? '#f59e0b' : 'var(--text-primary)' }}>{value}</div>
+                <div key={label} style={{ background: 'var(--surface-2)', borderRadius: 6, padding: isMobile ? '0.5rem 0.6rem' : '0.3rem 0.45rem' }}>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
+                  <div style={{ fontSize: isMobile ? '1.15rem' : '0.9rem', fontWeight: 700, color: hi ? '#f59e0b' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -101,7 +101,7 @@ export default function EgoSidebar({ activeDriver, egoData, loading }) {
                 .sort((a, b) => (a.seasons?.[0] ?? '9999').localeCompare(b.seasons?.[0] ?? '9999'))
                 .map(t => (
                   <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.22rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 135 }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 240 : 135 }}>
                       {t.name}
                     </span>
                     <span style={{ fontSize: '0.7rem', color: '#f59e0b', flexShrink: 0, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>
@@ -127,9 +127,9 @@ export default function EgoSidebar({ activeDriver, egoData, loading }) {
                     <div key={t.id} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
                       padding: '0.28rem 0',
-                      borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                      borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
                     }}>
-                      <span style={{ fontSize: '0.77rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>
+                      <span style={{ fontSize: '0.77rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 260 : 140 }}>
                         {t.name}
                       </span>
                       <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0, marginLeft: 4, fontVariantNumeric: 'tabular-nums' }}>

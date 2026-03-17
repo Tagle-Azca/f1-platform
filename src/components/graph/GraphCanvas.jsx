@@ -10,9 +10,12 @@ export default function GraphCanvas({
   error,
   nodeCanvasObject,
   nodePointerAreaPaint,
+  onNodeClick,
+  isMobile = false,
 }) {
   const containerRef = useRef()
   const [dims, setDims] = useState({ w: 800, h: 560 })
+  const canvasHeight = isMobile ? Math.round(window.innerHeight * 0.45) : 520
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -28,7 +31,7 @@ export default function GraphCanvas({
       <div
         ref={containerRef}
         className="card card--dgraph"
-        style={{ padding: 0, overflow: 'hidden', height: 520, position: 'relative' }}
+        style={{ padding: 0, overflow: 'hidden', height: canvasHeight, position: 'relative' }}
       >
         {!activeDriver && !loading && (
           <div style={{
@@ -79,6 +82,13 @@ export default function GraphCanvas({
             linkDirectionalParticles={0}
             nodeCanvasObject={nodeCanvasObject}
             nodePointerAreaPaint={nodePointerAreaPaint}
+            onNodeClick={onNodeClick}
+            onNodeHover={node => {
+              if (containerRef.current) {
+                const clickable = node && !node.isSelf && (node.type === 'Teammate' || node.type === 'Team')
+                containerRef.current.style.cursor = clickable ? 'pointer' : 'default'
+              }
+            }}
             onEngineStop={() => fgRef.current?.zoomToFit(300, 50)}
             enableZoomInteraction
             enablePanInteraction

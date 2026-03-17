@@ -1,15 +1,20 @@
+export const PODIUM_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32']
+
 export const CTOR_COLORS = {
   red_bull:       '#3671C6',
-  mercedes:       '#00D2BE',
-  ferrari:        '#DC0000',
+  mercedes:       '#27F4D2',
+  ferrari:        '#E8002D',
   mclaren:        '#FF8000',
   alpine:         '#FF87BC',
-  aston_martin:   '#006F62',
+  aston_martin:   '#229971',
   williams:       '#64C4FF',
-  alphatauri:     '#5E8FAA',
-  alpha_tauri:    '#5E8FAA',
-  alfa:           '#B12039',
-  haas:           '#B6BABD',
+  rb:             '#6692FF',
+  alphatauri:     '#6692FF',
+  alpha_tauri:    '#6692FF',
+  sauber:         '#52E252',
+  alfa:           '#52E252',
+  haas:           '#E8002D',
+  cadillac:       '#C0C0C0',
   renault:        '#FFD700',
   racing_point:   '#F596C8',
   toro_rosso:     '#469BFF',
@@ -20,14 +25,14 @@ export const CTOR_COLORS = {
   jordan:         '#EDA120',
   bar:            '#AAAAAA',
   jaguar:         '#228B22',
-  minardi:        '#666666',
+  minardi:        '#999966',
   arrows:         '#F68020',
   tyrrell:        '#1E90FF',
   brabham:        '#DDDD22',
   march:          '#CC4444',
   ligier:         '#4444FF',
   wolf:           '#888800',
-  shadow:         '#444444',
+  shadow:         '#888888',
   fittipaldi:     '#994400',
   surtees:        '#CC0000',
 }
@@ -54,4 +59,8 @@ export const SEASON_STORIES = {
   '2016': 'Rosberg wins his only world title. Hamilton wins more races but not the championship.',
   '2019': 'Hamilton wins with an 87-point margin, dominating with Mercedes.',
   '2021': 'Verstappen vs Hamilton. 20 races of razor-thin margins. Controversy in Abu Dhabi. Verstappen champion on the final lap.',
+}
+
+export function ctorColor(constructorId) {
+  return CTOR_COLORS[constructorId] || '#888'
 }

@@ -15,11 +15,13 @@ function drawLabel(ctx, node, radius, globalScale, isSelf, isTeam) {
 
 export function useGraphCanvas(imgCacheRef, fgRef) {
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
-    const isSelf = node.isSelf
-    const isTeam = node.type === 'Team'
-    const isTm   = node.type === 'Teammate'
-    const color  = COLOR[isSelf ? 'Driver' : node.type] || '#888'
-    const radius = isSelf ? 36 : isTeam ? 9 : 7
+    const isSelf    = node.isSelf
+    const isTeam    = node.type === 'Team'
+    const isTm      = node.type === 'Teammate'
+    const isSelfTeam = isSelf && isTeam          // constructor-graph center node
+    const color  = isSelfTeam ? COLOR.Team
+                 : COLOR[isSelf ? 'Driver' : node.type] || '#888'
+    const radius = isSelf ? (isSelfTeam ? 22 : 36) : isTeam ? 9 : 7
 
     if (isSelf) {
       ctx.shadowBlur  = 40
@@ -27,7 +29,7 @@ export function useGraphCanvas(imgCacheRef, fgRef) {
     }
 
     const cacheKey = node.id
-    if (node.photoUrl && (isSelf || isTm)) {
+    if (node.photoUrl && (isSelf || isTm || (!isSelf && node.type === 'Driver')) && !isSelfTeam) {
       const cached = imgCacheRef.current[cacheKey]
       if (!cached) {
         const img = new Image()
@@ -59,6 +61,18 @@ export function useGraphCanvas(imgCacheRef, fgRef) {
     ctx.fillStyle = color
     ctx.fill()
     ctx.shadowBlur = 0
+
+    if (isSelfTeam) {
+      // Draw abbreviated team name inside the gold circle
+      const abbr = node.name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase()
+      const fs = Math.max(7, radius * 0.55)
+      ctx.font         = `800 ${fs}px Inter,sans-serif`
+      ctx.fillStyle    = '#0a0a0a'
+      ctx.textAlign    = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(abbr, node.x, node.y)
+      ctx.textBaseline = 'alphabetic'
+    }
 
     if (isTm) {
       const initials = node.name.split(' ').map(w => w[0]).join('').slice(0, 2)

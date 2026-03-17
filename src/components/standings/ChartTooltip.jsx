@@ -1,5 +1,7 @@
-export default function ChartTooltip({ active, payload, label, rounds }) {
+export default function ChartTooltip({ active, payload, label, rounds, cappedRound }) {
   if (!active || !payload?.length) return null
+  // Don't show tooltip for rounds beyond the current playback position
+  if (cappedRound != null && label > cappedRound) return null
   const sorted   = [...payload].filter(p => p.value != null).sort((a, b) => b.value - a.value)
   const raceName = rounds?.[label - 1]?.raceName ?? `Round ${label}`
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { racesApi } from '../../services/api'
 import { statusColor, isFinished } from '../../utils/raceUtils'
+import { fmtDate } from '../../utils/date'
 import Podium from './Podium'
 
 export default function RaceDetail({ season, round }) {
@@ -27,7 +28,7 @@ export default function RaceDetail({ season, round }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
           <span className="db-badge db-badge--mongo">MongoDB</span>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Season {season} · Round {round}</span>
-          {race.date && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{race.date}</span>}
+          {race.date && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{fmtDate(race.date)}</span>}
         </div>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
           {race.raceName}
@@ -69,7 +70,7 @@ export default function RaceDetail({ season, round }) {
             <div key={r.Driver?.driverId} style={{
               display: 'grid', gridTemplateColumns: '2rem 1fr auto auto',
               gap: '0.5rem', alignItems: 'center', padding: '0.3rem 0',
-              borderBottom: '1px solid rgba(255,255,255,0.04)',
+              borderBottom: '1px solid rgba(255,255,255,0.09)',
               fontSize: '0.82rem',
             }}>
               <span style={{ fontWeight: 700, color: r.position <= 3 ? '#ffd700' : 'var(--text-muted)' }}>

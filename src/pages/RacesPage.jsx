@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useSearchParams } from 'react-router-dom'
 import PageWrapper from '../components/layout/PageWrapper'
 import { racesApi } from '../services/api'
+import PageHint from '../components/ui/PageHint'
+import RaceCard from '../components/races/RaceCard'
 
-const SEASONS = ['2024', '2023', '2022', '2021', '2020']
+const CY = new Date().getFullYear()
+const SEASONS = Array.from({ length: CY - 1949 }, (_, i) => String(CY - i))
 
 export default function RacesPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [races,   setRaces]   = useState([])
-  const [season,  setSeason]  = useState('2024')
+  const [season,  setSeason]  = useState(searchParams.get('season') || String(CY))
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(null)
 
@@ -20,49 +24,56 @@ export default function RacesPage() {
       .finally(() => setLoading(false))
   }, [season])
 
+  const completedCount = races.filter(r => r.hasResults).length
+  const currentRace    = races.find(r => r.isCurrentWeekend)
+  const nextRace       = !currentRace && races.find(r => r.isUpcoming && !r.isCurrentWeekend)
+
   return (
     <PageWrapper>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+      <PageHint
+        id="races"
+        title="Race Calendar"
+        text="Click any race to view results, qualifying and full weekend details. The yellow badge marks the next upcoming race."
+        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 16, height: 16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" /></svg>}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
         <h1 className="page__title" style={{ marginBottom: 0 }}>Races</h1>
         <select
           className="input"
           style={{ width: 120 }}
           value={season}
-          onChange={(e) => setSeason(e.target.value)}
+          onChange={(e) => {
+            setSeason(e.target.value)
+            setSearchParams({ season: e.target.value })
+          }}
         >
           {SEASONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
+        {!loading && races.length > 0 && (
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            {completedCount} / {races.length} races completed
+          </span>
+        )}
+        {currentRace && (
+          <span style={{
+            fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '2px 9px', borderRadius: 4,
+            background: 'rgba(225,6,0,0.14)', color: 'var(--f1-red)',
+            border: '1px solid rgba(225,6,0,0.3)',
+          }}>
+            R{currentRace.round} · Active Weekend
+          </span>
+        )}
       </div>
-      <p className="page__subtitle">Season calendar stored in MongoDB</p>
 
-      {loading && <p>Loading races...</p>}
+      {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
       {error   && <p style={{ color: 'var(--f1-red)' }}>Error: {error}</p>}
 
       {!loading && !error && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {races.length === 0 && <p>No races found for {season}.</p>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+          {races.length === 0 && <p style={{ color: 'var(--text-secondary)' }}>No races found for {season}.</p>}
           {races.map((race, i) => (
-            <motion.div
-              key={race._id || `${race.season}-${race.round}`}
-              className="card card--mongo"
-              style={{ display: 'grid', gridTemplateColumns: '3rem 1fr auto', alignItems: 'center', gap: '1rem', padding: '1rem 1.5rem' }}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.03 }}
-            >
-              <span style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-muted)' }}>
-                {race.round}
-              </span>
-              <div>
-                <h3 style={{ marginBottom: '0.15rem' }}>{race.raceName}</h3>
-                <p style={{ fontSize: '0.8rem' }}>
-                  {race.Circuit?.circuitName || race.circuit} — {race.date}
-                </p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span className="db-badge db-badge--mongo">MongoDB</span>
-              </div>
-            </motion.div>
+            <RaceCard key={`${race.season}-${race.round}`} race={race} index={i} isNextRace={nextRace && race.round === nextRace.round} />
           ))}
         </div>
       )}

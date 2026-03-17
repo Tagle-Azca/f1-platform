@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8741'
 
 async function request(path, options) {
   const res = await fetch(`${BASE_URL}${path}`, options)
@@ -13,7 +13,10 @@ async function request(path, options) {
 export const driversApi = {
   getAll:      (params = {}) => request(`/api/drivers?${new URLSearchParams(params)}`),
   getById:     (id)          => request(`/api/drivers/${id}`),
-  getFeatured: (seasons = 10) => request(`/api/drivers/featured?seasons=${seasons}`),
+  getFeatured: (seasons, season) => {
+    const params = season ? `season=${season}` : `seasons=${seasons ?? 10}`
+    return request(`/api/drivers/featured?${params}`)
+  },
 }
 
 export const racesApi = {
@@ -30,19 +33,22 @@ export const circuitsApi = {
 
 // ── Cassandra ────────────────────────────────────────────
 export const telemetryApi = {
-  getLapTimes: (raceId, driverId) =>
-    request(`/api/telemetry/laps/${raceId}/${driverId}`),
-  getPitStops: (raceId, driverId) =>
-    request(`/api/telemetry/pitstops/${raceId}/${driverId}`),
-  getAvailableRaces: () => request('/api/telemetry/races'),
+  getLapTimes:       (raceId, driverId) => request(`/api/telemetry/laps/${raceId}/${driverId}`),
+  getPitStops:       (raceId, driverId) => request(`/api/telemetry/pitstops/${raceId}/${driverId}`),
+  getAvailableRaces: ()                 => request('/api/telemetry/races'),
+  getRaceDrivers:    (raceId)           => request(`/api/telemetry/drivers/${raceId}`),
+  getRacePace:       (raceId, drivers)  => request(`/api/telemetry/pace/${raceId}?drivers=${drivers.join(',')}`),
+  getTireStrategy:   (raceId)           => request(`/api/telemetry/strategy/${raceId}`),
+  getRacePositions:  (raceId)           => request(`/api/telemetry/positions/${raceId}`),
 }
 
 // ── Dgraph ───────────────────────────────────────────────
 export const graphApi = {
-  getDriverNetwork:     (season)   => request(`/api/graph/drivers${season ? `?season=${season}` : ''}`),
-  getDriverEgoGraph:    (driverId) => request(`/api/graph/driver/${driverId}/ego`),
-  getDriverNode:        (driverId) => request(`/api/graph/driver/${driverId}`),
-  getDriverConnections: (driverId) => request(`/api/graph/driver/${driverId}/connections`),
+  getDriverNetwork:       (season)        => request(`/api/graph/drivers${season ? `?season=${season}` : ''}`),
+  getDriverEgoGraph:      (driverId)      => request(`/api/graph/driver/${driverId}/ego`),
+  getDriverNode:          (driverId)      => request(`/api/graph/driver/${driverId}`),
+  getDriverConnections:   (driverId)      => request(`/api/graph/driver/${driverId}/connections`),
+  getConstructorEgoGraph: (constructorId) => request(`/api/graph/constructor/${constructorId}`),
 }
 
 // ── Search (MongoDB) ─────────────────────────────────────
@@ -51,9 +57,26 @@ export const searchApi = {
     request(`/api/search?${new URLSearchParams({ q, limit })}`),
 }
 
+// ── Dashboard ────────────────────────────────────────────
+export const dashboardApi = {
+  get:               () => request('/api/dashboard'),
+  getLive:           () => request('/api/dashboard/live'),
+  getClassification: () => request('/api/dashboard/live'),
+}
+
+// ── Constructors (MongoDB aggregations) ─────────────────
+export const constructorsApi = {
+  getStats: (id) => request(`/api/stats/constructor/${id}`),
+}
+
 // ── Stats (MongoDB aggregations) ────────────────────────
 export const statsApi = {
-  driverStats:       (id)     => request(`/api/stats/driver/${id}`),
-  circuitHistory:    (id)     => request(`/api/stats/circuit/${id}`),
-  getSeasonStandings:(season) => request(`/api/stats/standings/${season}`),
+  driverStats:              (id)              => request(`/api/stats/driver/${id}`),
+  driverSeasons:            (id)              => request(`/api/stats/driver/${id}/seasons`),
+  driverCircuits:           (id)              => request(`/api/stats/driver/${id}/circuits`),
+  circuitHistory:           (id)              => request(`/api/stats/circuit/${id}`),
+  getSeasonStandings:       (season)          => request(`/api/stats/standings/${season}`),
+  getConstructorStandings:  (season)          => request(`/api/stats/constructor-standings/${season}`),
+  seasonDrivers:            (season)          => request(`/api/stats/season-drivers/${season}`),
+  historicalPerformance:    (driverId, year)  => request(`/api/stats/historical-performance?driverId=${driverId}&year=${year}`),
 }

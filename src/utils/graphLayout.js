@@ -15,6 +15,26 @@ export function seasonRange(seasons) {
   return s.length === 1 ? s[0] : `${s[0]}–${s[s.length - 1]}`
 }
 
+// Layout for constructor graph: center node surrounded by drivers in a full circle
+export function applyCircularLayout(rawNodes, rawLinks) {
+  const nodes = rawNodes.map(n => ({ ...n }))
+  const links = rawLinks.map(l => ({ ...l }))
+
+  const center   = nodes.find(n => n.isSelf)
+  const spokes   = nodes.filter(n => !n.isSelf)
+
+  if (center) { center.fx = 0; center.fy = 0 }
+
+  const radius = Math.max(160, spokes.length * 14)
+  spokes.forEach((n, i) => {
+    const a = (2 * Math.PI * i) / spokes.length - Math.PI / 2
+    n.fx = Math.cos(a) * radius
+    n.fy = Math.sin(a) * radius
+  })
+
+  return { nodes, links }
+}
+
 export function applyRadialLayout(rawNodes, rawLinks) {
   const nodes = rawNodes.map(n => ({ ...n }))
   const links = rawLinks.map(l => ({ ...l }))

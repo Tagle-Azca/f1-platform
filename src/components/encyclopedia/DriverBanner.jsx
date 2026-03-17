@@ -89,17 +89,18 @@ function DriverCard({ driver, onClick }) {
   )
 }
 
-export default function DriverBanner({ onDriverSelect, seasons = 10 }) {
+export default function DriverBanner({ onDriverSelect, season }) {
   const [drivers, setDrivers] = useState([])
   const [loading, setLoading] = useState(true)
   const scrollRef = useRef()
 
   useEffect(() => {
-    driversApi.getFeatured(seasons)
+    setLoading(true)
+    driversApi.getFeatured(undefined, season)
       .then(setDrivers)
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [seasons])
+  }, [season])
 
   if (loading) return (
     <div style={{ padding: '1rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
@@ -117,10 +118,10 @@ export default function DriverBanner({ onDriverSelect, seasons = 10 }) {
     <div style={{ marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-            Drivers · last {seasons} years
+          <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>
+            Drivers · {season}
           </h3>
-          <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+          <p style={{ margin: 0, fontSize: '0.90rem', color: 'var(--text-muted)' }}>
             Click to view full profile
           </p>
         </div>
