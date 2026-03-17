@@ -1,5 +1,30 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, Component } from 'react'
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+
+class ErrorBoundary extends Component {
+  state = { error: null }
+  static getDerivedStateFromError(error) { return { error } }
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', minHeight: '60vh' }}>
+        <p style={{ color: 'var(--f1-red)', fontWeight: 700 }}>Something went wrong</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{this.state.error.message}</p>
+        <button className="btn" onClick={() => this.setState({ error: null })}>Try again</button>
+      </div>
+    )
+  }
+}
+
+function NotFound() {
+  return (
+    <div className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', minHeight: '60vh' }}>
+      <p style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--f1-red)' }}>404</p>
+      <p style={{ color: 'var(--text-muted)' }}>Page not found</p>
+      <Link to="/" className="btn">Go to Dashboard</Link>
+    </div>
+  )
+}
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Navbar           from './components/layout/Navbar'
 import HomePage         from './pages/HomePage'
@@ -28,6 +53,7 @@ function App() {
       <div className="app">
         <Navbar />
         <StandingsSidebar />
+        <ErrorBoundary>
         <Routes>
           <Route path="/"             element={<HomePage />}         />
           <Route path="/encyclopedia" element={<EncyclopediaPage />} />
@@ -49,7 +75,9 @@ function App() {
               <GraphPage />
             </Suspense>
           } />
+          <Route path="*" element={<NotFound />} />
         </Routes>
+        </ErrorBoundary>
       </div>
       </TooltipProvider>
     </BrowserRouter>
