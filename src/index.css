@@ -643,6 +643,11 @@ select option { cursor: pointer; }
   50%       { opacity: 0.4; transform: scale(0.75); }
 }
 
+@keyframes cd-bounce {
+  0%, 100% { transform: translateX(0);    opacity: 1;   }
+  50%       { transform: translateX(3px); opacity: 0.55; }
+}
+
 /* Divider row */
 .row-divider {
   border-bottom: 1px solid var(--border-subtle);
