@@ -1,4 +1,6 @@
-import { useEffect, useRef, useId } from 'react'
+import { useEffect, useRef, useId, useState } from 'react'
+
+const SECTOR_COLORS = { S1: '#a855f7', S2: '#22c55e', S3: '#3b82f6' }
 
 function projectCoords(coords, width, height, padding = 12) {
   const lons = coords.map(c => c[0])
@@ -35,6 +37,7 @@ export default function CircuitSilhouette({
   height      = 160,
   strokeWidth = 2.5,
   animate     = true,
+  activeSector = null,   // 'S1' | 'S2' | 'S3' | null
   className   = '',
   style       = {},
 }) {
@@ -45,11 +48,14 @@ export default function CircuitSilhouette({
   const filterId = `cst-glow-${uid}`
   const trailId  = `cst-trail-${uid}`
 
+  const [pathLen, setPathLen] = useState(0)
+
   useEffect(() => {
     const path = pathRef.current
     if (!path) return
 
     const len = path.getTotalLength()
+    setPathLen(len)
 
     path.style.transition       = 'none'
     path.style.strokeDasharray  = len
@@ -133,6 +139,36 @@ export default function CircuitSilhouette({
         strokeDashoffset={99999}
         opacity={0.85}
       />
+
+      {/* Sector highlight overlays — equal thirds of path length */}
+      {activeSector && pathLen > 0 && (() => {
+        const seg = pathLen / 3
+        const configs = {
+          S1: { da: `${seg} ${pathLen}`,                        off: '0' },
+          S2: { da: `0.1 ${seg - 0.1} ${seg} ${seg}`,          off: '0' },
+          S3: { da: `0.1 ${seg * 2 - 0.1} ${seg} 0.1`,         off: '0' },
+        }
+        return Object.entries(SECTOR_COLORS).map(([sector, secColor]) => {
+          const { da, off } = configs[sector]
+          const active = activeSector === sector
+          return (
+            <path
+              key={sector}
+              d={d}
+              fill="none"
+              stroke={secColor}
+              strokeWidth={strokeWidth + 2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={da}
+              strokeDashoffset={off}
+              opacity={active ? 1 : 0}
+              filter={`url(#${filterId})`}
+              style={{ transition: 'opacity 0.12s ease' }}
+            />
+          )
+        })
+      })()}
 
       {/* Start/finish dot — appears after track finishes drawing */}
       {projected[0] && (
