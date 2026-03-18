@@ -34,7 +34,7 @@ export function useGraphCanvas(imgCacheRef, fgRef) {
       if (!cached) {
         const img = new Image()
         img.crossOrigin = 'anonymous'
-        img.onload  = () => { imgCacheRef.current[cacheKey] = img; fgRef.current?.refresh() }
+        img.onload  = () => { imgCacheRef.current[cacheKey] = img; fgRef.current?.d3ReheatSimulation() }
         img.onerror = () => { imgCacheRef.current[cacheKey] = 'error' }
         img.src     = node.photoUrl
         imgCacheRef.current[cacheKey] = 'loading'

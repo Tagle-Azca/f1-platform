@@ -43,6 +43,7 @@ export default function CircuitSilhouette({
   const uid     = useId().replace(/:/g, '-')
   const pathId  = `cst-path-${uid}`
   const filterId = `cst-glow-${uid}`
+  const trailId  = `cst-trail-${uid}`
 
   useEffect(() => {
     const path = pathRef.current
@@ -50,9 +51,8 @@ export default function CircuitSilhouette({
 
     const len = path.getTotalLength()
 
-    // Set initial state without transition (invisible)
-    path.style.transition      = 'none'
-    path.style.strokeDasharray = len
+    path.style.transition       = 'none'
+    path.style.strokeDasharray  = len
     path.style.strokeDashoffset = animate ? len : 0
 
     if (dotRef.current) {
@@ -62,21 +62,20 @@ export default function CircuitSilhouette({
 
     if (!animate) return
 
-    // Wait one frame for the browser to paint the hidden state, then animate
+    // Double-rAF to force browser to paint initial hidden state before animating
     const raf = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        path.style.transition       = 'stroke-dashoffset 5s linear'
+        path.style.transition       = 'stroke-dashoffset 2.8s cubic-bezier(0.4, 0, 0.2, 1)'
         path.style.strokeDashoffset = '0'
 
         if (dotRef.current) {
-          dotRef.current.style.transition = 'opacity 0.5s 4.8s'
+          dotRef.current.style.transition = 'opacity 0.4s 2.6s'
           dotRef.current.style.opacity    = '1'
         }
       })
     })
 
     return () => cancelAnimationFrame(raf)
-  // Re-run only when coords change (new circuit)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coords])
 
@@ -84,6 +83,10 @@ export default function CircuitSilhouette({
 
   const projected = projectCoords(coords, width, height)
   const d         = toPath(projected)
+
+  // Animation timing
+  const drawDone = '2.8s'
+  const lapDur   = '4.5s'
 
   return (
     <svg
@@ -94,24 +97,29 @@ export default function CircuitSilhouette({
       style={{ overflow: 'visible', ...style }}
     >
       <defs>
-        <filter id={filterId} x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="4" />
+        {/* Soft glow for track and car */}
+        <filter id={filterId} x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" />
+        </filter>
+        {/* Stronger glow for car core */}
+        <filter id={trailId} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" />
         </filter>
       </defs>
 
-      {/* Glow layer — always fully visible, no animation needed */}
+      {/* Track glow (background halo, always visible) */}
       <path
         d={d}
         fill="none"
         stroke={color}
-        strokeWidth={strokeWidth + 5}
-        strokeOpacity={0.15}
+        strokeWidth={strokeWidth + 6}
+        strokeOpacity={0.10}
         strokeLinecap="round"
         strokeLinejoin="round"
         filter={`url(#${filterId})`}
       />
 
-      {/* Main track line — animated via ref */}
+      {/* Main track line — dash-reveal animation */}
       <path
         ref={pathRef}
         id={pathId}
@@ -123,10 +131,10 @@ export default function CircuitSilhouette({
         strokeLinejoin="round"
         strokeDasharray={99999}
         strokeDashoffset={99999}
-        opacity={0.92}
+        opacity={0.85}
       />
 
-      {/* Start/finish dot */}
+      {/* Start/finish dot — appears after track finishes drawing */}
       {projected[0] && (
         <circle
           ref={dotRef}
@@ -138,20 +146,37 @@ export default function CircuitSilhouette({
         />
       )}
 
-      {/* Moving car dot — starts after draw animation (5s), loops indefinitely */}
+      {/* Car animation — starts after track draw finishes */}
       {animate && (
         <>
-          {/* Glow halo */}
-          <circle r={6} fill={color} opacity={0} filter={`url(#${filterId})`}>
-            <set attributeName="opacity" to="0.5" begin="5s" fill="freeze" />
-            <animateMotion dur="8s" repeatCount="indefinite" begin="5s" calcMode="linear" rotate="auto">
+          {/* Outer glow halo (wide, soft) */}
+          <circle r={8} fill={color} opacity={0} filter={`url(#${trailId})`}>
+            <set attributeName="opacity" to="0.55" begin={drawDone} fill="freeze" />
+            <animateMotion dur={lapDur} repeatCount="indefinite" begin={drawDone} calcMode="linear" rotate="auto">
               <mpath href={`#${pathId}`} />
             </animateMotion>
           </circle>
-          {/* White core dot */}
-          <circle r={2.8} fill="#ffffff" opacity={0}>
-            <set attributeName="opacity" to="1" begin="5s" fill="freeze" />
-            <animateMotion dur="8s" repeatCount="indefinite" begin="5s" calcMode="linear" rotate="auto">
+
+          {/* Trail dot 2 (slightly behind, faded) */}
+          <circle r={2} fill={color} opacity={0} filter={`url(#${filterId})`}>
+            <set attributeName="opacity" to="0.35" begin={drawDone} fill="freeze" />
+            <animateMotion dur={lapDur} repeatCount="indefinite" begin={`calc(${drawDone} + 0.22s)`} calcMode="linear" rotate="auto">
+              <mpath href={`#${pathId}`} />
+            </animateMotion>
+          </circle>
+
+          {/* Trail dot 1 (close behind, brighter) */}
+          <circle r={2.5} fill={color} opacity={0} filter={`url(#${filterId})`}>
+            <set attributeName="opacity" to="0.55" begin={drawDone} fill="freeze" />
+            <animateMotion dur={lapDur} repeatCount="indefinite" begin={`calc(${drawDone} + 0.12s)`} calcMode="linear" rotate="auto">
+              <mpath href={`#${pathId}`} />
+            </animateMotion>
+          </circle>
+
+          {/* Car core (white dot) */}
+          <circle r={3} fill="#ffffff" opacity={0}>
+            <set attributeName="opacity" to="1" begin={drawDone} fill="freeze" />
+            <animateMotion dur={lapDur} repeatCount="indefinite" begin={drawDone} calcMode="linear" rotate="auto">
               <mpath href={`#${pathId}`} />
             </animateMotion>
           </circle>

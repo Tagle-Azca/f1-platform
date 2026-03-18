@@ -1,57 +1,35 @@
+import { useState, useEffect } from 'react'
 import CircuitSilhouette from '../circuit/CircuitSilhouette'
+import { circuitsApi } from '../../services/api'
 
-// Monaco circuit GPS coordinates — hardcoded so this renders with zero network requests
-const MONACO_COORDS = [
-  [7.4274, 43.7347],
-  [7.4268, 43.7340],
-  [7.4262, 43.7336],
-  [7.4254, 43.7337],
-  [7.4244, 43.7342],
-  [7.4235, 43.7349],
-  [7.4227, 43.7355],
-  [7.4219, 43.7356],
-  [7.4214, 43.7353],
-  [7.4213, 43.7348],
-  [7.4215, 43.7342],
-  [7.4214, 43.7335],
-  [7.4210, 43.7330],
-  [7.4207, 43.7334],
-  [7.4207, 43.7339],
-  [7.4210, 43.7343],
-  [7.4215, 43.7345],
-  [7.4224, 43.7345],
-  [7.4235, 43.7344],
-  [7.4246, 43.7342],
-  [7.4251, 43.7339],
-  [7.4254, 43.7336],
-  [7.4258, 43.7337],
-  [7.4264, 43.7337],
-  [7.4268, 43.7337],
-  [7.4272, 43.7338],
-  [7.4276, 43.7341],
-  [7.4278, 43.7345],
-  [7.4277, 43.7349],
-  [7.4273, 43.7352],
-  [7.4270, 43.7351],
-  [7.4271, 43.7349],
-  [7.4274, 43.7347],
-]
+// Module-level cache — fetched once on first render, reused forever.
+// Avoids re-fetching on every loading state across the app.
+let _cachedCoords = null
+let _fetchPromise = null
 
-/**
- * CircuitLoader — Monaco circuit animation used as loading indicator.
- * Renders instantly (hardcoded coords, pure SVG — no network requests).
- *
- * Props:
- *   message?  string   — label below the circuit (default 'Loading...')
- *   size?     'sm'|'md'|'lg'  — controls dimensions (default 'md')
- *   height?   number   — outer container min-height (default 220)
- */
+function getMonzaCoords() {
+  if (_cachedCoords) return Promise.resolve(_cachedCoords)
+  if (!_fetchPromise) {
+    _fetchPromise = circuitsApi.getById('spa')
+      .then(c => { _cachedCoords = c?.trackCoords ?? null; return _cachedCoords })
+      .catch(() => null)
+  }
+  return _fetchPromise
+}
+
 export default function CircuitLoader({ message = 'Loading...', size = 'md', height = 220 }) {
+  const [coords, setCoords] = useState(_cachedCoords) // instant if already cached
+
+  useEffect(() => {
+    if (_cachedCoords) return  // already have it
+    getMonzaCoords().then(setCoords)
+  }, [])
+
   const dims = {
     sm: { w: 110, h: 70  },
-    md: { w: 160, h: 100 },
-    lg: { w: 220, h: 140 },
-  }[size] || { w: 160, h: 100 }
+    md: { w: 200, h: 130 },
+    lg: { w: 280, h: 180 },
+  }[size] || { w: 200, h: 130 }
 
   return (
     <div style={{
@@ -59,14 +37,28 @@ export default function CircuitLoader({ message = 'Loading...', size = 'md', hei
       alignItems: 'center', justifyContent: 'center',
       gap: '0.75rem', minHeight: height,
     }}>
-      <CircuitSilhouette
-        coords={MONACO_COORDS}
-        color="var(--f1-red)"
-        width={dims.w}
-        height={dims.h}
-        strokeWidth={2}
-        animate
-      />
+      {coords?.length ? (
+        <CircuitSilhouette
+          coords={coords}
+          color="var(--f1-red)"
+          width={dims.w}
+          height={dims.h}
+          strokeWidth={2}
+          animate
+        />
+      ) : (
+        // Fallback while circuit data loads (only on the very first render ever)
+        <div style={{
+          width: dims.w, height: dims.h,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            width: 10, height: 10, borderRadius: '50%',
+            background: 'var(--f1-red)',
+            animation: 'pulse-dot 1.2s ease-in-out infinite',
+          }} />
+        </div>
+      )}
       {message && (
         <span style={{
           fontFamily: "'Barlow Condensed', sans-serif",
