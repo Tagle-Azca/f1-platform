@@ -12,16 +12,17 @@ export default function ConstructorKPICard({ label, value, sub, color, trend }) 
       WebkitBackdropFilter: 'blur(12px)',
       borderRadius: 10,
       padding: '0.75rem 1rem',
-      flex: 1, minWidth: 0,
+      flex: '1 1 130px', minWidth: 0, overflow: 'hidden',
     }}>
       <div style={{ fontSize: '0.52rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '0.35rem' }}>
         {label}
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, overflow: 'hidden' }}>
         <span style={{
           fontSize: '1.35rem', fontWeight: 900, fontVariantNumeric: 'tabular-nums',
           color: color || 'var(--text-primary)',
           fontFamily: "'Barlow Condensed', sans-serif", lineHeight: 1,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
         }}>
           {value ?? '—'}
         </span>
@@ -30,7 +31,7 @@ export default function ConstructorKPICard({ label, value, sub, color, trend }) 
         )}
       </div>
       {sub && (
-        <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.25rem', lineHeight: 1.3 }}>
+        <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.25rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {sub}
         </div>
       )}

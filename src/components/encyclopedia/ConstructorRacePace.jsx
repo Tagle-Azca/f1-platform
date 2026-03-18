@@ -8,6 +8,13 @@ import EmptyState from '../ui/EmptyState'
 
 const COMPOUND_COLOR = { SOFT: '#ef4444', MEDIUM: '#eab308', HARD: '#d1d5db', INTERMEDIATE: '#22c55e', WET: '#3b82f6' }
 
+function fmtLap(s) {
+  if (s == null) return '—'
+  const m   = Math.floor(s / 60)
+  const sec = s % 60
+  return `${m}:${sec < 10 ? '0' : ''}${sec.toFixed(3)}`
+}
+
 function PaceTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
@@ -19,7 +26,7 @@ function PaceTooltip({ active, payload, label }) {
           <div key={p.dataKey} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color }} />
             <span style={{ color: 'var(--text-secondary)' }}>{p.dataKey}:</span>
-            <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{p.value}s</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{fmtLap(p.value)}</span>
             {compound && (
               <span style={{ padding: '1px 5px', borderRadius: 3, background: `${COMPOUND_COLOR[compound]}22`, color: COMPOUND_COLOR[compound], fontWeight: 700, fontSize: '0.6rem' }}>
                 {compound[0]}
@@ -134,14 +141,14 @@ export default function ConstructorRacePace({ teamName, year, color }) {
       )}
 
       <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+        <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="rgba(255,255,255,0.04)" vertical={false} />
           <XAxis dataKey="lap" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
-          <YAxis domain={[minTime, maxTime]} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}s`} />
+          <YAxis domain={[minTime, maxTime]} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} tickFormatter={fmtLap} width={52} />
           <Tooltip content={<PaceTooltip />} />
           {data.fieldAvgLap && (
             <ReferenceLine y={data.fieldAvgLap} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 4"
-              label={{ value: `Field ${data.fieldAvgLap}s`, position: 'insideTopRight', fontSize: 9, fill: 'rgba(255,255,255,0.35)' }}
+              label={{ value: `Field ${fmtLap(data.fieldAvgLap)}`, position: 'insideTopRight', fontSize: 9, fill: 'rgba(255,255,255,0.35)' }}
             />
           )}
           <Line dataKey={dA.acronym} stroke={colorA} strokeWidth={1.5} dot={false} connectNulls={false} />
