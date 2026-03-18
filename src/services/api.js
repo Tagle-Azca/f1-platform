@@ -42,6 +42,7 @@ export const telemetryApi = {
   getRacePositions:  (raceId)           => request(`/api/telemetry/positions/${raceId}`),
   getTeamPace:       (teamName, year, raceId) => request(`/api/telemetry/team-pace?teamName=${encodeURIComponent(teamName)}&year=${year}${raceId ? `&raceId=${raceId}` : ''}`),
   getSafetyCar:      (raceId)           => request(`/api/telemetry/safety-car/${raceId}`),
+  getRaceInfo:       (raceId)           => request(`/api/telemetry/race-info/${raceId}`),
 }
 
 // ── Dgraph ───────────────────────────────────────────────
