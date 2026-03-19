@@ -40,10 +40,7 @@ class ErrorBoundary extends Component {
 
 function App() {
   useEffect(() => {
-    const ping = () => {
-      if (document.visibilityState === 'visible')
-        fetch(`${import.meta.env.VITE_API_URL}/health`).catch(() => {})
-    }
+    const ping = () => fetch(`${import.meta.env.VITE_API_URL}/health`).catch(() => {})
     ping()
     const id = setInterval(ping, 13 * 60 * 1000)
     return () => clearInterval(id)
