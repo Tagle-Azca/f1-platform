@@ -103,14 +103,13 @@ export default function ChampionshipChart({
                 {drivers.map((d, i) => (
                   <Line
                     key={d.driverId}
-                    type="monotone"
+                    type="stepAfter"
                     dataKey={d.driverId}
                     name={d.name}
                     stroke={d.color}
-                    strokeWidth={i === 0 ? 3 : i < 3 ? 2 : 1.5}
+                    strokeWidth={i === 0 ? 2.5 : 2}
                     dot={false}
                     activeDot={{ r: 5, strokeWidth: 0, fill: d.color }}
-                    strokeOpacity={i < 3 ? 1 : 0.55}
                     isAnimationActive={false}
                     label={i < 5 ? <EndLabel color={d.color} name={d.name} /> : false}
                   />

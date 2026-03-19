@@ -308,12 +308,15 @@ export default function Navbar() {
                 onMouseEnter={() => setCdHover(true)}
                 onMouseLeave={() => setCdHover(false)}
                 style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
+                  cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: '0.65rem',
-                  borderLeft: '1px solid var(--border-strong)',
-                  paddingLeft: '1rem', paddingRight: '0.25rem',
-                  transition: 'opacity 0.15s',
-                  opacity: cdHover ? 0.85 : 1,
+                  background: cdHover ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 8,
+                  padding: '0.35rem 0.75rem',
+                  marginLeft: '0.5rem',
+                  transition: 'background 0.15s, border-color 0.15s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                 }}
               >
                 {flagUrl && (
@@ -367,8 +370,8 @@ export default function Navbar() {
                 </div>
               </button>
 
-              {/* Tooltip — only on dashboard, on hover */}
-              {isHome && !live && countdown && cdHover && (
+              {/* Tooltip — desktop, on hover */}
+              {!live && countdown && cdHover && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 10px)', right: 0,
                   background: 'rgba(15,15,15,0.97)',
@@ -420,9 +423,18 @@ export default function Navbar() {
             </button>
           )}
           {isTablet && !live && countdown && (
-            <button
+            <motion.button
               onClick={() => navigate('/next-race')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem', padding: '2px 4px' }}
+              whileTap={{ scale: 0.93 }}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.09)',
+                borderRadius: 7,
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '0.2rem',
+                padding: '5px 9px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              }}
             >
               {[['d','D'],['h','H'],['m','M']].map(([k, lbl]) => (
                 <div key={k} style={{ display: 'flex', alignItems: 'baseline', gap: '1px' }}>
@@ -441,7 +453,7 @@ export default function Navbar() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                 </svg>
               )}
-            </button>
+            </motion.button>
           )}
 
           {/* Hamburger — mobile/tablet only */}
