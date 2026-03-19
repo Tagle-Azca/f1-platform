@@ -39,6 +39,7 @@ export default function SearchBox({ onSelect, exclude = [], externalValue }) {
   function select(item) {
     setQuery(item.label)
     setOpen(false)
+    setResults([])
     onSelect(item)
   }
 
