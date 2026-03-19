@@ -39,7 +39,7 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
-  return (
+  return (<>
     <BrowserRouter>
       <TooltipProvider>
         <div className="app">
@@ -74,7 +74,7 @@ function App() {
       </TooltipProvider>
     </BrowserRouter>
     <Analytics />
-  )
+  </>)
 }
 
 export default App
