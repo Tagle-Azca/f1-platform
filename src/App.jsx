@@ -1,4 +1,5 @@
 import { lazy, Suspense, Component } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Navbar                    from './components/layout/Navbar'
@@ -72,6 +73,7 @@ function App() {
         </div>
       </TooltipProvider>
     </BrowserRouter>
+    <Analytics />
   )
 }
 
