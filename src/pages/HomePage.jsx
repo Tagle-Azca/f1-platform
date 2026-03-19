@@ -402,8 +402,20 @@ export default function HomePage() {
         ))}
       </div>
 
-      <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        Data sourced from Jolpica F1 API · OpenF1 · 1950 – {new Date().getFullYear()} - made by Andres Gomez Tagle Azcarraga
+      <p style={{ 
+        textAlign: 'center', 
+        marginTop: '3rem', 
+        fontSize: '0.65rem', 
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color: 'var(--text-muted)',
+        opacity: 0.6
+      }}>
+        Data sourced from Jolpica F1 API · OpenF1 · 1950 – {new Date().getFullYear()}
+        <br />
+        <span style={{ marginTop: '0.5rem', display: 'block', fontWeight: 700, color: 'var(--f1-red)' }}>
+          Designed & Engineered by Andres Gomez Tagle Azcarraga
+        </span>
       </p>
 
     </PageWrapper>
