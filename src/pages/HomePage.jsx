@@ -403,7 +403,7 @@ export default function HomePage() {
       </div>
 
       <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        Data sourced from Jolpica F1 API · OpenF1 · 1950 – {new Date().getFullYear()}
+        Data sourced from Jolpica F1 API · OpenF1 · 1950 – {new Date().getFullYear()} - made by Andres Gomez Tagle Azcarraga
       </p>
 
     </PageWrapper>
