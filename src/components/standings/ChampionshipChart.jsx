@@ -103,7 +103,7 @@ export default function ChampionshipChart({
                 {drivers.map((d, i) => (
                   <Line
                     key={d.driverId}
-                    type="stepAfter"
+                    type="monotone"
                     dataKey={d.driverId}
                     name={d.name}
                     stroke={d.color}
@@ -126,12 +126,7 @@ export default function ChampionshipChart({
                   bottom: 5,
                   left: curtainLeft,
                   right: 0,
-                  background: `linear-gradient(to right,
-                    transparent,
-                    rgba(22,22,22,0.85) 18%,
-                    rgba(22,22,22,0.98) 40%,
-                    rgb(22,22,22) 60%
-                  )`,
+                  background: `linear-gradient(to right, transparent, rgb(22,22,22) 6%)`,
                   transition: isPlaying ? 'left 620ms linear' : 'none',
                   pointerEvents: 'none',
                   zIndex: 2,
