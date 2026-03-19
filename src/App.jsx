@@ -1,4 +1,4 @@
-import { lazy, Suspense, Component } from 'react'
+import { lazy, Suspense, Component, useEffect } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -39,6 +39,16 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
+  useEffect(() => {
+    const ping = () => {
+      if (document.visibilityState === 'visible')
+        fetch(`${import.meta.env.VITE_API_URL}/health`).catch(() => {})
+    }
+    ping()
+    const id = setInterval(ping, 13 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+
   return (<>
     <BrowserRouter>
       <TooltipProvider>
