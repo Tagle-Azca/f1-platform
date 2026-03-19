@@ -244,12 +244,21 @@ export default function Navbar() {
             {TABS.map(({ path, label, icon, color }) => {
               const ring = color + '33'
               const bg   = color + '14'
+              const isActive = path === '/'
+                ? location.pathname === '/'
+                : location.pathname.startsWith(path)
               return (
                 <NavLink
                   key={path}
                   to={path}
                   end={path === '/'}
-                  style={({ isActive }) => ({
+                  onClick={() => {
+                    if (isActive) {
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                      navigate(path, { state: { reset: Date.now() } })
+                    }
+                  }}
+                  style={{
                     display: 'flex', alignItems: 'center', gap: '0.35rem',
                     padding: '0.4rem 0.75rem',
                     borderRadius: 7,
@@ -268,7 +277,7 @@ export default function Navbar() {
                     boxShadow: isActive ? `0 0 14px ${ring}, 0 4px 12px rgba(0,0,0,0.4)` : 'none',
                     transform: isActive ? 'translateY(-1px)' : 'none',
                     userSelect: 'none',
-                  })}
+                  }}
                   onMouseEnter={e => {
                     if (!e.currentTarget.style.boxShadow.includes('14px')) {
                       e.currentTarget.style.color = '#fff'
@@ -520,29 +529,41 @@ export default function Navbar() {
                     Navigation
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                    {TABS.map(({ path, label, icon, color }) => (
-                      <NavLink
-                        key={path}
-                        to={path}
-                        end={path === '/'}
-                        style={({ isActive }) => ({
-                          display: 'flex', alignItems: 'center', gap: '0.65rem',
-                          padding: '0.65rem 0.85rem',
-                          borderRadius: 8,
-                          border: `1px solid ${isActive ? color + '55' : 'transparent'}`,
-                          background: isActive ? color + '18' : 'transparent',
-                          color: isActive ? color : 'var(--text-secondary)',
-                          textDecoration: 'none',
-                          fontFamily: "'Barlow Condensed', sans-serif",
-                          fontSize: '1rem', fontWeight: isActive ? 800 : 600,
-                          letterSpacing: '0.06em', textTransform: 'uppercase',
-                          transition: 'background 0.15s',
-                        })}
-                      >
-                        {I(icon)}
-                        {label}
-                      </NavLink>
-                    ))}
+                    {TABS.map(({ path, label, icon, color }) => {
+                      const isActive = path === '/'
+                        ? location.pathname === '/'
+                        : location.pathname.startsWith(path)
+                      return (
+                        <NavLink
+                          key={path}
+                          to={path}
+                          end={path === '/'}
+                          onClick={() => {
+                            setMenuOpen(false)
+                            if (isActive) {
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                              navigate(path, { state: { reset: Date.now() } })
+                            }
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '0.65rem',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: 8,
+                            border: `1px solid ${isActive ? color + '55' : 'transparent'}`,
+                            background: isActive ? color + '18' : 'transparent',
+                            color: isActive ? color : 'var(--text-secondary)',
+                            textDecoration: 'none',
+                            fontFamily: "'Barlow Condensed', sans-serif",
+                            fontSize: '1rem', fontWeight: isActive ? 800 : 600,
+                            letterSpacing: '0.06em', textTransform: 'uppercase',
+                            transition: 'background 0.15s',
+                          }}
+                        >
+                          {I(icon)}
+                          {label}
+                        </NavLink>
+                      )
+                    })}
                   </div>
                 </div>
 

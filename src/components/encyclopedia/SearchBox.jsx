@@ -7,11 +7,13 @@ export default function SearchBox({ onSelect, exclude = [], externalValue }) {
   const [results, setResults] = useState([])
   const [open,    setOpen]    = useState(false)
   const [loading, setLoading] = useState(false)
-  const ref = useRef()
+  const ref         = useRef()
+  const externalRef = useRef(false)  // true when query change came from outside (card click / graph)
 
-  // Sync search box text when navigating via graph clicks
+  // Sync search box text when navigating via card click or graph
   useEffect(() => {
     if (externalValue !== undefined) {
+      externalRef.current = true
       setQuery(externalValue)
       setOpen(false)
       setResults([])
@@ -19,6 +21,11 @@ export default function SearchBox({ onSelect, exclude = [], externalValue }) {
   }, [externalValue])
 
   useEffect(() => {
+    // Skip search when the query was set externally — just show the name, no dropdown
+    if (externalRef.current) {
+      externalRef.current = false
+      return
+    }
     if (query.length < 2) { setResults([]); setOpen(false); return }
     setLoading(true)
     const t = setTimeout(() => {

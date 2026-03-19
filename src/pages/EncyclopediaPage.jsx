@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { motion, AnimatePresence } from 'framer-motion'
 import PageWrapper    from '../components/layout/PageWrapper'
@@ -20,12 +20,27 @@ export default function EncyclopediaPage() {
   const [bannerSeason, setBannerSeason] = useState(String(currentYear))
   const years = Array.from({ length: currentYear - 1949 }, (_, i) => String(currentYear - i))
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Reset when Navbar re-clicks the Encyclopedia tab
+  useEffect(() => {
+    if (location.state?.reset) {
+      setSelected(null)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [location.state?.reset])
+
+  function goBack() {
+    setSelected(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function handleSelect(item) {
     if (item.type === 'race') {
       navigate(`/races/${item.season}/${item.round}`)
     } else {
       setSelected(item)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -41,6 +56,26 @@ export default function EncyclopediaPage() {
       <p className="page__subtitle">
         The full history of F1 since 1950 · Data from MongoDB
       </p>
+
+      {selected && (
+        <button
+          onClick={goBack}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--text-muted)', padding: '0 0 0.75rem 0',
+            fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.04em',
+            transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 15, height: 15 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          Back to Encyclopedia
+        </button>
+      )}
 
       <SearchBox onSelect={handleSelect} exclude={['race']} showConstructor externalValue={selected?.label} />
 
