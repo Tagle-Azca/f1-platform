@@ -78,6 +78,7 @@ export default function CircuitsPage() {
             selected={selected}
             onSelect={handleSelect}
             isMobile={isMobile}
+            contFilter={contFilter}
           />
 
           <AnimatePresence>

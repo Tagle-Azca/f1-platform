@@ -3,7 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { circuitType, TYPE_COLORS } from './constants'
 import { makeIcon, MapController } from './MapController'
 
-export default function CircuitsMapView({ filtered, sorted, selected, onSelect, isMobile }) {
+export default function CircuitsMapView({ filtered, sorted, selected, onSelect, isMobile, contFilter }) {
   return (
     <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'flex-start' }}>
 
@@ -22,7 +22,7 @@ export default function CircuitsMapView({ filtered, sorted, selected, onSelect, 
 
         <MapContainer center={[25, 15]} zoom={2} minZoom={2} maxZoom={12} style={{ width: '100%', height: '100%' }} zoomControl={false}>
           <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution='&copy; CARTO' />
-          <MapController target={selected} />
+          <MapController target={selected} contFilter={contFilter} />
 
           {filtered.map(c => {
             const lat   = parseFloat(c.Location?.lat  || c.lat)

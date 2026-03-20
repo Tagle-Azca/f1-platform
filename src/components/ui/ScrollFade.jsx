@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 export default function ScrollFade() {
-  const { isMobile } = useBreakpoint()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -20,7 +18,7 @@ export default function ScrollFade() {
     }
   }, [])
 
-  if (!isMobile || !visible) return null
+  if (!visible) return null
 
   return (
     <div style={{
