@@ -12,11 +12,13 @@ import HomeStandingsPanel from '../components/home/HomeStandingsPanel'
 import HomeDbCardsGrid from '../components/home/HomeDbCardsGrid'
 import HomeFooter from '../components/home/HomeFooter'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import BackendError from '../components/ui/BackendError'
 
 export default function HomePage() {
   const { isMobile, isTablet } = useBreakpoint()
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(false)
   const [standingsTab, setStandingsTab] = useState('drivers')
   const [liveData, setLiveData] = useState(null)
   const [selectedDriver,      setSelectedDriver]      = useState(null)
@@ -25,7 +27,7 @@ export default function HomePage() {
   useEffect(() => {
     dashboardApi.get()
       .then(setData)
-      .catch(() => setData(null))
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -51,6 +53,13 @@ export default function HomePage() {
       )}
 
       <HomeHero />
+
+      {error && (
+        <BackendError onRetry={() => {
+          setError(false); setLoading(true)
+          dashboardApi.get().then(setData).catch(() => setError(true)).finally(() => setLoading(false))
+        }} />
+      )}
 
       {/* Main Grid: standings + last race */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.4fr', gap: '1rem', marginBottom: '1rem' }}>

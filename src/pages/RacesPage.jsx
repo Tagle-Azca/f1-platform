@@ -4,6 +4,7 @@ import PageWrapper from '../components/layout/PageWrapper'
 import { racesApi } from '../services/api'
 import PageHint from '../components/ui/PageHint'
 import RaceCard from '../components/races/RaceCard'
+import BackendError from '../components/ui/BackendError'
 
 const CY = new Date().getFullYear()
 const SEASONS = Array.from({ length: CY - 1949 }, (_, i) => String(CY - i))
@@ -71,7 +72,7 @@ export default function RacesPage() {
       </p>
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
-      {error   && <p style={{ color: 'var(--f1-red)' }}>Error: {error}</p>}
+      {error   && <BackendError onRetry={() => { setError(null); setLoading(true) }} />}
 
       {!loading && !error && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>

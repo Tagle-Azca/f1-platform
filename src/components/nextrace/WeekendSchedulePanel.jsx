@@ -49,7 +49,18 @@ function isSessionPast(date, time) {
   return d ? d < Date.now() : false
 }
 
-export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey }) {
+function weatherIcon(code) {
+  if (code === 0)               return { icon: '☀️', label: 'Clear' }
+  if (code <= 3)                return { icon: '⛅', label: 'Partly cloudy' }
+  if (code <= 48)               return { icon: '🌫️', label: 'Foggy' }
+  if (code <= 57)               return { icon: '🌦️', label: 'Drizzle' }
+  if (code <= 67)               return { icon: '🌧️', label: 'Rain' }
+  if (code <= 77)               return { icon: '❄️', label: 'Snow' }
+  if (code <= 82)               return { icon: '🌦️', label: 'Showers' }
+  return                               { icon: '⛈️', label: 'Storm' }
+}
+
+export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey, weather }) {
   const { isMobile } = useBreakpoint()
 
   return (
@@ -65,7 +76,10 @@ export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey
             padding: '2px 7px', borderRadius: 4,
             display: 'flex', alignItems: 'center', gap: '0.3rem',
           }}>
-            <span style={{ opacity: 0.5 }}>🕐</span> {TZ_ABBR}
+            <span style={{ opacity: 0.5 }}><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+</svg>
+</span> {TZ_ABBR}
           </span>
         )}
       </div>
@@ -110,6 +124,24 @@ export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey
                   {formatSessionDate(s.date, s.time, isMobile)}
                 </div>
               </div>
+              {/* Weather */}
+              {weather?.[s.date] && !past && (() => {
+                const w = weather[s.date]
+                const { icon } = weatherIcon(w.code)
+                return (
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: '1rem', lineHeight: 1 }}>{icon}</div>
+                    <div style={{ fontSize: '0.68rem', color: '#fff', fontWeight: 600, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                      {w.tempMax}° / {w.tempMin}°
+                    </div>
+                    {w.precipProb > 0 && (
+                      <div style={{ fontSize: '0.6rem', color: '#60a5fa', marginTop: 1 }}>
+                        {w.precipProb}% rain
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )
         }) : (

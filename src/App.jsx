@@ -32,10 +32,32 @@ class ErrorBoundary extends Component {
   render() {
     if (!this.state.error) return this.props.children
     return (
-      <div className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', minHeight: '60vh' }}>
-        <p style={{ color: 'var(--f1-red)', fontWeight: 700 }}>Something went wrong</p>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{this.state.error.message}</p>
-        <button className="btn" onClick={() => this.setState({ error: null })}>Try again</button>
+      <div className="page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.25rem', minHeight: '70vh', textAlign: 'center' }}>
+        {/* Red flag icon */}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" style={{ width: 56, height: 56, opacity: 0.9 }}>
+          <rect x="10" y="8" width="4" height="48" rx="2" fill="var(--text-muted)" />
+          <rect x="14" y="8" width="36" height="22" rx="2" fill="#e10600" />
+          <rect x="14" y="8"  width="12" height="11" fill="#c00" />
+          <rect x="26" y="19" width="12" height="11" fill="#c00" />
+          <rect x="38" y="8"  width="12" height="11" fill="#c00" />
+        </svg>
+
+        <div>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '2rem', fontWeight: 900, letterSpacing: '0.08em', color: '#e10600', textTransform: 'uppercase', lineHeight: 1 }}>
+            Red Flag
+          </div>
+          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginTop: '0.3rem', textTransform: 'uppercase' }}>
+            Stewards are investigating a technical incident
+          </div>
+        </div>
+
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', maxWidth: 320 }}>
+          The pit wall is on it. Service will resume shortly — try again in a moment.
+        </p>
+
+        <button className="btn" onClick={() => this.setState({ error: null })}>
+          Back to the pits
+        </button>
       </div>
     )
   }

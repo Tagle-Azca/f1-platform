@@ -4,6 +4,7 @@ import PageWrapper from '../components/layout/PageWrapper'
 import PageHeader from '../components/layout/PageHeader'
 import PageHint from '../components/ui/PageHint'
 import DbOfflineBanner from '../components/ui/DbOfflineBanner'
+import BackendError from '../components/ui/BackendError'
 import EmptyState from '../components/ui/EmptyState'
 import CassandraLapChart from '../components/telemetry/CassandraLapChart'
 import TyreAnalysisPanel from '../components/telemetry/TyreAnalysisPanel'
@@ -330,7 +331,7 @@ export default function TelemetryPage() {
       />
 
       {error && (
-        <p style={{ color: 'var(--f1-red)', marginBottom: '1rem', fontSize: '0.88rem' }}>Error: {error}</p>
+        <BackendError />
       )}
 
       {/* ════════════════════════════════════════════════

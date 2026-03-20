@@ -29,6 +29,7 @@ export default function NextRacePage() {
   const [race,    setRace]    = useState(null)
   const [circuit, setCircuit] = useState(null)
   const [history, setHistory] = useState(null)
+  const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -49,6 +50,32 @@ export default function NextRacePage() {
       })
       .catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    const clat = circuit?.Location?.lat
+    const clng = circuit?.Location?.long
+    if (!clat || !clng || !race?.schedule) return
+    const dates = Object.values(race.schedule).map(s => s.date).filter(Boolean)
+    if (!dates.length) return
+    const start = dates.reduce((a, b) => a < b ? a : b)
+    const end   = dates.reduce((a, b) => a > b ? a : b)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${clat}&longitude=${clng}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=auto&start_date=${start}&end_date=${end}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.daily) return
+        const map = {}
+        data.daily.time.forEach((date, i) => {
+          map[date] = {
+            tempMax:     Math.round(data.daily.temperature_2m_max[i]),
+            tempMin:     Math.round(data.daily.temperature_2m_min[i]),
+            precipProb:  data.daily.precipitation_probability_max[i],
+            code:        data.daily.weathercode[i],
+          }
+        })
+        setWeather(map)
+      })
+      .catch(() => {})
+  }, [circuit, race?.schedule])
 
   const live      = race?.currentSession?.isLive ? race.currentSession : null
   const countdown = useCountdown(!live ? (race?.nextSession?.dateTime ?? race?.raceDateTime) : null)
@@ -95,6 +122,7 @@ export default function NextRacePage() {
           schedule={race.schedule}
           liveKey={live?.key}
           nextSessionKey={race?.nextSession?.key}
+          weather={weather}
         />
 
         <div style={{ display: isMobile ? 'grid' : 'flex', gridTemplateColumns: '1fr 1fr', flexDirection: 'column', gap: '1rem' }}>
