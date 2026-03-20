@@ -53,7 +53,9 @@ export default function LastSessionPanel({ session, loading, onDriverClick }) {
           <Flag country={session.country} />
           <span className="race-name">{session.raceName?.replace(' Grand Prix', ' GP')}</span>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Rd {session.round}</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>↗</span>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 12, height: 12, flexShrink: 0 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+          </svg>
         </Link>
       </div>
 
