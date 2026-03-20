@@ -20,6 +20,7 @@ import RacePacePage              from './pages/RacePacePage'
 import NextRacePage              from './pages/NextRacePage'
 import LivePage                  from './pages/LivePage'
 import NotFoundPage              from './pages/NotFoundPage'
+import ScrollFade               from './components/ui/ScrollFade'
 
 const GraphPage = lazy(() => import('./pages/GraphPage'))
 
@@ -80,6 +81,7 @@ function App() {
         </div>
       </TooltipProvider>
     </BrowserRouter>
+    <ScrollFade />
     <Analytics />
   </>)
 }

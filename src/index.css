@@ -604,6 +604,26 @@ select option { cursor: pointer; }
 .panel--dgraph    { border-top: 2px solid var(--dgraph-color); }
 .panel--red       { border-top: 2px solid var(--f1-red); }
 
+.last-session-race-link {
+  display: flex; align-items: center; gap: 0.4rem;
+  text-decoration: none; color: inherit;
+}
+.last-session-race-link .race-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.88rem; font-weight: 700; color: #fff;
+  transition: color 0.15s;
+}
+.last-session-race-link:hover .race-name { color: var(--f1-red); }
+
+.last-session-footer-link {
+  align-self: flex-end; margin-top: auto;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; text-decoration: none;
+  color: var(--text-muted); transition: color 0.15s;
+}
+.last-session-footer-link:hover { color: var(--f1-red); }
+
 /* Accent banner — dynamic color border+gradient (color set via inline var) */
 .accent-banner {
   border: 1px solid var(--banner-color, rgba(255,255,255,0.18));

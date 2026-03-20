@@ -15,7 +15,7 @@ const SESSION_TYPE_COLORS = {
   FP1: 'var(--text-secondary)', FP2: 'var(--text-secondary)', FP3: 'var(--text-secondary)',
 }
 
-export default function LastSessionPanel({ session, loading }) {
+export default function LastSessionPanel({ session, loading, onDriverClick }) {
   if (loading) {
     return (
       <Panel accent="red" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
@@ -46,31 +46,15 @@ export default function LastSessionPanel({ session, loading }) {
         }}>
           Last {session.sessionLabel}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <Link
+          to={`/races/${session.season}/${session.round}`}
+          className="last-session-race-link"
+        >
           <Flag country={session.country} />
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.88rem', fontWeight: 700, color: '#fff' }}>
-            {session.raceName?.replace(' Grand Prix', ' GP')}
-          </span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-            Rd {session.round}
-          </span>
-          {session.season && session.round && (
-            <Link
-              to={`/races/${session.season}/${session.round}`}
-              style={{
-                display: 'inline-flex', alignItems: 'center',
-                fontSize: '0.75rem', color: 'var(--text-muted)',
-                textDecoration: 'none', lineHeight: 1,
-                transition: 'color 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = '#fff' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
-              title="View race detail"
-            >
-              ↗
-            </Link>
-          )}
-        </div>
+          <span className="race-name">{session.raceName?.replace(' Grand Prix', ' GP')}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>Rd {session.round}</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>↗</span>
+        </Link>
       </div>
 
       {/* Podium (Race / Sprint) */}
@@ -103,6 +87,10 @@ export default function LastSessionPanel({ session, loading }) {
                   stat={driver.time || (driver.points ? `+${driver.points} pts` : '')}
                   color={ctorColor(driver.constructorId)}
                   isLeader={driver.position === 1}
+                  showChevron={!!onDriverClick}
+                  onClick={onDriverClick
+                    ? () => onDriverClick({ driverId: driver.driverId, name: driver.name })
+                    : undefined}
                 />
               )
             })}
@@ -192,14 +180,7 @@ export default function LastSessionPanel({ session, loading }) {
       {session.season && session.round && (
         <Link
           to={`/races/${session.season}/${session.round}`}
-          style={{
-            alignSelf: 'flex-end', fontSize: '0.72rem', color: 'var(--text-muted)',
-            textDecoration: 'none', letterSpacing: '0.06em', fontWeight: 600,
-            fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', marginTop: 'auto',
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--f1-red)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
+          className="last-session-footer-link"
         >
           Full results →
         </Link>

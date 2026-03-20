@@ -70,7 +70,7 @@ export default function HomePage() {
           style={{ display: 'flex', flexDirection: 'column' }}
         >
           {liveData ? <LiveRacePanel live={liveData} /> : (
-            <LastSessionPanel session={data?.lastSession} loading={loading} />
+            <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />
           )}
         </motion.div>
       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -32,6 +32,17 @@ export default function ChampionshipChart({
 }) {
   const { isMobile } = useBreakpoint()
   const [tooltipPos, setTooltipPos] = useState(undefined)
+  const [showAll,    setShowAll]    = useState(false)
+
+  // Drivers who scored at least 1 point across the full season
+  const scoringDriverIds = useMemo(() => {
+    if (!fullChartData?.length) return new Set(drivers.map(d => d.driverId))
+    const last = fullChartData[fullChartData.length - 1]
+    return new Set(drivers.filter(d => (last?.[d.driverId] ?? 0) > 0).map(d => d.driverId))
+  }, [fullChartData, drivers])
+
+  const activeDrivers = showAll ? drivers : drivers.filter(d => scoringDriverIds.has(d.driverId))
+
   const chartHeight = isMobile
     ? Math.round(window.innerHeight * 0.42)
     : 400
@@ -100,7 +111,7 @@ export default function ChampionshipChart({
                   position={tooltipPos}
                   wrapperStyle={{ zIndex: 9999, pointerEvents: 'none' }}
                 />
-                {drivers.map((d, i) => (
+                {activeDrivers.map((d, i) => (
                   <Line
                     key={d.driverId}
                     type="monotone"
@@ -160,6 +171,24 @@ export default function ChampionshipChart({
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
               R{capped}/{totalRounds}
             </span>
+
+            {drivers.length > scoringDriverIds.size && (
+              <button
+                onClick={() => setShowAll(v => !v)}
+                style={{
+                  background: 'none', border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 5, cursor: 'pointer',
+                  fontSize: '0.68rem', color: showAll ? '#fff' : 'var(--text-muted)',
+                  padding: '0.2rem 0.55rem', flexShrink: 0,
+                  transition: 'color 0.15s, border-color 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'}
+              >
+                {showAll ? `Top ${scoringDriverIds.size}` : `All ${drivers.length}`}
+              </button>
+            )}
           </div>
 
           {currentRound && (
