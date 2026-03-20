@@ -66,6 +66,10 @@ export default function RacesPage() {
         )}
       </div>
 
+      <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.75rem', letterSpacing: '0.03em' }}>
+        Tap any race to view results, qualifying and full weekend details.
+      </p>
+
       {loading && <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>}
       {error   && <p style={{ color: 'var(--f1-red)' }}>Error: {error}</p>}
 

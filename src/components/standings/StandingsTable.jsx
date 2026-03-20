@@ -46,12 +46,13 @@ export default function StandingsTable({ currentStandings, currentRound, season,
         podiumColor={PODIUM_COLORS[globalIdx] ?? null}
         isLeader={false}
         compact
+        showChevron={!!onDriverClick}
         onClick={onDriverClick ? () => onDriverClick({ driverId: d.driverId, name: d.name }) : undefined}
         style={{
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           borderRadius: 0,
           paddingLeft: 0,
-          paddingRight: twoCol ? '0.25rem' : 0,
+          paddingRight: twoCol && !onDriverClick ? '0.25rem' : undefined,
         }}
       />
     )
@@ -61,8 +62,15 @@ export default function StandingsTable({ currentStandings, currentRound, season,
     <div style={{ width: isMobile ? '100%' : (twoCol ? 420 : 220), flexShrink: 0 }}>
       <Panel padding="none" className="card">
         <div style={{ padding: '0.85rem 1rem' }}>
-          <div className="table-header" style={{ marginBottom: '0.6rem' }}>
-            STANDINGS{currentRound ? ` · ${currentRound.raceName}` : ''}
+          <div style={{ marginBottom: '0.6rem' }}>
+            <div className="table-header">
+              STANDINGS{currentRound ? ` · ${currentRound.raceName}` : ''}
+            </div>
+            {onDriverClick && (
+              <div style={{ fontSize: '0.65rem', color: 'var(--mongo-color)', opacity: 0.7, marginTop: '0.2rem' }}>
+                Click a row for detailed profile
+              </div>
+            )}
           </div>
 
           {twoCol ? (

@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { countryFlag } from '../../utils/flags'
 import { fmtDate } from '../../utils/date'
 import { ctorColor } from '../../utils/teamColors'
@@ -22,6 +23,7 @@ function CountdownBadge({ dateStr, timeStr }) {
 }
 
 export default function RaceCard({ race, index, isNextRace }) {
+  const [hovered, setHovered] = useState(false)
   const flag         = countryFlag(race.Circuit?.Location?.country)
   const isCurrentWknd = race.isCurrentWeekend
   const isUpcoming   = race.isUpcoming && !isCurrentWknd
@@ -43,13 +45,59 @@ export default function RaceCard({ race, index, isNextRace }) {
     ? 'rgba(40,34,4,0.92)'
     : 'rgba(22,22,22,0.92)'
 
+  const tooltipText = race.hasResults
+    ? 'View results, qualifying & full weekend details'
+    : 'View circuit info & schedule'
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.025 }}
-      style={{ opacity: 1 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ opacity: 1, position: 'relative' }}
     >
+      <AnimatePresence>
+        {hovered && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={{ duration: 0.13 }}
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 8px)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 50,
+              background: 'rgba(18,18,18,0.97)',
+              border: '1px solid rgba(255,255,255,0.13)',
+              borderRadius: 6,
+              padding: '0.3rem 0.7rem',
+              fontSize: '0.72rem',
+              color: 'var(--text-secondary)',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+            }}
+          >
+            {tooltipText}
+            {/* Arrow */}
+            <span style={{
+              position: 'absolute',
+              bottom: -5,
+              left: '50%',
+              transform: 'translateX(-50%) rotate(45deg)',
+              width: 8, height: 8,
+              background: 'rgba(18,18,18,0.97)',
+              border: '1px solid rgba(255,255,255,0.13)',
+              borderTop: 'none',
+              borderLeft: 'none',
+            }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <Link to={`/races/${race.season}/${race.round}`} style={{ textDecoration: 'none' }}>
         <div
           style={{

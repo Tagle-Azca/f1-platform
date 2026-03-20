@@ -3,6 +3,8 @@ import PageWrapper        from '../components/layout/PageWrapper'
 import ChampionBanner     from '../components/standings/ChampionBanner'
 import ChampionshipChart  from '../components/standings/ChampionshipChart'
 import StandingsTable     from '../components/standings/StandingsTable'
+import StandingsHeader    from '../components/standings/StandingsHeader'
+import LiveRaceBanner     from '../components/standings/LiveRaceBanner'
 import { driverColor, CTOR_COLORS } from '../utils/teamColors'
 import { statsApi, dashboardApi }   from '../services/api'
 import { useBreakpoint }            from '../hooks/useBreakpoint'
@@ -157,104 +159,15 @@ export default function StandingsPage() {
         title="Championship Battle"
         text="Use the slider or Play button to animate the season round by round. Switch between WDC and WCC to see drivers or constructors."
       />
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-        <div>
-          <h1 className="page__title" style={{ marginBottom: 0 }}>Championship Battle</h1>
-          <p className="page__subtitle" style={{ marginBottom: 0 }}>Points evolution round by round</p>
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* WDC / WCC tabs */}
-          {[['wdc', 'WDC'], ['wcc', 'WCC']].map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                padding: '0.3rem 0.85rem', borderRadius: 6,
-                border: `1px solid ${tab === key ? 'rgba(225,6,0,0.8)' : 'rgba(255,255,255,0.1)'}`,
-                background: tab === key ? 'rgba(255, 10, 2, 0.7)' : 'transparent',
-                color: tab === key ? '#FFFDFD' : 'rgba(255,255,255,0.4)',
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}
-            >
-              {label}
-            </button>
-          ))}
-          <select
-            className="input"
-            style={{ width: 115 }}
-            value={season}
-            onChange={e => setSeason(e.target.value)}
-          >
-            {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
+      <StandingsHeader
+        season={season}
+        onSeasonChange={setSeason}
+        seasons={seasons}
+        tab={tab}
+        onTabChange={setTab}
+      />
 
-      {/* ── Live race banner ─────────────────────────── */}
-      {liveData && (
-        <div style={{
-          marginBottom: '0.85rem',
-          background: 'rgba(225,6,0,0.08)',
-          border: '1px solid rgba(225,6,0,0.35)',
-          borderLeft: '3px solid #e10600',
-          borderRadius: 10,
-          padding: '0.65rem 1rem',
-          display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap',
-        }}>
-          {/* Live indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-            <div style={{
-              width: 8, height: 8, borderRadius: '50%', background: '#e10600',
-              boxShadow: '0 0 6px #e10600',
-              animation: 'pulse 1.4s ease-in-out infinite',
-            }} />
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.72rem', fontWeight: 700, color: '#e10600', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              LIVE
-            </span>
-          </div>
-
-          <div style={{ flexShrink: 0 }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-              {liveData.raceName}
-            </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              {liveData.sessionName}{liveData.currentLap ? ` · Lap ${liveData.currentLap}${liveData.totalLaps ? `/${liveData.totalLaps}` : ''}` : ''}
-            </div>
-          </div>
-
-          {/* Top 3 */}
-          {liveData.top3?.length > 0 && (
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {liveData.top3.slice(0, 5).map((d, i) => (
-                <div key={d.driverId || i} style={{
-                  display: 'flex', alignItems: 'center', gap: '0.35rem',
-                  background: 'rgba(255,255,255,0.04)', borderRadius: 6,
-                  padding: '0.2rem 0.55rem',
-                }}>
-                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.72rem', fontWeight: 700, color: i === 0 ? '#e10600' : 'rgba(255,255,255,0.35)', width: 14, textAlign: 'right' }}>
-                    {d.position ?? i + 1}
-                  </span>
-                  <div style={{ width: 3, height: 14, borderRadius: 2, background: d.color || CTOR_COLORS[d.teamId] || '#888', flexShrink: 0 }} />
-                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.8rem', fontWeight: 700, color: i === 0 ? '#fff' : 'rgba(255,255,255,0.7)' }}>
-                    {d.acronym}
-                  </span>
-                  {d.interval && (
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', marginLeft: 2 }}>
-                      {d.interval}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>
-            {new Date(liveData.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
-        </div>
-      )}
+      {liveData && <LiveRaceBanner liveData={liveData} />}
 
       {champion && !loading && (
         <ChampionBanner champion={champion} gap={gap} season={season} />

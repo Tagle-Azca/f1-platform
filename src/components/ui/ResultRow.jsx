@@ -1,20 +1,7 @@
-/**
- * ResultRow — standings / results list row.
- * Handles position number, name, team sub-label, stat value,
- * and the "leader" elevated treatment.
- *
- * Props:
- *   position   number
- *   name       string
- *   sub?       string          — team name, nationality, etc.
- *   stat       string|number   — points, time, gap
- *   color      string          — hex team color
- *   isLeader?  boolean         — applies elevated background
- *   leftSwatch? boolean        — show 3px vertical color bar (table style)
- *   compact?   boolean         — smaller padding
- *   onClick?   () => void
- *   style?     object
- */
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
+
 export default function ResultRow({
   position,
   name,
@@ -25,10 +12,13 @@ export default function ResultRow({
   podiumColor = null,
   leftSwatch = false,
   compact = false,
+  showChevron = false,
   onClick,
   style = {},
 }) {
-  // Parse hex to r,g,b for dynamic rgba
+  const [hovered, setHovered] = useState(false)
+  const { isMobile } = useBreakpoint()
+
   function hexToRgb(hex) {
     const r = parseInt(hex.slice(1, 3), 16)
     const g = parseInt(hex.slice(3, 5), 16)
@@ -37,20 +27,28 @@ export default function ResultRow({
   }
 
   const rgb = color.startsWith('#') ? hexToRgb(color) : null
+  const interactive = !!onClick
 
   return (
-    <div
+    <motion.div
+      whileTap={interactive ? { scale: 0.98 } : undefined}
+      onMouseEnter={() => interactive && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       onClick={onClick}
       style={{
+        position: 'relative',
         display: 'flex',
         alignItems: 'center',
         gap: '0.6rem',
         padding: compact
           ? '0.35rem 0.75rem'
           : isLeader ? '0.6rem 0.75rem' : '0.4rem 0.75rem',
-        background: isLeader && rgb
-          ? `rgba(${rgb},0.08)`
-          : 'transparent',
+        paddingRight: showChevron && interactive
+          ? '1.5rem'
+          : (compact ? '0.75rem' : isLeader ? '0.75rem' : '0.75rem'),
+        background: hovered && interactive
+          ? 'rgba(255,255,255,0.03)'
+          : isLeader && rgb ? `rgba(${rgb},0.08)` : 'transparent',
         border: isLeader && rgb
           ? `1px solid rgba(${rgb},0.2)`
           : '1px solid transparent',
@@ -58,8 +56,9 @@ export default function ResultRow({
           ? `3px solid ${color}`
           : undefined,
         borderRadius: 8,
-        cursor: onClick ? 'pointer' : undefined,
-        transition: 'background var(--transition-fast)',
+        cursor: interactive ? 'pointer' : undefined,
+        transform: hovered && interactive ? 'translateY(-1px)' : undefined,
+        transition: 'background 0.2s ease-in-out, transform 0.2s ease-in-out',
         ...style,
       }}
     >
@@ -107,6 +106,27 @@ export default function ResultRow({
       }}>
         {stat}
       </span>
-    </div>
+
+      {/* Chevron */}
+      {showChevron && interactive && (
+        <span style={{
+          position: 'absolute',
+          right: '0.5rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          color: 'var(--text-muted)',
+          opacity: isMobile ? 0.5 : (hovered ? 1 : 0),
+          transition: 'opacity 0.2s ease-in-out',
+          display: 'flex',
+          alignItems: 'center',
+          pointerEvents: 'none',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </span>
+      )}
+    </motion.div>
   )
 }

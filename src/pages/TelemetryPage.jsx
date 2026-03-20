@@ -3,77 +3,19 @@ import { useBreakpoint } from '../hooks/useBreakpoint'
 import PageWrapper from '../components/layout/PageWrapper'
 import PageHeader from '../components/layout/PageHeader'
 import PageHint from '../components/ui/PageHint'
-import StatCard from '../components/ui/StatCard'
-import ControlGroup from '../components/ui/ControlGroup'
 import DbOfflineBanner from '../components/ui/DbOfflineBanner'
 import EmptyState from '../components/ui/EmptyState'
-import AccentBanner from '../components/ui/AccentBanner'
 import CassandraLapChart from '../components/telemetry/CassandraLapChart'
 import TyreAnalysisPanel from '../components/telemetry/TyreAnalysisPanel'
 import SectorChart from '../components/telemetry/SectorChart'
 import PitStopsPanel from '../components/telemetry/PitStopsPanel'
 import HistoricalSeasonView from '../components/telemetry/HistoricalSeasonView'
-import { COLOR_B, TELEMETRY_CUTOFF, HISTORICAL_YEARS } from '../components/telemetry/telemetryConstants'
+import TelemetryModeBadge from '../components/telemetry/TelemetryModeBadge'
+import TelemetryControls from '../components/telemetry/TelemetryControls'
+import DriverComparisonBanner from '../components/telemetry/DriverComparisonBanner'
+import { TELEMETRY_CUTOFF, HISTORICAL_YEARS } from '../components/telemetry/telemetryConstants'
 import { fmtLap, buildStints, stintSlope, raceToCircuitId } from '../components/telemetry/telemetryUtils'
 import { telemetryApi, statsApi, circuitsApi, racesApi } from '../services/api'
-
-// ── Driver summary card (used in AccentBanner for both drivers) ───────────
-const DNS_STATUSES = ['Did not start', 'Withdrew', 'Did not qualify', 'Not classified']
-
-function DriverBannerCard({ driver, validLaps, bestLap, avgLap, pitStops, color, isMobile, status }) {
-  // Classify using MongoDB status when available, fall back to 0-lap heuristic for DNS
-  const hasMongo = status != null
-  const isDns    = hasMongo ? DNS_STATUSES.includes(status) : validLaps.length === 0
-  const isLapped = hasMongo && !isDns && status.startsWith('+')   // "+1 Lap", "+3 Laps" etc.
-  const isDnf    = hasMongo && !isDns && !isLapped && status !== 'Finished'
-
-  // DNF reason label — shorten long strings
-  const dnfReason = isDnf ? status : null
-
-  return (
-    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? '0.5rem' : '1.25rem' }}>
-      {/* Name block */}
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.62rem', color, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Driver</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {driver.fullName}
-          </span>
-          <span style={{ fontSize: '0.9rem', color }}>{driver.acronym}</span>
-          {isDns && (
-            <span style={{ fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.07em', padding: '1px 6px', borderRadius: 4, background: 'rgba(239,68,68,0.14)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.35)' }}>
-              DNS
-            </span>
-          )}
-          {isDnf && (
-            <span style={{ fontSize: '0.58rem', fontWeight: 800, letterSpacing: '0.07em', padding: '2px 7px', borderRadius: 4, background: 'rgba(251,146,60,0.14)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.35)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              DNF
-              {dnfReason && <span style={{ fontWeight: 600, opacity: 0.8 }}>· {dnfReason}</span>}
-            </span>
-          )}
-        </div>
-        {driver.teamName && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>{driver.teamName}</div>
-        )}
-      </div>
-
-      {!isMobile && <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }} />}
-
-      {/* KPI grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, auto)', gap: '0.5rem', flex: isMobile ? undefined : 1 }}>
-        <StatCard
-          label="Laps"
-          value={isDns ? 'DNS' : validLaps.length}
-          sub={isLapped ? status : undefined}
-          accent={isDns ? '#ef4444' : isDnf ? '#fb923c' : isLapped ? '#f59e0b' : undefined}
-        />
-        <StatCard label="Best lap"  value={isDns ? '—' : fmtLap(bestLap)} />
-        <StatCard label="Avg lap"   value={isDns ? '—' : fmtLap(avgLap)} />
-        <StatCard label="Pit stops" value={isDns ? '—' : pitStops.length} />
-      </div>
-    </div>
-  )
-}
 
 // ── Main page ──────────────────────────────────────────
 export default function TelemetryPage() {
@@ -122,6 +64,21 @@ export default function TelemetryPage() {
   // ── Mode ───────────────────────────────────────────
   const isHistorical = year !== '' && parseInt(year) < TELEMETRY_CUTOFF
 
+  // ── Shared race-state reset ─────────────────────────
+  function resetRaceState() {
+    setDriverId('')
+    setLaps([])
+    setPitStops([])
+    setDriverIdB('')
+    setLapsB([])
+    setPitStopsB([])
+    setTelemetryLoaded(false)
+    setLapsBLoaded(false)
+    setTotalLaps(null)
+    setRaceResult(null)
+    setDriverStatuses({})
+  }
+
   // ── Init: load Cassandra races ─────────────────────
   useEffect(() => {
     telemetryApi.getAvailableRaces()
@@ -144,19 +101,9 @@ export default function TelemetryPage() {
   // ── Year change ────────────────────────────────────
   function handleYearChange(y) {
     setYear(y)
-    setDriverId('')
-    setLaps([])
-    setPitStops([])
-    setDriverIdB('')
-    setLapsB([])
-    setPitStopsB([])
+    resetRaceState()
     setHistData(null)
     setError(null)
-    setTelemetryLoaded(false)
-    setLapsBLoaded(false)
-    setTotalLaps(null)
-    setRaceResult(null)
-    setDriverStatuses({})
     autoLoadedRef.current = false
 
     if (parseInt(y) >= TELEMETRY_CUTOFF) {
@@ -173,18 +120,8 @@ export default function TelemetryPage() {
   useEffect(() => {
     if (!raceId || isHistorical) return
     setCassDrivers([])
-    setDriverId('')
-    setLaps([])
-    setPitStops([])
-    setDriverIdB('')
-    setLapsB([])
-    setPitStopsB([])
+    resetRaceState()
     setScPeriods([])
-    setTelemetryLoaded(false)
-    setLapsBLoaded(false)
-    setTotalLaps(null)
-    setRaceResult(null)
-    setDriverStatuses({})
     setLoadingDrivers(true)
     telemetryApi.getRaceDrivers(raceId)
       .then(data => {
@@ -370,25 +307,7 @@ export default function TelemetryPage() {
         badge={isHistorical ? 'mongo' : 'cassandra'}
       />
 
-      {/* ── Mode indicator ─────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-          padding: '0.25rem 0.7rem', borderRadius: 99,
-          background: isHistorical ? 'rgba(34,197,94,0.12)' : 'rgba(168,85,247,0.12)',
-          border: `1px solid ${isHistorical ? 'rgba(34,197,94,0.35)' : 'rgba(168,85,247,0.35)'}`,
-        }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: isHistorical ? '#22c55e' : '#a855f7' }} />
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: isHistorical ? '#22c55e' : '#a855f7' }}>
-            {isHistorical ? 'Historical Mode · MongoDB' : 'Telemetry Mode · Cassandra'}
-          </span>
-        </div>
-        {isHistorical && (
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            Select 2023 or later for live telemetry data
-          </span>
-        )}
-      </div>
+      <TelemetryModeBadge isHistorical={isHistorical} />
 
       {dbOffline && !isHistorical && (
         <div style={{ marginBottom: '1rem' }}>
@@ -399,84 +318,16 @@ export default function TelemetryPage() {
       )}
 
       {/* ── Controls ───────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-
-        <ControlGroup label="Season" width={100}>
-          <select className="input" style={{ width: 100 }} value={year} onChange={e => handleYearChange(e.target.value)}>
-            {allYears.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </ControlGroup>
-
-        {/* Race selector — Cassandra mode only */}
-        {!isHistorical && (
-          <ControlGroup label="Race" width={220}>
-            <select className="input" style={{ width: 220 }} value={raceId} onChange={e => setRaceId(e.target.value)}>
-              <option value="">Select race…</option>
-              {racesOfYear.map(r => (
-                <option key={r.raceId} value={r.raceId}>{r.raceName}</option>
-              ))}
-            </select>
-          </ControlGroup>
-        )}
-
-        {/* Driver selector */}
-        <ControlGroup
-          label={<>Driver {(loadingDrivers || loadingHist) && <span style={{ color: isHistorical ? 'var(--mongo-color)' : 'var(--cassandra-color)' }}>···</span>}</>}
-          width={240}
-        >
-          {isHistorical ? (
-            <select className="input" style={{ width: 240 }} value={driverId} onChange={e => setDriverId(e.target.value)} disabled={!histDrivers.length}>
-              <option value="">Select driver…</option>
-              {histDrivers.map(d => (
-                <option key={d.driverId} value={d.driverId}>{d.name}</option>
-              ))}
-            </select>
-          ) : (
-            <select className="input" style={{ width: 240, paddingLeft: '0.75rem', paddingRight: '0.75rem' }} value={driverId} onChange={e => setDriverId(e.target.value)} disabled={!cassDrivers.length || loadingDrivers}>
-              <option value="">Select driver…</option>
-              {cassDrivers.map(d => (
-                <option key={d.driverId} value={d.driverId}>
-                  {d.acronym} — {d.fullName}{d.teamName ? ` (${d.teamName})` : ''}
-                </option>
-              ))}
-            </select>
-          )}
-        </ControlGroup>
-
-        {/* Driver B — Cassandra compare mode only */}
-        {!isHistorical && laps.length > 0 && (
-          <ControlGroup
-            label={<>vs Driver {loadingB && <span style={{ color: COLOR_B }}>···</span>}</>}
-            width={200}
-          >
-            <select
-              className="input"
-              style={{ width: 200, borderColor: driverIdB ? `${COLOR_B}80` : undefined }}
-              value={driverIdB}
-              onChange={e => setDriverIdB(e.target.value)}
-              disabled={!cassDrivers.length}
-            >
-              <option value="">— no comparison —</option>
-              {cassDrivers.filter(d => d.driverId !== driverId).map(d => (
-                <option key={d.driverId} value={d.driverId}>
-                  {d.acronym} — {d.fullName}
-                </option>
-              ))}
-            </select>
-          </ControlGroup>
-        )}
-
-        <button
-          className="btn btn--primary"
-          onClick={isHistorical ? loadHistoricalData : loadCassandraTelemetry}
-          disabled={isHistorical ? (!driverId || loadingHist) : (!raceId || !driverId || loading)}
-          style={{ alignSelf: 'flex-end' }}
-        >
-          {(loading || loadingHist) ? 'Loading…' : isHistorical ? 'Load Analysis' : 'Load Telemetry'}
-        </button>
-      </div>
+      <TelemetryControls
+        year={year}            onYearChange={handleYearChange}  allYears={allYears}
+        isHistorical={isHistorical}
+        raceId={raceId}        onRaceChange={setRaceId}          racesOfYear={racesOfYear}
+        driverId={driverId}    onDriverChange={setDriverId}
+        histDrivers={histDrivers}   cassDrivers={cassDrivers}
+        loadingDrivers={loadingDrivers}  loadingHist={loadingHist}
+        driverIdB={driverIdB}  onDriverBChange={setDriverIdB}    laps={laps}  loadingB={loadingB}
+        loading={loading}      onLoad={isHistorical ? loadHistoricalData : loadCassandraTelemetry}
+      />
 
       {error && (
         <p style={{ color: 'var(--f1-red)', marginBottom: '1rem', fontSize: '0.88rem' }}>Error: {error}</p>
@@ -488,49 +339,12 @@ export default function TelemetryPage() {
       {!isHistorical && (
         <>
           {telemetryLoaded && selectedCassDriver && (
-            <AccentBanner
-              color="var(--cassandra-color)"
-              padding="sm"
-              radius={10}
-              style={{ marginBottom: '1rem', borderTop: '2px solid rgba(168,85,247,0.45)' }}
-            >
-              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '1rem' : '1.5rem' }}>
-
-                {/* ── Driver A card ── */}
-                <DriverBannerCard
-                  driver={selectedCassDriver}
-                  validLaps={validLaps}
-                  bestLap={bestLap}
-                  avgLap={avgLap}
-                  pitStops={pitStops}
-                  color="var(--cassandra-color)"
-                  isMobile={isMobile}
-                  totalLaps={totalLaps}
-                  status={driverStatus}
-                />
-
-                {/* ── Driver B card (comparison) ── */}
-                {lapsBLoaded && selectedCassDriverB && (
-                  <>
-                    <div style={isMobile
-                      ? { height: 1, background: 'rgba(255,255,255,0.07)' }
-                      : { width: 1, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }}
-                    />
-                    <DriverBannerCard
-                      driver={selectedCassDriverB}
-                      validLaps={validLapsB}
-                      bestLap={bestLapB}
-                      avgLap={avgLapB}
-                      pitStops={pitStopsB}
-                      color={COLOR_B}
-                      isMobile={isMobile}
-                      totalLaps={totalLaps}
-                      status={driverStatusB}
-                    />
-                  </>
-                )}
-              </div>
-            </AccentBanner>
+            <DriverComparisonBanner
+              isMobile={isMobile}
+              driverA={selectedCassDriver}   validLaps={validLaps}   bestLap={bestLap}   avgLap={avgLap}   pitStops={pitStops}   statusA={driverStatus}
+              driverB={selectedCassDriverB}  validLapsB={validLapsB} bestLapB={bestLapB} avgLapB={avgLapB} pitStopsB={pitStopsB} statusB={driverStatusB}
+              lapsBLoaded={lapsBLoaded}
+            />
           )}
 
           {laps.length > 0 && (

@@ -18,7 +18,7 @@ export default function HowToSteps({ driverCount }) {
         const done   = i < activeStep
         const active = i === activeStep
         const color    = done ? '#22c55e' : active ? '#ef4444' : 'var(--border-color)'
-        const textCol  = done ? '#22c55e' : active ? '#fff' : 'var(--text-muted)'
+        const textCol  = done ? '#FFFFFF' : active ? '#fff' : 'var(--text-muted)'
 
         if (isMobile && !active) return null
 
@@ -35,7 +35,7 @@ export default function HowToSteps({ driverCount }) {
                 padding: '0.45rem 0.65rem',
                 borderRadius: 8,
                 border: `1px solid ${color}`,
-                background: active ? 'rgba(239,68,68,0.12)' : done ? 'rgba(34,197,94,0.10)' : 'rgba(22,22,22,0.92)',
+                background: active ? 'rgba(84, 19, 19, 0.72)' : done ? 'rgba(11, 106, 46, 0.72)' : 'rgba(22,22,22,0.92)',
                 transition: 'all 0.3s',
                 minWidth: 0,
               }}
@@ -45,7 +45,7 @@ export default function HowToSteps({ driverCount }) {
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: '0.72rem', fontWeight: 700, color: textCol, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</div>
-                <div style={{ fontSize: '0.62rem', color: done ? 'rgba(34,197,94,0.7)' : active ? 'rgba(255,255,255,0.5)' : 'var(--text-muted)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.desc}</div>
+                <div style={{ fontSize: '0.62rem', color: done ? '#FFFFFF' : active ? 'rgba(255, 255, 255, 0.94)' : 'var(--text-muted)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.desc}</div>
               </div>
             </motion.div>
 
