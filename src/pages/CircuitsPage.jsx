@@ -85,7 +85,7 @@ export default function CircuitsPage() {
           </AnimatePresence>
 
           <AnimatePresence>
-            {selected && <CircuitDNAPanel key={selected.circuitId} circuit={selected} />}
+            {selected && <div style={{ marginTop: '0.75rem' }}><CircuitDNAPanel key={selected.circuitId} circuit={selected} /></div>}
           </AnimatePresence>
         </>
       )}

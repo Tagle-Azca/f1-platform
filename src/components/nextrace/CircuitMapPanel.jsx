@@ -14,9 +14,9 @@ export default function CircuitMapPanel({ lat, lng }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      style={{ overflow: 'hidden' }}
+      style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}
     >
-      <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
           Circuit Location
         </span>
@@ -27,7 +27,7 @@ export default function CircuitMapPanel({ lat, lng }) {
       <iframe
         title="Circuit Map"
         src={`https://www.openstreetmap.org/export/embed.html?bbox=${fLng - 0.012},${fLat - 0.008},${fLng + 0.012},${fLat + 0.008}&layer=mapnik&marker=${lat},${lng}`}
-        style={{ width: '100%', height: 380, border: 'none', display: 'block', filter: 'invert(0.92) hue-rotate(180deg) saturate(0.7)' }}
+        style={{ width: '100%', flex: 1, minHeight: 300, border: 'none', display: 'block', filter: 'invert(0.92) hue-rotate(180deg) saturate(0.7)' }}
         loading="lazy"
       />
     </Panel>

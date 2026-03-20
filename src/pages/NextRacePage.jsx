@@ -10,6 +10,7 @@ import WeekendSchedulePanel from '../components/nextrace/WeekendSchedulePanel'
 import CircuitStatsPanel from '../components/nextrace/CircuitStatsPanel'
 import TopWinnersPanel from '../components/nextrace/TopWinnersPanel'
 import CircuitMapPanel from '../components/nextrace/CircuitMapPanel'
+import CircuitDNAPanel from '../components/circuits/CircuitDNAPanel'
 
 function computeTopWinners(history) {
   if (!history?.races) return []
@@ -131,7 +132,10 @@ export default function NextRacePage() {
         </div>
       </div>
 
-      <CircuitMapPanel lat={lat} lng={lng} />
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', alignItems: 'stretch' }}>
+        <CircuitMapPanel lat={lat} lng={lng} />
+        {race.circuitId && <CircuitDNAPanel circuit={{ circuitId: race.circuitId }} />}
+      </div>
     </PageWrapper>
   )
 }

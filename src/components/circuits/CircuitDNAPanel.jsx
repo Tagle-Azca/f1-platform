@@ -92,7 +92,6 @@ export default function CircuitDNAPanel({ circuit }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: 0.1 }}
       style={{
-        marginTop: '0.75rem',
         background: 'rgba(22,22,22,0.92)',
         border: '1px solid rgba(255,255,255,0.1)',
         borderLeft: '3px solid rgba(255,255,255,0.25)',
