@@ -234,7 +234,7 @@ export default function DriverProfile({ driverId }) {
       </div>
 
       {/* ── Stats grid ───────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '0.4rem', marginBottom: '0.75rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '0.4rem', marginBottom: '0.75rem' }}>
         {STAT_CONFIG.map(({ key, label, accent }) => {
           const val       = statValues[key]
           const display   = displayValue(key, val)

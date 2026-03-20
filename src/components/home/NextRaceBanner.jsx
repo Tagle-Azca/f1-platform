@@ -67,7 +67,7 @@ export default function NextRaceBanner({ race, totalRounds }) {
                 fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em',
                 color: '#e10600', textTransform: 'uppercase',
                 padding: '2px 8px', borderRadius: 4,
-                background: 'rgba(225,6,0,0.12)', border: '1px solid rgba(225,6,0,0.3)',
+                background: 'rgba(225,6,0,0.12)', border: '1px solid rgba(92, 6, 3, 0.3)',
               }}>
                 Race in progress
               </span>
@@ -112,8 +112,8 @@ export default function NextRaceBanner({ race, totalRounds }) {
                   style={{
                     padding: '0.4rem 0.85rem',
                     borderRadius: 7,
-                    border: `1px solid ${isRace ? 'rgba(225,6,0,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                    background: isRace ? 'rgba(225,6,0,0.12)' : 'rgba(22,22,22,0.9)',
+                    border: `1px solid ${isRace ? 'rgb(225, 7, 0)' : 'rgba(255,255,255,0.08)'}`,
+                    background: isRace ? 'rgba(44, 2, 1, 0.96)' : 'rgba(22,22,22,0.9)',
                     opacity: isPast ? 0.45 : 1,
                   }}
                 >
