@@ -6,6 +6,7 @@ import CountdownDisplay from '../ui/CountdownDisplay'
 import AccentBanner from '../ui/AccentBanner'
 import Flag from '../ui/Flag'
 import { fmtDate } from '../../utils/date'
+import { TZ_OPTIONS, getInitialTZ, saveTZ, tzAbbr, formatInTZ } from '../../utils/timezone'
 
 const SESSION_LABELS = {
   fp1: 'FP1', fp2: 'FP2', fp3: 'FP3',
@@ -15,10 +16,17 @@ const SESSION_LABELS = {
 
 export default function NextRaceBanner({ race, totalRounds }) {
   const { isMobile } = useBreakpoint()
-  // Dashboard always counts down to the RACE itself (the main event)
   const isLive    = !!race.currentSession
   const countdown = useCountdown(!isLive ? race.raceDateTime : null)
-  const [open, setOpen] = useState(false)
+  const [open,       setOpen]       = useState(false)
+  const [tz,         setTz]         = useState(getInitialTZ)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  function selectTz(value) {
+    setTz(value)
+    setPickerOpen(false)
+    saveTZ(value)
+  }
 
   const sessions = race.schedule
     ? Object.entries(race.schedule)
@@ -72,7 +80,12 @@ export default function NextRaceBanner({ race, totalRounds }) {
                 Race in progress
               </span>
             ) : (
-              <CountdownDisplay parts={countdown} size={isMobile ? 'sm' : 'lg'} />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(225,6,0,0.7)' }}>
+                  Race starts in
+                </span>
+                <CountdownDisplay parts={countdown} size={isMobile ? 'sm' : 'lg'} />
+              </div>
             )}
 
             {!isMobile && (
@@ -96,41 +109,90 @@ export default function NextRaceBanner({ race, totalRounds }) {
 
         {/* Weekend schedule */}
         {open && sessions.length > 0 && (
-          <div style={{
-            borderTop: '1px solid rgba(255,255,255,0.12)',
-            paddingTop: '0.75rem',
-            marginTop: '0.75rem',
-            display: 'flex', gap: '0.5rem', flexWrap: 'wrap',
-          }}>
-            {sessions.map(s => {
-              const isRace = s.key === 'race'
-              const dt = new Date(s.date + (s.time ? 'T' + s.time : 'T00:00:00Z'))
-              const isPast = dt < new Date()
-              return (
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '0.75rem', marginTop: '0.75rem' }}>
+
+            {/* Timezone selector row */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.6rem', position: 'relative' }}>
+              <button
+                onClick={e => { e.stopPropagation(); setPickerOpen(v => !v) }}
+                style={{
+                  fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.06em',
+                  color: pickerOpen ? '#fff' : 'rgba(255,255,255,0.45)',
+                  background: pickerOpen ? 'rgba(225,6,0,0.15)' : 'rgba(255,255,255,0.07)',
+                  border: `1px solid ${pickerOpen ? 'rgba(225,6,0,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                  padding: '2px 7px', borderRadius: 4, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '0.3rem',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 11, height: 11, opacity: 0.5 }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                {tzAbbr(tz)}
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 9, height: 9, opacity: 0.5, transform: pickerOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+
+              {pickerOpen && (
                 <div
-                  key={s.key}
+                  onClick={e => e.stopPropagation()}
                   style={{
-                    padding: '0.4rem 0.85rem',
-                    borderRadius: 7,
-                    border: `1px solid ${isRace ? 'rgb(225, 7, 0)' : 'rgba(255,255,255,0.08)'}`,
-                    background: isRace ? 'rgba(44, 2, 1, 0.96)' : 'rgba(22,22,22,0.9)',
-                    opacity: isPast ? 0.45 : 1,
+                    position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                    background: 'rgba(12,12,12,0.98)', backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+                    zIndex: 200, minWidth: 220, maxHeight: 280, overflowY: 'auto',
                   }}
                 >
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', color: isRace ? 'var(--f1-red)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                    {s.label}
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600 }}>
-                    {dt.toLocaleDateString('en-GB', { weekday: 'short' })} {String(dt.getDate()).padStart(2,'0')}/{String(dt.getMonth()+1).padStart(2,'0')}
-                  </div>
-                  {s.time && (
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
-                      {s.time.slice(0,5)} UTC
-                    </div>
-                  )}
+                  {TZ_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => selectTz(opt.value)}
+                      style={{
+                        width: '100%', textAlign: 'left',
+                        padding: '0.45rem 0.75rem',
+                        background: tz === opt.value ? 'rgba(225,6,0,0.12)' : 'transparent',
+                        border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        color: tz === opt.value ? '#e10600' : 'rgba(255,255,255,0.7)',
+                        fontSize: '0.75rem', fontWeight: tz === opt.value ? 700 : 400,
+                        cursor: 'pointer', transition: 'background 0.1s',
+                      }}
+                      onMouseEnter={e => { if (tz !== opt.value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                      onMouseLeave={e => { if (tz !== opt.value) e.currentTarget.style.background = 'transparent' }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
-              )
-            })}
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {sessions.map(s => {
+                const isRace = s.key === 'race'
+                const isPast = new Date(`${s.date}T${(s.time || '00:00:00').replace(/Z$/i, '')}Z`) < new Date()
+                const formatted = formatInTZ(s.date, s.time, tz, true)
+                return (
+                  <div
+                    key={s.key}
+                    style={{
+                      padding: '0.4rem 0.85rem', borderRadius: 7,
+                      border: `1px solid ${isRace ? 'rgb(225, 7, 0)' : 'rgba(255,255,255,0.08)'}`,
+                      background: isRace ? 'rgba(44, 2, 1, 0.96)' : 'rgba(22,22,22,0.9)',
+                      opacity: isPast ? 0.45 : 1,
+                    }}
+                  >
+                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', color: isRace ? 'var(--f1-red)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                      {s.label}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 600, marginTop: 2 }}>
+                      {formatted}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </AccentBanner>
