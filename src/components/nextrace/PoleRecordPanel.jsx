@@ -5,7 +5,7 @@ import { useBreakpoint } from '../../hooks/useBreakpoint'
 const cellStyle  = { padding: '0.3rem 0', borderBottom: '1px solid var(--border-subtle)' }
 const labelStyle = { fontSize: '0.7rem', color: 'var(--text-secondary)' }
 
-function TireStressLabel() {
+function EstimatedLabel({ name, tooltip }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -24,7 +24,7 @@ function TireStressLabel() {
 
   return (
     <span ref={ref} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-      <span style={labelStyle}>Tire stress</span>
+      <span style={labelStyle}>{name}</span>
       <svg
         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
         onClick={() => setOpen(v => !v)}
@@ -44,12 +44,17 @@ function TireStressLabel() {
             background: 'rgba(15,15,15,0.97)', border: '1px solid rgba(255,255,255,0.1)',
             borderTop: 'none', borderLeft: 'none', transform: 'rotate(45deg)' }} />
           <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5, margin: 0 }}>
-            Stress levels are calculated based on historical race data and 2026 technical projections.
+            {tooltip}
           </p>
         </div>
       )}
     </span>
   )
+}
+
+const ESTIMATED_LABELS = {
+  'Tire stress': 'Stress levels are calculated based on historical race data and 2026 technical projections.',
+  'Braking':     'Braking intensity is estimated based on circuit layout and historical race data.',
 }
 
 // Splits "307.8 km" → ["307.8", " km"] so number and unit can be styled separately
@@ -86,10 +91,22 @@ export default function PoleRecordPanel({ specs }) {
     ['Gear changes',  `${specs.gearChanges}/lap`],
     ['Braking',       `${specs.braking}/10`],
   ]
-  const flat = left.map((l, i) => [l, right[i]]).flat()
+  const flat = [
+    ['Circuit length',  `${specs.length.toFixed(1)} km`],
+    ['Full race dist.', `${raceDist} km`],
+    ['Laps',             specs.laps],
+    ['Turns',            specs.turns],
+    ['Tire stress',      `${specs.tireStress}/10`],
+    ['Braking',          `${specs.braking}/10`],
+    ['Top speed',        `${specs.topSpeed} km/h`],
+    ['Max G-force',      `${specs.gforce}G`],
+    ['Gear changes',     `${specs.gearChanges}/lap`],
+    ['Full throttle',    `${specs.throttle}%`],
+  ]
 
   function Label({ name }) {
-    if (name === 'Tire stress') return <TireStressLabel />
+    const tooltip = ESTIMATED_LABELS[name]
+    if (tooltip) return <EstimatedLabel name={name} tooltip={tooltip} />
     return <span style={labelStyle}>{name}</span>
   }
 
