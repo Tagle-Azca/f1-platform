@@ -136,17 +136,20 @@ export default function RaceCard({ race, index, isNextRace }) {
 
           {/* Race name + circuit */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: isMobile ? 'nowrap' : 'wrap' }}>
               <span style={{
                 fontFamily: "'Barlow Condensed', sans-serif",
                 fontSize: '1rem', fontWeight: 700,
                 color: isCurrentWknd ? '#fff' : isUpcoming ? 'var(--text-secondary)' : 'var(--text-primary)',
+                whiteSpace: isMobile ? 'nowrap' : 'normal',
+                overflow: isMobile ? 'hidden' : 'visible',
+                textOverflow: isMobile ? 'ellipsis' : 'clip',
               }}>
                 {isMobile ? race.raceName.replace(' Grand Prix', ' GP') : race.raceName}
               </span>
 
-              {/* Status badges */}
-              {isCurrentWknd && (
+              {/* Desktop badges */}
+              {!isMobile && isCurrentWknd && (
                 <span style={{
                   fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
                   padding: '2px 7px', borderRadius: 4,
@@ -158,7 +161,7 @@ export default function RaceCard({ race, index, isNextRace }) {
                   This Weekend
                 </span>
               )}
-              {isNextRace && !isCurrentWknd && (
+              {!isMobile && isNextRace && !isCurrentWknd && (
                 <span style={{
                   fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
                   padding: '2px 7px', borderRadius: 4,
@@ -168,9 +171,16 @@ export default function RaceCard({ race, index, isNextRace }) {
                   Next Race
                 </span>
               )}
-              {(race.hasSprint || race.hasSprintQualifying) && (
+              {!isMobile && (race.hasSprint || race.hasSprintQualifying) && (
                 <span style={{ fontSize: '0.55rem', fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', letterSpacing: '0.06em' }}>
                   SPRINT
+                </span>
+              )}
+
+              {/* Mobile: sprint dot only */}
+              {isMobile && (race.hasSprint || race.hasSprintQualifying) && (
+                <span style={{ fontSize: '0.55rem', fontWeight: 700, padding: '1px 5px', borderRadius: 3, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', letterSpacing: '0.06em', flexShrink: 0 }}>
+                  S
                 </span>
               )}
             </div>
