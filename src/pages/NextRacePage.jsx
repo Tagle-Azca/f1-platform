@@ -3,26 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import PageWrapper from '../components/layout/PageWrapper'
 import { dashboardApi, circuitsApi, statsApi } from '../services/api'
+import { getCircuitSpecs } from '../utils/circuitSpecs'
 import { countryFlag } from '../utils/flags'
 import { useCountdown } from '../hooks/useCountdown'
 import NextRaceHero from '../components/nextrace/NextRaceHero'
 import WeekendSchedulePanel from '../components/nextrace/WeekendSchedulePanel'
 import CircuitStatsPanel from '../components/nextrace/CircuitStatsPanel'
-import TopWinnersPanel from '../components/nextrace/TopWinnersPanel'
+import PoleRecordPanel from '../components/nextrace/PoleRecordPanel'
 import CircuitMapPanel from '../components/nextrace/CircuitMapPanel'
 import CircuitDNAPanel from '../components/circuits/CircuitDNAPanel'
 
-function computeTopWinners(history) {
-  if (!history?.races) return []
-  const wins = {}
-  for (const r of history.races) {
-    const w = r.Results?.[0]?.Driver
-    if (!w) continue
-    const name = `${w.givenName} ${w.familyName}`
-    wins[name] = (wins[name] || 0) + 1
-  }
-  return Object.entries(wins).sort((a, b) => b[1] - a[1]).slice(0, 5)
-}
 
 export default function NextRacePage() {
   const { isMobile } = useBreakpoint()
@@ -83,7 +73,7 @@ export default function NextRacePage() {
   const flagUrl   = race ? countryFlag(race.country) : null
   const lat       = circuit?.Location?.lat
   const lng       = circuit?.Location?.long
-  const topWinners = computeTopWinners(history)
+  const trackSpecs = race?.circuitId ? getCircuitSpecs(race.circuitId) : null
 
   if (loading) return (
     <PageWrapper>
@@ -128,7 +118,7 @@ export default function NextRacePage() {
 
         <div style={{ display: isMobile ? 'grid' : 'flex', gridTemplateColumns: '1fr 1fr', flexDirection: 'column', gap: '1rem' }}>
           <CircuitStatsPanel history={history} race={race} circuit={circuit} isMobile={isMobile} />
-          <TopWinnersPanel topWinners={topWinners} />
+          <PoleRecordPanel specs={trackSpecs} />
         </div>
       </div>
 
