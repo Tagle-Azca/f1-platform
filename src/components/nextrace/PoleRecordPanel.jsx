@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Panel from '../ui/Panel'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 const cellStyle  = { padding: '0.3rem 0', borderBottom: '1px solid var(--border-subtle)' }
 const labelStyle = { fontSize: '0.7rem', color: 'var(--text-secondary)' }
@@ -66,17 +67,31 @@ function Value({ v }) {
 }
 
 export default function PoleRecordPanel({ specs }) {
+  const { isMobile } = useBreakpoint()
   if (!specs) return null
 
   const raceDist = (specs.length * specs.laps).toFixed(1)
 
-  const rows = [
-    ['Circuit length',  `${raceDist} km`,         'Full throttle', `${specs.throttle}%`],
-    ['Full race dist.', `${specs.length} km`,      'Top speed',     `${specs.topSpeed} km/h`],
-    ['Laps',             specs.laps,               'Max G-force',   `${specs.gforce}G`],
-    ['Turns',            specs.turns,              'Gear changes',  `${specs.gearChanges}/lap`],
-    ['Tire stress',      `${specs.tireStress}/10`,  'Braking',       `${specs.braking}/10`],
+  const left  = [
+    ['Circuit length',  `${raceDist} km`],
+    ['Full race dist.', `${specs.length} km`],
+    ['Laps',             specs.laps],
+    ['Turns',            specs.turns],
+    ['Tire stress',      `${specs.tireStress}/10`],
   ]
+  const right = [
+    ['Full throttle', `${specs.throttle}%`],
+    ['Top speed',     `${specs.topSpeed} km/h`],
+    ['Max G-force',   `${specs.gforce}G`],
+    ['Gear changes',  `${specs.gearChanges}/lap`],
+    ['Braking',       `${specs.braking}/10`],
+  ]
+  const flat = left.map((l, i) => [l, right[i]]).flat()
+
+  function Label({ name }) {
+    if (name === 'Tire stress') return <TireStressLabel />
+    return <span style={labelStyle}>{name}</span>
+  }
 
   return (
     <Panel padding="none" style={{ padding: '1rem 1.25rem' }}>
@@ -84,19 +99,33 @@ export default function PoleRecordPanel({ specs }) {
         Track Specs
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 2rem 1fr auto', alignItems: 'center' }}>
-        {rows.map(([lL, vL, lR, vR]) => (
-          <>
-            <div key={lL + 'l'} style={cellStyle}>
-              {lL === 'Tire stress' ? <TireStressLabel /> : <span style={labelStyle}>{lL}</span>}
-            </div>
-            <div key={lL + 'v'} style={{ ...cellStyle, textAlign: 'right' }}><Value v={vL} /></div>
-            <div key={lL + 'd'} style={cellStyle} />
-            <div key={lR + 'l'} style={cellStyle}><span style={labelStyle}>{lR}</span></div>
-            <div key={lR + 'v'} style={{ ...cellStyle, textAlign: 'right' }}><Value v={vR} /></div>
-          </>
-        ))}
-      </div>
+      {isMobile ? (
+        /* Mobile: single column, all 10 stats */
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
+          {flat.map(([name, val]) => (
+            <>
+              <div key={name + 'l'} style={cellStyle}><Label name={name} /></div>
+              <div key={name + 'v'} style={{ ...cellStyle, textAlign: 'right' }}><Value v={val} /></div>
+            </>
+          ))}
+        </div>
+      ) : (
+        /* Desktop: two columns side by side */
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 2rem 1fr auto', alignItems: 'center' }}>
+          {left.map(([lL, vL], i) => {
+            const [lR, vR] = right[i]
+            return (
+              <>
+                <div key={lL + 'l'} style={cellStyle}><Label name={lL} /></div>
+                <div key={lL + 'v'} style={{ ...cellStyle, textAlign: 'right' }}><Value v={vL} /></div>
+                <div key={lL + 'd'} style={cellStyle} />
+                <div key={lR + 'l'} style={cellStyle}><span style={labelStyle}>{lR}</span></div>
+                <div key={lR + 'v'} style={{ ...cellStyle, textAlign: 'right' }}><Value v={vR} /></div>
+              </>
+            )
+          })}
+        </div>
+      )}
     </Panel>
   )
 }
