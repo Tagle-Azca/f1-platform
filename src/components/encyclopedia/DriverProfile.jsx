@@ -137,7 +137,11 @@ export default function DriverProfile({ driverId }) {
   const lastYear  = parseInt(lastSeason)
   const birthYear = driver.dateOfBirth ? new Date(driver.dateOfBirth).getFullYear() : null
   const hasPhoto  = driver.photoUrl && !imgErr
-  const seasons   = firstSeason === lastSeason ? firstSeason : `${firstSeason} – ${lastSeason}`
+  const currentYear = new Date().getFullYear()
+  const lastLabel   = lastYear >= currentYear ? 'Present' : lastSeason
+  const seasons     = firstSeason === lastSeason && lastLabel === lastSeason
+    ? firstSeason
+    : `${firstSeason} – ${lastLabel}`
 
   function displayValue(key, value) {
     const threshold = COVERAGE[key]

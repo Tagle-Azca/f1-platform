@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 export default function NavbarDesktopCountdown({ nextRace, live, countdown, isUrgent, flagUrl }) {
   const navigate  = useNavigate()
   const location  = useLocation()
+  const { isTablet } = useBreakpoint()
   const isHome    = location.pathname === '/'
   const [hover, setHover] = useState(false)
 
@@ -69,8 +71,8 @@ export default function NavbarDesktopCountdown({ nextRace, live, countdown, isUr
         </div>
       </button>
 
-      {/* Tooltip */}
-      {!live && countdown && hover && (
+      {/* Tooltip — desktop only (no hover on touch) */}
+      {!live && countdown && hover && !isTablet && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 10px)', right: 0,
           background: 'rgba(15,15,15,0.97)',
