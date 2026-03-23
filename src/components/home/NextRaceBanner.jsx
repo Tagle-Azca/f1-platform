@@ -57,7 +57,7 @@ export default function NextRaceBanner({ race, totalRounds }) {
               {isLive ? `LIVE · ${race.currentSession.label}` : `Rd ${race.round}/${totalRounds}`}
             </span>
             <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-            <Flag country={race.country} />
+            {!isMobile && <Flag country={race.country} />}
             <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: isMobile ? '0.88rem' : '1.05rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {isMobile ? race.raceName.replace(' Grand Prix', ' GP') : race.raceName}
             </span>
@@ -168,7 +168,7 @@ export default function NextRaceBanner({ race, totalRounds }) {
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
               {sessions.map(s => {
                 const isRace = s.key === 'race'
                 const isPast = new Date(`${s.date}T${(s.time || '00:00:00').replace(/Z$/i, '')}Z`) < new Date()
@@ -177,6 +177,7 @@ export default function NextRaceBanner({ race, totalRounds }) {
                   <div
                     key={s.key}
                     style={{
+                      gridColumn: isRace && sessions.length % 2 !== 0 ? '1 / -1' : undefined,
                       padding: '0.4rem 0.85rem', borderRadius: 7,
                       border: `1px solid ${isRace ? 'rgb(225, 7, 0)' : 'rgba(255,255,255,0.08)'}`,
                       background: isRace ? 'rgba(44, 2, 1, 0.96)' : 'rgba(22,22,22,0.9)',

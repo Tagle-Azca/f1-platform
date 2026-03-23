@@ -53,16 +53,16 @@ export default function Navbar() {
         {/* Logo */}
         <NavLink to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', textDecoration: 'none', flexShrink: 0 }}>
           <img src="/favicon.png" alt="PITWALL INTELLIGENCE" style={{ width: 34, height: 34, borderRadius: 6, flexShrink: 0, objectFit: 'cover' }} />
-          <div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>
-              PITWALL<span style={{ color: 'var(--f1-red)' }}>INTELLIGENCE</span>
-            </div>
-            {!isTablet && (
+          {!isTablet && (
+            <div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>
+                PITWALL<span style={{ color: 'var(--f1-red)' }}>INTELLIGENCE</span>
+              </div>
               <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>
                 Every Lap. Every Era. One Grid.
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </NavLink>
 
         {/* Desktop tabs */}
