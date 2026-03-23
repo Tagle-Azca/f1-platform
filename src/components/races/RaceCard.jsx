@@ -195,6 +195,11 @@ export default function RaceCard({ race, index, isNextRace }) {
                   <CountdownBadge dateStr={race.date} timeStr={race.time} />
                 </div>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{fmtDate(race.date)}</div>
+                {race.lastCircuitWinner?.driver && (
+                  <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    {race.lastCircuitWinner.season} · {race.lastCircuitWinner.driver.givenName?.slice(0,1)}. {race.lastCircuitWinner.driver.familyName}
+                  </div>
+                )}
               </>
             )}
           </div>
