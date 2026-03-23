@@ -22,8 +22,11 @@ function CountdownBadge({ dateStr, timeStr }) {
   )
 }
 
+import { useBreakpoint } from '../../hooks/useBreakpoint'
+
 export default function RaceCard({ race, index, isNextRace }) {
   const [hovered, setHovered] = useState(false)
+  const { isMobile } = useBreakpoint()
   const flag         = countryFlag(race.Circuit?.Location?.country)
   const isCurrentWknd = race.isCurrentWeekend
   const isUpcoming   = race.isUpcoming && !isCurrentWknd
@@ -139,7 +142,7 @@ export default function RaceCard({ race, index, isNextRace }) {
                 fontSize: '1rem', fontWeight: 700,
                 color: isCurrentWknd ? '#fff' : isUpcoming ? 'var(--text-secondary)' : 'var(--text-primary)',
               }}>
-                {race.raceName}
+                {isMobile ? race.raceName.replace(' Grand Prix', ' GP') : race.raceName}
               </span>
 
               {/* Status badges */}
@@ -171,10 +174,12 @@ export default function RaceCard({ race, index, isNextRace }) {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              {race.Circuit?.circuitName}
-              {race.Circuit?.Location?.locality && ` · ${race.Circuit.Location.locality}, ${race.Circuit.Location.country}`}
-            </div>
+            {!isMobile && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {race.Circuit?.circuitName}
+                {race.Circuit?.Location?.locality && ` · ${race.Circuit.Location.locality}, ${race.Circuit.Location.country}`}
+              </div>
+            )}
           </div>
 
           {/* Right side: date + winner or countdown */}
