@@ -141,9 +141,6 @@ export default function RaceCard({ race, index, isNextRace }) {
                 fontFamily: "'Barlow Condensed', sans-serif",
                 fontSize: '1rem', fontWeight: 700,
                 color: isCurrentWknd ? '#fff' : isUpcoming ? 'var(--text-secondary)' : 'var(--text-primary)',
-                whiteSpace: isMobile ? 'nowrap' : 'normal',
-                overflow: isMobile ? 'hidden' : 'visible',
-                textOverflow: isMobile ? 'ellipsis' : 'clip',
               }}>
                 {isMobile ? race.raceName.replace(' Grand Prix', ' GP') : race.raceName}
               </span>
@@ -193,7 +190,7 @@ export default function RaceCard({ race, index, isNextRace }) {
           </div>
 
           {/* Right side: date + winner or countdown */}
-          <div style={{ flexShrink: 0, textAlign: 'right', minWidth: 120 }}>
+          <div style={{ flexShrink: 0, textAlign: 'right', minWidth: isMobile ? 80 : 120 }}>
             {isCompleted && winner ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', marginBottom: '0.2rem' }}>
