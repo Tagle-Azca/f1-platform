@@ -109,53 +109,11 @@ export default function Navbar() {
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
 
-          {/* Desktop countdown */}
-          {!isTablet && (
-            <NavbarDesktopCountdown
-              nextRace={nextRace} live={live} countdown={countdown}
-              isUrgent={isUrgent} flagUrl={flagUrl}
-            />
-          )}
-
-          {/* Mobile: live badge */}
-          {isTablet && live && (
-            <button
-              onClick={() => navigate('/live')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 5, padding: '4px 10px', cursor: 'pointer' }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} />
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#ef4444', letterSpacing: '0.08em', fontFamily: "'Barlow Condensed', sans-serif" }}>LIVE</span>
-            </button>
-          )}
-
-          {/* Mobile: compact countdown */}
-          {isTablet && !live && countdown && (
-            <button
-              onClick={() => navigate('/next-race')}
-              style={{
-                background: isUrgent ? 'rgba(225,6,0,0.07)' : 'rgba(255,255,255,0.05)',
-                border: `1px solid ${isUrgent ? 'rgba(225,6,0,0.5)' : 'rgba(255,255,255,0.09)'}`,
-                borderRadius: 7, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '0.2rem',
-                padding: '5px 9px', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                animation: isUrgent ? 'urgent-glow 1.8s ease-in-out infinite' : 'none',
-              }}
-            >
-              {[['d','D'],['h','H'],['m','M']].map(([k, lbl]) => (
-                <div key={k} style={{ display: 'flex', alignItems: 'baseline', gap: '1px' }}>
-                  <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.95rem', fontWeight: 900, fontVariantNumeric: 'tabular-nums', lineHeight: 1, color: '#fff', animation: isUrgent ? 'urgent-num 1.8s ease-in-out infinite' : 'none' }}>
-                    {String(countdown[k]).padStart(2, '0')}
-                  </span>
-                  <span style={{ fontSize: '0.5rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>{lbl}</span>
-                </div>
-              ))}
-              {isHome && (
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" style={{ width: 11, height: 11, color: 'var(--f1-red)', flexShrink: 0, marginLeft: 2, animation: 'cd-bounce 1.4s ease-in-out infinite' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                </svg>
-              )}
-            </button>
-          )}
+          {/* Countdown — same component for all screen sizes */}
+          <NavbarDesktopCountdown
+            nextRace={nextRace} live={live} countdown={countdown}
+            isUrgent={isUrgent} flagUrl={flagUrl}
+          />
 
           {/* Hamburger */}
           {isTablet && (

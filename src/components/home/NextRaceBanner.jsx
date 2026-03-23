@@ -4,14 +4,24 @@ import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useCountdown } from '../../hooks/useCountdown'
 import CountdownDisplay from '../ui/CountdownDisplay'
 import AccentBanner from '../ui/AccentBanner'
-import Flag from '../ui/Flag'
-import { fmtDate } from '../../utils/date'
 import { TZ_OPTIONS, getInitialTZ, saveTZ, tzAbbr, formatInTZ } from '../../utils/timezone'
 
 const SESSION_LABELS = {
   fp1: 'FP1', fp2: 'FP2', fp3: 'FP3',
   sprintQualifying: 'Sprint Quali', sprint: 'Sprint',
   qualifying: 'Qualifying', race: 'Race',
+}
+
+function fmtRaceDateTime(date, time, tz) {
+  if (!date) return null
+  const t = (time || '00:00:00').replace(/Z$/i, '')
+  const d = new Date(`${date}T${t}Z`)
+  if (isNaN(d)) return null
+  const weekday = d.toLocaleString('en-US', { timeZone: tz, weekday: 'short' }).toUpperCase()
+  const month   = d.toLocaleString('en-US', { timeZone: tz, month: 'short' }).toUpperCase()
+  const day     = d.toLocaleString('en-US', { timeZone: tz, day: 'numeric' })
+  const hhmm    = d.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false })
+  return `${weekday}. ${month} ${day} · ${hhmm} ${tzAbbr(tz)}`
 }
 
 export default function NextRaceBanner({ race, totalRounds }) {
@@ -34,6 +44,9 @@ export default function NextRaceBanner({ race, totalRounds }) {
         .map(([key, val]) => ({ key, label: SESSION_LABELS[key] || key, ...val }))
     : []
 
+  const circuitCode = (race.locality || race.raceName?.replace(' Grand Prix', '') || '').toUpperCase()
+  const raceDateLine = fmtRaceDateTime(race.date, race.time, tz)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -51,23 +64,37 @@ export default function NextRaceBanner({ race, totalRounds }) {
           }}
           onClick={() => sessions.length && setOpen(o => !o)}
         >
+          {/* Left: circuit badge + race name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#e10600', animation: 'pulse 2s infinite', flexShrink: 0 }} />
             <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(225,6,0,0.8)', textTransform: 'uppercase', flexShrink: 0 }}>
               {isLive ? `LIVE · ${race.currentSession.label}` : `Rd ${race.round}/${totalRounds}`}
             </span>
             <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-            {!isMobile && <Flag country={race.country} />}
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: isMobile ? '0.88rem' : '1.05rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {isMobile ? race.raceName.replace(' Grand Prix', ' GP') : race.raceName}
+            {/* Engineering circuit badge */}
+            <span style={{
+              fontFamily: "'Courier New', monospace",
+              fontSize: isMobile ? '0.72rem' : '0.78rem',
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              color: 'rgba(255,255,255,0.9)',
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 4,
+              padding: '1px 7px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}>
+              RD {String(race.round).padStart(2, '0')} // {circuitCode}
             </span>
             {!isMobile && (
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                {race.locality && `${race.locality}, `}{race.country}
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1.05rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {race.raceName}
               </span>
             )}
           </div>
 
+          {/* Right: countdown or live */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.6rem' : '1.25rem', flexShrink: 0 }}>
             {isLive ? (
               <span style={{
@@ -80,23 +107,15 @@ export default function NextRaceBanner({ race, totalRounds }) {
                 Race in progress
               </span>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(225,6,0,0.7)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem' }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(225,6,0,0.7)' }}>
                   Race starts in
                 </span>
-                <CountdownDisplay parts={countdown} size={isMobile ? 'sm' : 'lg'} />
-              </div>
-            )}
-
-            {!isMobile && (
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.82rem', color: '#fff', fontWeight: 600 }}>
-                  {fmtDate(race.date)}
-                </div>
-                {race.time && (
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                    {race.time.slice(0,5)} UTC
-                  </div>
+                <CountdownDisplay parts={countdown} size="lg" />
+                {raceDateLine && (
+                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+                    {raceDateLine}
+                  </span>
                 )}
               </div>
             )}
