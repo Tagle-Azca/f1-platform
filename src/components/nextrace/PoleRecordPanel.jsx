@@ -73,8 +73,8 @@ export default function PoleRecordPanel({ specs }) {
   const raceDist = (specs.length * specs.laps).toFixed(1)
 
   const left  = [
-    ['Circuit length',  `${raceDist} km`],
-    ['Full race dist.', `${specs.length} km`],
+    ['Circuit length',  `${specs.length.toFixed(1)} km`],
+    ['Full race dist.', `${raceDist} km`],
     ['Laps',             specs.laps],
     ['Turns',            specs.turns],
     ['Tire stress',      `${specs.tireStress}/10`],

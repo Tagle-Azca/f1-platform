@@ -116,7 +116,7 @@ export default function NextRacePage() {
           weather={weather}
         />
 
-        <div style={{ display: isMobile ? 'grid' : 'flex', gridTemplateColumns: '1fr 1fr', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <CircuitStatsPanel history={history} race={race} circuit={circuit} isMobile={isMobile} />
           <PoleRecordPanel specs={trackSpecs} />
         </div>
