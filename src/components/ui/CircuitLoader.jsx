@@ -10,7 +10,7 @@ let _fetchPromise = null
 function getMonzaCoords() {
   if (_cachedCoords) return Promise.resolve(_cachedCoords)
   if (!_fetchPromise) {
-    _fetchPromise = circuitsApi.getById('spa')
+    _fetchPromise = circuitsApi.getById('monaco')
       .then(c => { _cachedCoords = c?.trackCoords ?? null; return _cachedCoords })
       .catch(() => null)
   }
