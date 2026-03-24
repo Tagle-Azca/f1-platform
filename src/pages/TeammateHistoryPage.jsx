@@ -48,8 +48,8 @@ export default function TeammateHistoryPage() {
   return (
     <PageWrapper>
       <PageHeader
-        title="Teammate History"
-        subtitle="Explore a driver's full career, teams and teammates · click any name to chain"
+        title="Rivalries"
+        subtitle="Explore a driver's career network — chain teammates to compare"
         badge="dgraph"
       />
 
