@@ -55,12 +55,15 @@ function SlotBox({ driver, slot, onRemove, pulse, isMobile }) {
           >
             <div style={{
               fontFamily: "'Barlow Condensed', sans-serif",
-              fontSize: isMobile ? '1.5rem' : '1.9rem',
+              fontSize: isMobile ? '1.1rem' : '1.9rem',
               fontWeight: 900,
               color,
               letterSpacing: '0.03em',
               textTransform: 'uppercase',
               lineHeight: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}>
               {driver.name.split(' ').slice(-1)[0]}
             </div>
