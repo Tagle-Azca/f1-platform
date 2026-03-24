@@ -66,8 +66,8 @@ export default function NextRaceBanner({ race, totalRounds }) {
         >
           {/* Left: circuit badge + race name */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
-            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#e10600', animation: 'pulse 2s infinite', flexShrink: 0 }} />
-            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(225,6,0,0.8)', textTransform: 'uppercase', flexShrink: 0 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'rgba(225,6,0,0.8)', animation: 'pulse 2s infinite', flexShrink: 0 }} />
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.12em', color: 'rgba(255, 255, 255, 0.8)', textTransform: 'uppercase', flexShrink: 0 }}>
               {isLive ? `LIVE · ${race.currentSession.label}` : `Rd ${race.round}/${totalRounds}`}
             </span>
             <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
@@ -108,7 +108,7 @@ export default function NextRaceBanner({ race, totalRounds }) {
               </span>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem' }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(225,6,0,0.7)' }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)' }}>
                   Race starts in
                 </span>
                 <CountdownDisplay parts={countdown} size="lg" />
