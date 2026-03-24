@@ -14,7 +14,7 @@ function isRivalryRelevant(rivalry, selectedIds) {
   return selectedIds.some(id => id === rivalry.a.driverId || id === rivalry.b.driverId)
 }
 
-export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabledIds = [] }) {
+export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabledIds = [], isMobile = false }) {
   const selectedIds = drivers.map(d => d.driverId)
   const hasSelection = selectedIds.length > 0
 
@@ -34,7 +34,7 @@ export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabl
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(188px, 1fr))',
+        gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(188px, 1fr))',
         gap: '0.65rem',
         marginBottom: '2.5rem',
       }}>
@@ -110,7 +110,7 @@ export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabl
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: '0.6rem',
         }}>
           {RIVALRIES.map((r, i) => {

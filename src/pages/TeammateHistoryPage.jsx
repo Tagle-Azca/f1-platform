@@ -128,6 +128,7 @@ export default function TeammateHistoryPage() {
         onAddPair={addPair}
         drivers={drivers}
         disabledIds={existingIds}
+        isMobile={isMobile}
       />
 
       {/* ── Career Networks — for deeper exploration ── */}
