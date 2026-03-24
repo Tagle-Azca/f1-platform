@@ -15,10 +15,10 @@ export const ERA_COLORS = [
 ]
 
 export const FEATURED = [
-  { driverId: 'hamilton',           name: 'Lewis Hamilton',  era: '2007–2025', titles: 7, note: '7 titles · The Hammer' },
+  { driverId: 'hamilton',           name: 'Lewis Hamilton',  era: '2007–2025', titles: 7, note: '7 titles · The Knight' },
   { driverId: 'michael_schumacher', name: 'M. Schumacher',   era: '1991–2012', titles: 7, note: '7 titles · The Káiser' },
-  { driverId: 'alonso',             name: 'Fernando Alonso', era: '2001–',     titles: 2, note: '2 titles · Magic Alonso' },
-  { driverId: 'max_verstappen',     name: 'Max Verstappen',  era: '2015–',     titles: 4, note: '4 titles · The Flying Dutchman' },
+  { driverId: 'alonso',             name: 'Fernando Alonso', era: '2001–',     titles: 2, note: '2 titles · The Samurai' },
+  { driverId: 'max_verstappen',     name: 'Max Verstappen',  era: '2015–',     titles: 4, note: '4 titles · Mad Max' },
   { driverId: 'senna',              name: 'Ayrton Senna',    era: '1984–1994', titles: 3, note: '3 titles · Rain Master' },
   { driverId: 'prost',              name: 'Alain Prost',     era: '1980–1993', titles: 4, note: '4 titles · The Professor' },
 ]

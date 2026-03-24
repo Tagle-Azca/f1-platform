@@ -49,9 +49,13 @@ export default function ComparisonPanel({ drivers }) {
 
   const commonTeams = useMemo(() => {
     if (ready.length < 2) return []
-    const sets = ready.map(d => new Set(d.data.teams.map(t => t.constructorId)))
-    const [, ...rest] = sets
-    return ready[0].data.teams.filter(t => rest.every(s => s.has(t.constructorId)))
+    const [dA, dB] = ready
+    return dA.data.teams.filter(teamA => {
+      const teamB = dB.data.teams.find(t => t.constructorId === teamA.constructorId)
+      if (!teamB) return false
+      const seasonsA = new Set(teamA.seasons)
+      return teamB.seasons.some(s => seasonsA.has(s))
+    })
   }, [ready])
 
   return (

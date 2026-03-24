@@ -1,6 +1,14 @@
 import { motion } from 'framer-motion'
 import { FEATURED, ERA_COLORS, RIVALRIES, SLOT_COLORS, DRIVER_ACCENT } from './constants'
 
+const pulseStyle = `
+@keyframes card-invite {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  50%       { box-shadow: 0 0 0 6px rgba(255,255,255,0.06); }
+}
+.card-invite { animation: card-invite 2.2s ease-in-out infinite; }
+`
+
 function isRivalryRelevant(rivalry, selectedIds) {
   if (!selectedIds.length) return true
   return selectedIds.some(id => id === rivalry.a.driverId || id === rivalry.b.driverId)
@@ -10,8 +18,11 @@ export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabl
   const selectedIds = drivers.map(d => d.driverId)
   const hasSelection = selectedIds.length > 0
 
+  const inviteActive = drivers.length === 1
+
   return (
     <div>
+      <style>{pulseStyle}</style>
       {/* ── Featured Drivers ── */}
       <div style={{
         fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em',
@@ -31,13 +42,15 @@ export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabl
           const accent  = DRIVER_ACCENT[d.driverId] || ERA_COLORS[i]
           const isSelected = selectedIds.includes(d.driverId)
           const isDisabled = disabledIds.includes(d.driverId) || drivers.length >= 2
-          const dim = hasSelection && !isSelected
+          const dim = isSelected
+          const invite = inviteActive && !isSelected && !isDisabled
 
           return (
             <motion.button
               key={d.driverId}
+              className={invite ? 'card-invite' : undefined}
               initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: dim ? 0.35 : 1, y: 0 }}
+              animate={{ opacity: dim ? 0.9 : 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.25 }}
               disabled={isDisabled}
               onClick={() => !isDisabled && onAdd({ driverId: d.driverId, name: d.name })}
@@ -77,7 +90,7 @@ export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabl
               <div style={{ fontSize: '0.65rem', color: accent, fontWeight: 700, opacity: 0.9 }}>
                 {d.era}
               </div>
-              <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)', lineHeight: 1.35, marginTop: '0.1rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.35, marginTop: '0.1rem' }}>
                 {d.note}
               </div>
             </motion.button>
@@ -103,12 +116,14 @@ export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabl
           {RIVALRIES.map((r, i) => {
             const relevant = isRivalryRelevant(r, selectedIds)
             const isDisabled = drivers.length >= 2
+            const inviteRivalry = inviteActive && relevant
 
             return (
               <motion.button
                 key={`${r.a.driverId}-${r.b.driverId}`}
+                className={inviteRivalry ? 'card-invite' : undefined}
                 initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: hasSelection ? (relevant ? 1 : 0.22) : 1, y: 0 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.04, duration: 0.25 }}
                 disabled={isDisabled}
                 onClick={() => !isDisabled && onAddPair(r.a, r.b)}
@@ -148,7 +163,7 @@ export default function FeaturedDrivers({ onAdd, onAddPair, drivers = [], disabl
                   </span>
                   <span style={{
                     fontSize: '0.6rem', fontWeight: 800,
-                    color: 'rgba(255,255,255,0.2)',
+                    color: 'rgba(255, 255, 255, 0.54)',
                     letterSpacing: '0.1em',
                   }}>
                     vs
