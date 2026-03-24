@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { searchApi } from '../../services/api'
 
-export default function DriverSearch({ onAdd, disabledIds }) {
+export default function DriverSearch({ onAdd, disabledIds, disabled = false }) {
   const [query,   setQuery]   = useState('')
   const [results, setResults] = useState([])
   const [open,    setOpen]    = useState(false)
@@ -38,14 +38,15 @@ export default function DriverSearch({ onAdd, disabledIds }) {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative', width: 320 }}>
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
       <input
         className="input"
         value={query}
-        onChange={e => setQuery(e.target.value)}
-        onFocus={() => results.length > 0 && setOpen(true)}
-        placeholder="Search driver name..."
-        style={{ width: '100%' }}
+        onChange={e => !disabled && setQuery(e.target.value)}
+        onFocus={() => !disabled && results.length > 0 && setOpen(true)}
+        placeholder={disabled ? 'Both slots filled — click a slot above to remove' : 'Search driver name...'}
+        disabled={disabled}
+        style={{ width: '100%', opacity: disabled ? 0.45 : 1, cursor: disabled ? 'not-allowed' : undefined }}
       />
       {loading && (
         <span style={{

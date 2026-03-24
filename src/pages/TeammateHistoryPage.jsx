@@ -8,8 +8,8 @@ import { SLOT_COLORS } from '../components/teammates/constants'
 import DriverSearch from '../components/teammates/DriverSearch'
 import DriverCard from '../components/teammates/DriverCard'
 import FeaturedDrivers from '../components/teammates/FeaturedDrivers'
-import HowToSteps from '../components/teammates/HowToSteps'
 import ComparisonPanel from '../components/teammates/ComparisonPanel'
+import VSHeroSlots from '../components/teammates/VSHeroSlots'
 
 export default function TeammateHistoryPage() {
   const { isMobile } = useBreakpoint()
@@ -18,9 +18,9 @@ export default function TeammateHistoryPage() {
   const existingIds = drivers.map(d => d.driverId)
 
   async function addDriver(info) {
-    if (existingIds.includes(info.driverId) || drivers.length >= 3) return
+    if (existingIds.includes(info.driverId) || drivers.length >= 2) return
     setDrivers(prev => {
-      if (prev.find(d => d.driverId === info.driverId) || prev.length >= 3) return prev
+      if (prev.find(d => d.driverId === info.driverId) || prev.length >= 2) return prev
       return [...prev, { driverId: info.driverId, name: info.name, color: SLOT_COLORS[prev.length], data: null, loading: true }]
     })
     try {
@@ -33,9 +33,22 @@ export default function TeammateHistoryPage() {
     }
   }
 
-  function addPair(infoA, infoB) {
-    addDriver(infoA)
-    addDriver(infoB)
+  async function addPair(infoA, infoB) {
+    setDrivers([
+      { driverId: infoA.driverId, name: infoA.name, color: SLOT_COLORS[0], data: null, loading: true },
+      { driverId: infoB.driverId, name: infoB.name, color: SLOT_COLORS[1], data: null, loading: true },
+    ])
+    const [resA, resB] = await Promise.allSettled([
+      graphApi.getDriverConnections(infoA.driverId),
+      graphApi.getDriverConnections(infoB.driverId),
+    ])
+    setDrivers(prev => prev.map(d => {
+      if (d.driverId === infoA.driverId)
+        return resA.status === 'fulfilled' ? { ...d, data: resA.value, loading: false } : null
+      if (d.driverId === infoB.driverId)
+        return resB.status === 'fulfilled' ? { ...d, data: resB.value, loading: false } : null
+      return d
+    }).filter(Boolean))
   }
 
   function removeDriver(driverId) {
@@ -49,43 +62,97 @@ export default function TeammateHistoryPage() {
     <PageWrapper>
       <PageHeader
         title="Rivalries"
-        subtitle="Explore a driver's career network — chain teammates to compare"
+        subtitle="Explore career overlaps and performance deltas. Compare teammate history or simulate legendary matchups across different eras."
         badge="dgraph"
       />
 
-      {/* Search + how-to row */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>
-              Search Driver
-            </span>
-            <DriverSearch onAdd={addDriver} disabledIds={existingIds} />
-          </div>
-          {drivers.length > 0 && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '1.1rem' }}
-            >
-              {drivers.length === 1 ? 'Click any teammate chip below to chain them' : `Comparing ${drivers.length} drivers`}
-            </motion.span>
-          )}
-        </div>
-        <HowToSteps driverCount={drivers.length} />
+      {/* ── VS Hero Slots ── */}
+      <VSHeroSlots drivers={drivers} onRemove={removeDriver} isMobile={isMobile} />
+
+      {/* ── Contextual hint — fades between states ── */}
+      <AnimatePresence mode="wait">
+        {drivers.length === 0 && (
+          <motion.p
+            key="hint-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400, margin: '0 0 1.5rem', lineHeight: 1.5 }}
+          >
+            Select a driver to start the analysis.
+          </motion.p>
+        )}
+        {drivers.length === 1 && (
+          <motion.p
+            key="hint-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 400, margin: '0 0 1.5rem', lineHeight: 1.5 }}
+          >
+            Now choose a teammate or any rival to calculate the comparison.
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      {/* ── Comparison Panel — visible immediately when both slots filled ── */}
+      <AnimatePresence>
+        {drivers.length >= 2 && (
+          <motion.div
+            key="comparison-hero"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            style={{ marginBottom: '2rem' }}
+          >
+            <ComparisonPanel drivers={drivers} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Search ── */}
+      <div style={{ marginBottom: '2.5rem', maxWidth: 520 }}>
+        <DriverSearch
+          onAdd={addDriver}
+          disabledIds={existingIds}
+          disabled={drivers.length >= 2}
+        />
       </div>
 
-      {/* Cards or empty state */}
-      <AnimatePresence mode="popLayout">
-        {drivers.length > 0 ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '1fr 300px',
-            gap: '0.75rem',
-            alignItems: 'flex-start',
-          }}>
-            {/* Left: driver cards */}
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      {/* ── Featured Drivers + Rivalries — always visible ── */}
+      <FeaturedDrivers
+        onAdd={addDriver}
+        onAddPair={addPair}
+        drivers={drivers}
+        disabledIds={existingIds}
+      />
+
+      {/* ── Career Networks — for deeper exploration ── */}
+      <AnimatePresence>
+        {drivers.length > 0 && (
+          <motion.div
+            key="networks"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              marginTop: '3rem',
+              borderTop: '1px solid var(--border-subtle)',
+              paddingTop: '2rem',
+            }}
+          >
+            <div style={{
+              fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.12em',
+              textTransform: 'uppercase', color: 'var(--text-muted)',
+              marginBottom: '1rem',
+            }}>
+              Career Networks
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', flexWrap: 'wrap', width: '100%' }}>
               {drivers.map(driver => (
                 <DriverCard
                   key={driver.driverId}
@@ -96,23 +163,6 @@ export default function TeammateHistoryPage() {
                 />
               ))}
             </div>
-            {/* Right: comparison panel (desktop only) */}
-            {!isMobile && (
-              <motion.div
-                key="comparison"
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 16 }}
-                transition={{ duration: 0.3 }}
-                style={{ position: 'sticky', top: 'calc(var(--navbar-height) + 1rem)' }}
-              >
-                <ComparisonPanel drivers={drivers} />
-              </motion.div>
-            )}
-          </div>
-        ) : (
-          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <FeaturedDrivers onAdd={addDriver} onAddPair={addPair} />
           </motion.div>
         )}
       </AnimatePresence>

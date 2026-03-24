@@ -13,7 +13,7 @@ export default function DriverCard({ driver, onRemove, onAddTeammate, existingId
       style={{
         borderTop: `3px solid ${color}`,
         background: `linear-gradient(160deg, ${color}0d, transparent 60%)`,
-        minWidth: 260, maxWidth: 340, flex: '1 1 260px',
+        minWidth: 0, width: '100%', maxWidth: 420, flex: '1 1 260px',
         display: 'flex', flexDirection: 'column',
       }}
     >

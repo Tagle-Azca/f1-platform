@@ -1,5 +1,14 @@
 export const SLOT_COLORS = ['#e8002d', '#27F4D2', '#FF8000']
 
+export const DRIVER_ACCENT = {
+  'hamilton':           '#a855f7',
+  'michael_schumacher': '#dc2626',
+  'alonso':             '#3b82f6',
+  'max_verstappen':     '#1d4ed8',
+  'senna':              '#eab308',
+  'prost':              '#e10600',
+}
+
 export const ERA_COLORS = [
   '#e10600', '#27F4D2', '#FF8000', '#a855f7',
   '#22c55e', '#f5c518', '#3b82f6', '#ec4899',
@@ -22,6 +31,5 @@ export const RIVALRIES = [
   { a: { driverId: 'max_verstappen',     name: 'Max Verstappen'   }, b: { driverId: 'perez',               name: 'Sergio Pérez'     }, team: 'Red Bull',             years: '2021–2024', note: 'Dominant duo turned bitter rivalry' },
   { a: { driverId: 'michael_schumacher', name: 'M. Schumacher'    }, b: { driverId: 'barrichello',         name: 'R. Barrichello'   }, team: 'Ferrari',              years: '2000–2005', note: 'Six titles, one clear hierarchy' },
   { a: { driverId: 'leclerc',            name: 'Charles Leclerc'  }, b: { driverId: 'sainz',               name: 'Carlos Sainz'     }, team: 'Ferrari',              years: '2019–2024', note: 'Close, respectful — and fiercely competitive' },
-  { a: { driverId: 'norris',             name: 'Lando Norris'     }, b: { driverId: 'piastri',             name: 'Oscar Piastri'    }, team: 'McLaren',              years: '2023–',     note: 'The new generation battle for McLaren' },
   { a: { driverId: 'alonso',             name: 'Fernando Alonso'  }, b: { driverId: 'michael_schumacher',  name: 'M. Schumacher'    }, team: 'Championship rivals',  years: '2003–2006', note: 'Alonso ended the Schumacher era — twice' },
 ]

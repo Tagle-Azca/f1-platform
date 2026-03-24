@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 function StatBar({ label, drivers }) {
   const max = Math.max(...drivers.map(d => d.value || 0), 1)
@@ -59,8 +59,33 @@ export default function ComparisonPanel({ drivers }) {
 
       {/* Stats comparison */}
       <div className="card" style={{ padding: '1rem 1.1rem' }}>
-        <div style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-          {ready.length >= 2 ? 'Stats Comparison' : 'Career Stats'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            {ready.length >= 2 ? 'Stats Comparison' : 'Career Stats'}
+          </span>
+          <AnimatePresence>
+            {ready.length >= 2 && (
+              <motion.span
+                key={commonTeams.length > 0 ? 'teammate' : 'cross-era'}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.25 }}
+                style={{
+                  fontSize: '0.52rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: commonTeams.length > 0 ? '#27F4D2' : '#a855f7',
+                  border: `1px solid ${commonTeams.length > 0 ? 'rgba(39,244,210,0.3)' : 'rgba(168,85,247,0.3)'}`,
+                  borderRadius: 4,
+                  padding: '0.15rem 0.45rem',
+                }}
+              >
+                {commonTeams.length > 0 ? 'Direct Teammate Comparison' : 'Cross-Era Legacy Analysis'}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
         {ready.length === 0 ? (
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Loading driver data…</p>
@@ -82,8 +107,8 @@ export default function ComparisonPanel({ drivers }) {
             Common Teammates
           </div>
           {commonTeammates.length === 0 ? (
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>
-              No shared teammates found
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>
+              Historical Mapping: No direct teammate overlap found between these two career networks.
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
