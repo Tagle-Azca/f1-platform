@@ -49,11 +49,11 @@ export default function HomePage() {
     <>
     <PageWrapper>
 
+      <HomeHero race={data?.nextRace ?? null} />
+
       {!loading && data?.nextRace && (
         <NextRaceBanner race={data.nextRace} totalRounds={data.totalRounds} />
       )}
-
-      <HomeHero />
 
       {error && (
         <BackendError onRetry={() => {

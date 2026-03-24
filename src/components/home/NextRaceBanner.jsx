@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
-import { useCountdown } from '../../hooks/useCountdown'
-import CountdownDisplay from '../ui/CountdownDisplay'
 import AccentBanner from '../ui/AccentBanner'
 import { TZ_OPTIONS, getInitialTZ, saveTZ, tzAbbr, formatInTZ } from '../../utils/timezone'
 
@@ -26,8 +24,7 @@ function fmtRaceDateTime(date, time, tz) {
 
 export default function NextRaceBanner({ race, totalRounds }) {
   const { isMobile } = useBreakpoint()
-  const isLive    = !!race.currentSession
-  const countdown = useCountdown(!isLive ? race.raceDateTime : null)
+  const isLive = !!race.currentSession
   const [open,       setOpen]       = useState(false)
   const [tz,         setTz]         = useState(getInitialTZ)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -94,7 +91,7 @@ export default function NextRaceBanner({ race, totalRounds }) {
             )}
           </div>
 
-          {/* Right: countdown or live */}
+          {/* Right: live badge or date */}
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.6rem' : '1.25rem', flexShrink: 0 }}>
             {isLive ? (
               <span style={{
@@ -106,19 +103,11 @@ export default function NextRaceBanner({ race, totalRounds }) {
               }}>
                 Race in progress
               </span>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem' }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)' }}>
-                  Race starts in
-                </span>
-                <CountdownDisplay parts={countdown} size="lg" />
-                {raceDateLine && (
-                  <span style={{ fontFamily: "'Courier New', monospace", fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
-                    {raceDateLine}
-                  </span>
-                )}
-              </div>
-            )}
+            ) : raceDateLine && !isMobile ? (
+              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.06em', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                {raceDateLine}
+              </span>
+            ) : null}
 
             {sessions.length > 0 && (
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 14, height: 14, color: 'var(--text-secondary)', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>

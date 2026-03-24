@@ -51,7 +51,7 @@ export default function NavbarDesktopCountdown({ nextRace, live, countdown, isUr
               <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#ef4444', letterSpacing: '0.08em' }}>LIVE · {live.label}</span>
             </div>
           ) : countdown ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 168 }}>
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.75rem', fontWeight: 900, color: 'var(--f1-red)', letterSpacing: '0.04em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 {nextRace.nextSession?.label || 'Race'} in:
               </span>
