@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import CircuitSilhouette from '../circuit/CircuitSilhouette'
 import { circuitsApi } from '../../services/api'
+import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 // Module-level cache — fetched once on first render, reused forever.
 // Avoids re-fetching on every loading state across the app.
@@ -17,25 +18,30 @@ function getMonzaCoords() {
   return _fetchPromise
 }
 
-export default function CircuitLoader({ message = 'Loading...', size = 'md', height = 220 }) {
-  const [coords, setCoords] = useState(_cachedCoords) // instant if already cached
+export default function CircuitLoader({ message = 'Loading...', size = 'md', height = 220, page = false }) {
+  const [coords, setCoords] = useState(_cachedCoords)
+  const { isMobile } = useBreakpoint()
 
   useEffect(() => {
-    if (_cachedCoords) return  // already have it
+    if (_cachedCoords) return
     getMonzaCoords().then(setCoords)
   }, [])
 
-  const dims = {
-    sm: { w: 110, h: 70  },
-    md: { w: 200, h: 130 },
-    lg: { w: 280, h: 180 },
-  }[size] || { w: 200, h: 130 }
+  const dims = page && !isMobile
+    ? { w: 520, h: 340 }
+    : {
+        sm: { w: 110, h: 70  },
+        md: { w: 200, h: 130 },
+        lg: { w: 280, h: 180 },
+      }[size] || { w: 200, h: 130 }
+
+  const resolvedHeight = page && !isMobile ? 440 : height
 
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      gap: '0.75rem', minHeight: height,
+      gap: '0.75rem', minHeight: resolvedHeight,
     }}>
       {coords?.length ? (
         <CircuitSilhouette

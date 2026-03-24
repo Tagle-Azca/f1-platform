@@ -81,7 +81,7 @@ export default function RaceDetailPage() {
 
   if (loading) return (
     <PageWrapper>
-      <EmptyState type="loading" message="Loading race..." height={120} />
+      <EmptyState type="loading" message="Loading race..." height={120} page />
     </PageWrapper>
   )
   if (error || !race) return (

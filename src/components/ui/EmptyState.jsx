@@ -8,13 +8,14 @@ import CircuitLoader from './CircuitLoader'
  *   height?   number   pixel height, default 80
  *   type?     'loading' | 'empty' | 'error'   default 'loading'
  */
-export default function EmptyState({ message, height = 80, type = 'loading' }) {
+export default function EmptyState({ message, height = 80, type = 'loading', page = false }) {
   if (type === 'loading') {
     return (
       <CircuitLoader
         message={message ?? 'Loading...'}
         size={height >= 180 ? 'md' : 'sm'}
         height={height}
+        page={page}
       />
     )
   }

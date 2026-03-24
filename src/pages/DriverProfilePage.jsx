@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import PageWrapper from '../components/layout/PageWrapper'
+import EmptyState from '../components/ui/EmptyState'
 import Panel from '../components/ui/Panel'
 import { driversApi, statsApi } from '../services/api'
 import { CTOR_COLORS } from '../utils/teamColors'
@@ -69,9 +70,7 @@ export default function DriverProfilePage() {
 
   if (loading) return (
     <PageWrapper>
-      <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: 'var(--text-secondary)' }}>Loading...</span>
-      </div>
+      <EmptyState type="loading" message="Loading driver..." height={120} page />
     </PageWrapper>
   )
 

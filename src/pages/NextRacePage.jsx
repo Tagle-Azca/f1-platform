@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import PageWrapper from '../components/layout/PageWrapper'
+import PageWrapper from '../components/layout/PageWrapper'\nimport EmptyState from '../components/ui/EmptyState'
 import { dashboardApi, circuitsApi, statsApi } from '../services/api'
 import { getCircuitSpecs } from '../utils/circuitSpecs'
 import { countryFlag } from '../utils/flags'
