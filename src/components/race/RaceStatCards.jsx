@@ -4,7 +4,7 @@ import { ctorColor } from '../../utils/teamColors'
 export default function RaceStatCards({ results, qualifyingResults, isMobile }) {
   const winner     = results.find(r => r.position === '1') || results[0]
   const pole       = qualifyingResults[0] ?? results.find(r => r.grid === '1')
-  const fastestLap = results.find(r => r.FastestLap?.rank === '1')
+  const fastestLap = results.find(r => r.FastestLap?.rank != null && String(r.FastestLap.rank) === '1')
   const dnfCount   = results.filter(r => r.status !== 'Finished' && !r.status?.startsWith('+')).length
   const totalLaps  = winner?.laps ? `${winner.laps} laps` : null
 

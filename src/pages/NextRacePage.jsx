@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import PageWrapper from '../components/layout/PageWrapper'
-import EmptyState from '../components/ui/EmptyState'
 import { dashboardApi, circuitsApi, statsApi } from '../services/api'
 import { getCircuitSpecs } from '../utils/circuitSpecs'
 import { countryFlag } from '../utils/flags'
 import { useCountdown } from '../hooks/useCountdown'
 import NextRaceHero from '../components/nextrace/NextRaceHero'
 import WeekendSchedulePanel from '../components/nextrace/WeekendSchedulePanel'
-import CircuitStatsPanel from '../components/nextrace/CircuitStatsPanel'
+import RaceExpectationsPanel from '../components/nextrace/RaceExpectationsPanel'
+import StrategyOutlookPanel from '../components/nextrace/StrategyOutlookPanel'
 import PoleRecordPanel from '../components/nextrace/PoleRecordPanel'
 import CircuitMapPanel from '../components/nextrace/CircuitMapPanel'
+import LastGPPanel from '../components/nextrace/LastGPPanel'
 import CircuitDNAPanel from '../components/circuits/CircuitDNAPanel'
 
 
@@ -92,7 +93,7 @@ export default function NextRacePage() {
     <PageWrapper>
       <button
         className="btn btn--ghost"
-        style={{ fontSize: '0.75rem', marginBottom: '1rem', padding: '0.3rem 0.75rem' }}
+        style={{ fontSize: isMobile ? '0.85rem' : '0.75rem', marginBottom: '1rem', padding: isMobile ? '0.6rem 1rem' : '0.3rem 0.75rem' }}
         onClick={() => navigate(-1)}
       >
         ← Back
@@ -109,24 +110,64 @@ export default function NextRacePage() {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-        <WeekendSchedulePanel
-          schedule={race.schedule}
-          liveKey={live?.key}
-          nextSessionKey={race?.nextSession?.key}
-          weather={weather}
-        />
-
+      {isMobile ? (
+        /* ── Mobile: single column, logical reading order ── */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <CircuitStatsPanel history={history} race={race} circuit={circuit} isMobile={isMobile} />
+          <WeekendSchedulePanel
+            schedule={race.schedule}
+            liveKey={live?.key}
+            nextSessionKey={race?.nextSession?.key}
+            weather={weather}
+          />
+          {history && <LastGPPanel history={history} />}
+          <CircuitMapPanel lat={lat} lng={lng} />
+          <RaceExpectationsPanel specs={trackSpecs} />
+          <StrategyOutlookPanel specs={trackSpecs} />
           <PoleRecordPanel specs={trackSpecs} />
+          {race.circuitId && <CircuitDNAPanel circuit={{ circuitId: race.circuitId }} compact />}
         </div>
-      </div>
+      ) : (
+        /* ── Desktop: 3-column command centre — logistics · dynamics · technical ── */
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 2fr 1fr',
+          gap: '1rem',
+          alignItems: 'stretch',
+        }}>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', alignItems: 'stretch' }}>
-        <CircuitMapPanel lat={lat} lng={lng} />
-        {race.circuitId && <CircuitDNAPanel circuit={{ circuitId: race.circuitId }} />}
-      </div>
+          {/* ── Col 1: Schedule + Last Time Here ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <WeekendSchedulePanel
+              schedule={race.schedule}
+              liveKey={live?.key}
+              nextSessionKey={race?.nextSession?.key}
+              weather={weather}
+            />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {history && <LastGPPanel history={history} />}
+            </div>
+          </div>
+
+          {/* ── Col 2: Map · Race Expectations · Strategy Outlook ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Map: explicit height on the iframe — no flex-1 trickery needed */}
+            <CircuitMapPanel lat={lat} lng={lng} />
+            <RaceExpectationsPanel specs={trackSpecs} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <StrategyOutlookPanel specs={trackSpecs} />
+            </div>
+          </div>
+
+          {/* ── Col 3: Track Specs (2-col internal grid) · Circuit DNA (radar + 5 stats) ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <PoleRecordPanel specs={trackSpecs} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {race.circuitId && <CircuitDNAPanel circuit={{ circuitId: race.circuitId }} compact />}
+            </div>
+          </div>
+
+        </div>
+      )}
     </PageWrapper>
   )
 }

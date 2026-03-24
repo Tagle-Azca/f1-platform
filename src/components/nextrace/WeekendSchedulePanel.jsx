@@ -51,9 +51,9 @@ export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey
   const abbr = tzAbbr(tz)
 
   return (
-    <Panel padding="none" style={{ overflow: 'hidden' }}>
+    <Panel padding="none">
       <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           Weekend Schedule
         </span>
 
@@ -122,7 +122,7 @@ export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey
           return (
             <div key={key} style={{
               display: 'flex', alignItems: 'center', gap: isMobile ? '0.6rem' : '1rem',
-              padding: isMobile ? '0.55rem 1rem' : '0.75rem 1.25rem',
+              padding: isMobile ? '0.55rem 1rem' : '0.65rem 1.25rem',
               opacity: past ? 0.4 : 1,
               borderBottom: '1px solid var(--border-subtle)',
               background: (isLive || key === nextSessionKey) && !past ? `${SESSION_COLORS[key]}08` : 'transparent',

@@ -116,7 +116,7 @@ function CustomTick({ x, y, payload, activeMetric, onHover }) {
   )
 }
 
-export default function CircuitDNAPanel({ circuit }) {
+export default function CircuitDNAPanel({ circuit, compact = false }) {
   const { isMobile } = useBreakpoint()
   const [data,         setData]         = useState(null)
   const [loading,      setLoading]      = useState(true)
@@ -147,6 +147,10 @@ export default function CircuitDNAPanel({ circuit }) {
         borderLeft: '3px solid rgba(255,255,255,0.25)',
         borderRadius: 12,
         padding: '1rem 1.25rem',
+        height: '100%',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <div style={{ marginBottom: '1rem' }}>
@@ -163,10 +167,10 @@ export default function CircuitDNAPanel({ circuit }) {
       )}
 
       {!loading && data && (
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: (isMobile || compact) ? 'column' : 'row', gap: '1.5rem', alignItems: 'flex-start', minHeight: 0 }}>
 
           {data.dna && (
-            <div style={{ flex: isMobile ? 'unset' : '0 0 260px', width: isMobile ? '100%' : 'auto' }}>
+            <div style={{ flex: compact ? 1 : (isMobile ? 'unset' : '0 0 260px'), width: (isMobile || compact) ? '100%' : 'auto', display: compact ? 'flex' : 'block', flexDirection: compact ? 'column' : undefined, minHeight: compact ? 0 : undefined }}>
               <ResponsiveContainer width="100%" height={220}>
                 <RadarChart data={data.dna} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
                   <PolarGrid stroke="rgba(255,255,255,0.08)" />
@@ -184,7 +188,7 @@ export default function CircuitDNAPanel({ circuit }) {
                 </RadarChart>
               </ResponsiveContainer>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.5rem', flex: compact ? 1 : undefined }}>
                 {data.dna.map(d => {
                   const isActive = d.metric === activeMetric
                   const accent = d.value >= 70 ? '#e10600' : d.value >= 40 ? '#f59e0b' : '#22c55e'
@@ -227,9 +231,9 @@ export default function CircuitDNAPanel({ circuit }) {
             </div>
           )}
 
-          {!isMobile && <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', alignSelf: 'stretch', flexShrink: 0 }} />}
+          {!isMobile && !compact && <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', alignSelf: 'stretch', flexShrink: 0 }} />}
 
-          {(data.winners.length > 0 || data.constructors?.length > 0) && (
+          {!compact && (data.winners.length > 0 || data.constructors?.length > 0) && (
             <div style={{ flex: 1, minWidth: 180, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {data.winners.length > 0 && (
                 <div>
