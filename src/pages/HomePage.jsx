@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { HOME_LIVE_POLL_INTERVAL } from '../constants'
 import PageWrapper from '../components/layout/PageWrapper'
 import DriverDrawer from '../components/ui/DriverDrawer'
 import ConstructorDrawer from '../components/ui/ConstructorDrawer'
@@ -40,7 +41,7 @@ export default function HomePage() {
         .catch(() => {})
     }
     poll()
-    const id = setInterval(poll, 5000)
+    const id = setInterval(poll, HOME_LIVE_POLL_INTERVAL)
     return () => { cancelled = true; clearInterval(id) }
   }, [])
 

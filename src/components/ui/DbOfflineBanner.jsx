@@ -19,7 +19,7 @@ export default function DbOfflineBanner({ db, message }) {
 
   return (
     <AccentBanner color={meta.color} padding="sm">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <div className="flex-center" style={{ gap: '0.75rem', flexWrap: 'wrap' }}>
         <span className={`db-badge ${meta.badge}`}>{meta.label}</span>
         <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>
           {message ?? defaultMsg}

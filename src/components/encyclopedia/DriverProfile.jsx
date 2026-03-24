@@ -3,16 +3,7 @@ import { motion } from 'framer-motion'
 import { MapContainer, TileLayer, CircleMarker, Tooltip as MapTooltip } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { statsApi } from '../../services/api'
-
-// Known data coverage thresholds in the Jolpica/Ergast dataset
-const COVERAGE = {
-  fastestLaps:   2004,  // FastestLap field only reliable from 2004
-  polePositions: 1994,  // Grid data incomplete before mid-90s
-  points:        1950,  // Always available
-  wins:          1950,
-  podiums:       1950,
-  races:         1950,
-}
+import { COVERAGE } from '../../constants'
 
 // Era-level banners — shown when a driver's career falls in a known gap
 const ERA_NOTICES = [

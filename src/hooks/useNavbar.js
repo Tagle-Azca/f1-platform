@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { dashboardApi } from '../services/api'
 import { countryFlag } from '../utils/flags'
+import { NAVBAR_POLL_INTERVAL } from '../constants'
 
 function useCountdown(isoTarget) {
   const [parts, setParts] = useState(null)
@@ -51,7 +52,7 @@ export function useNavbar() {
       })
       .catch(() => {})
     poll()
-    const id = setInterval(poll, 30000)
+    const id = setInterval(poll, NAVBAR_POLL_INTERVAL)
     return () => { cancelled = true; clearInterval(id) }
   }, [])
 

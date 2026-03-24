@@ -14,7 +14,7 @@ export default function EgoSidebar({ activeDriver, egoData, loading, isMobile = 
   const debut = egoData?.debut
 
   return (
-    <div style={{ width: isMobile ? '100%' : 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: isMobile ? 'none' : 620, overflowY: isMobile ? 'visible' : 'auto' }}>
+    <div style={{ width: isMobile ? '100%' : 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: isMobile ? 'none' : 800, overflowY: isMobile ? 'visible' : 'auto' }}>
 
       {!activeDriver && (
         <div className="card card--dgraph" style={{ padding: '1rem' }}>
@@ -66,7 +66,7 @@ export default function EgoSidebar({ activeDriver, egoData, loading, isMobile = 
               ].map(({ label, value, hi }) => (
                 <div key={label} style={{ background: 'var(--surface-2)', borderRadius: 6, padding: isMobile ? '0.5rem 0.6rem' : '0.3rem 0.45rem' }}>
                   <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</div>
-                  <div style={{ fontSize: isMobile ? '1.15rem' : '0.9rem', fontWeight: 700, color: hi ? '#f59e0b' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+                  <div style={{ fontSize: isMobile ? '1.15rem' : '1rem', fontWeight: 700, color: hi ? '#f59e0b' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -101,7 +101,7 @@ export default function EgoSidebar({ activeDriver, egoData, loading, isMobile = 
                 .sort((a, b) => (a.seasons?.[0] ?? '9999').localeCompare(b.seasons?.[0] ?? '9999'))
                 .map(t => (
                   <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.22rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 240 : 135 }}>
+                    <span className="text-truncate" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', maxWidth: isMobile ? 240 : 290 }}>
                       {t.name}
                     </span>
                     <span style={{ fontSize: '0.7rem', color: '#f59e0b', flexShrink: 0, marginLeft: 6, fontVariantNumeric: 'tabular-nums' }}>
@@ -129,7 +129,7 @@ export default function EgoSidebar({ activeDriver, egoData, loading, isMobile = 
                       padding: '0.28rem 0',
                       borderBottom: i < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
                     }}>
-                      <span style={{ fontSize: '0.77rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 260 : 140 }}>
+                      <span className="text-truncate" style={{ fontSize: '0.77rem', color: 'var(--text-secondary)', maxWidth: isMobile ? 260 : 300 }}>
                         {t.name}
                       </span>
                       <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0, marginLeft: 4, fontVariantNumeric: 'tabular-nums' }}>

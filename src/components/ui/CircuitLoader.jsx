@@ -3,45 +3,43 @@ import CircuitSilhouette from '../circuit/CircuitSilhouette'
 import { circuitsApi } from '../../services/api'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
 
-// Module-level cache — fetched once on first render, reused forever.
-// Avoids re-fetching on every loading state across the app.
-let _cachedCoords = null
-let _fetchPromise = null
+const LOADER_CIRCUIT_ID = 'monaco'
 
-function getMonzaCoords() {
-  if (_cachedCoords) return Promise.resolve(_cachedCoords)
-  if (!_fetchPromise) {
-    _fetchPromise = circuitsApi.getById('monaco')
-      .then(c => { _cachedCoords = c?.trackCoords ?? null; return _cachedCoords })
+const DIMS = {
+  sm: { w: 110, h: 70  },
+  md: { w: 200, h: 130 },
+  lg: { w: 280, h: 180 },
+}
+
+let coordsPromise = null
+
+function fetchLoaderCoords() {
+  if (!coordsPromise) {
+    coordsPromise = circuitsApi.getById(LOADER_CIRCUIT_ID)
+      .then(c => c?.trackCoords ?? null)
       .catch(() => null)
   }
-  return _fetchPromise
+  return coordsPromise
 }
 
 export default function CircuitLoader({ message = 'Loading...', size = 'md', height = 220, page = false }) {
-  const [coords, setCoords] = useState(_cachedCoords)
+  const [coords, setCoords] = useState(null)
   const { isMobile } = useBreakpoint()
 
   useEffect(() => {
-    if (_cachedCoords) return
-    getMonzaCoords().then(setCoords)
+    let cancelled = false
+    fetchLoaderCoords().then(c => { if (!cancelled) setCoords(c) })
+    return () => { cancelled = true }
   }, [])
 
-  const dims = page && !isMobile
-    ? { w: 520, h: 340 }
-    : {
-        sm: { w: 110, h: 70  },
-        md: { w: 200, h: 130 },
-        lg: { w: 280, h: 180 },
-      }[size] || { w: 200, h: 130 }
-
-  const resolvedHeight = page && !isMobile ? 440 : height
+  const dims = page && !isMobile ? { w: 520, h: 340 } : (DIMS[size] ?? DIMS.md)
+  const minHeight = page && !isMobile ? 440 : height
 
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      gap: '0.75rem', minHeight: resolvedHeight,
+      gap: '0.75rem', minHeight,
     }}>
       {coords?.length ? (
         <CircuitSilhouette
@@ -53,11 +51,7 @@ export default function CircuitLoader({ message = 'Loading...', size = 'md', hei
           animate
         />
       ) : (
-        // Fallback while circuit data loads (only on the very first render ever)
-        <div style={{
-          width: dims.w, height: dims.h,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+        <div style={{ width: dims.w, height: dims.h, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{
             width: 10, height: 10, borderRadius: '50%',
             background: 'var(--f1-red)',

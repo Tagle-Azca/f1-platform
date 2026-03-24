@@ -248,19 +248,21 @@ export default function ConstructorLoyaltyGraph({ constructorId }) {
               initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }}
               transition={{ duration: 0.18 }}
               style={{
-                position: 'absolute', top: 10, right: 10, zIndex: 10,
-                width: 170, borderRadius: 10, padding: '0.9rem',
-                background: `linear-gradient(160deg, ${color}22, rgba(10,10,10,0.97))`,
+                position: 'absolute', top: 0, right: 0, bottom: 0, zIndex: 10,
+                width: 280, borderRadius: '0 10px 10px 0', padding: '1.25rem',
+                background: `linear-gradient(160deg, ${color}28, rgba(8,8,8,0.97))`,
                 border: `1px solid ${color}50`,
-                backdropFilter: 'blur(8px)',
+                borderLeft: `2px solid ${color}60`,
+                backdropFilter: 'blur(10px)',
+                overflowY: 'auto',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                 <div>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: '1.05rem', color: 'var(--text-primary)', textTransform: 'uppercase', lineHeight: 1 }}>
+                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: '1.3rem', color: 'var(--text-primary)', textTransform: 'uppercase', lineHeight: 1 }}>
                     {selected.name.split(' ').pop()}
                   </div>
-                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>
                     {selected.name.split(' ').slice(0, -1).join(' ')}
                   </div>
                 </div>
@@ -268,33 +270,30 @@ export default function ConstructorLoyaltyGraph({ constructorId }) {
               </div>
 
               {selected.photoUrl && (
-                <img src={selected.photoUrl} alt={selected.name} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${color}`, marginBottom: '0.6rem' }} />
+                <img src={selected.photoUrl} alt={selected.name} style={{ width: 62, height: 62, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${color}`, marginBottom: '0.7rem' }} />
               )}
 
               <div style={{ background: `${color}18`, borderRadius: 6, padding: '0.45rem 0.6rem', marginBottom: '0.6rem' }}>
-                <div style={{ fontSize: '0.55rem', color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>With this team</div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ fontSize: '0.62rem', color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>With this team</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
                   {selected.seasons?.length} season{selected.seasons?.length !== 1 ? 's' : ''}
                 </div>
-                <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
                   {selected.seasons?.[0]}{selected.seasons?.length > 1 ? ` – ${selected.seasons[selected.seasons.length - 1]}` : ''}
                 </div>
               </div>
 
               {teammates.length > 0 && (
                 <>
-                  <div style={{ fontSize: '0.55rem', color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.3rem' }}>Teammates</div>
-                  {teammates.slice(0, 7).map(tm => (
-                    <div key={tm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.18rem' }}>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>{tm.name.split(' ').pop()}</span>
-                      <span style={{ fontSize: '0.55rem', color: `${color}bb`, fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ fontSize: '0.62rem', color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.35rem' }}>Teammates</div>
+                  {teammates.map(tm => (
+                    <div key={tm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.22rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{tm.name.split(' ').pop()}</span>
+                      <span style={{ fontSize: '0.65rem', color: `${color}bb`, fontVariantNumeric: 'tabular-nums' }}>
                         {tm.seasons.filter(s => selected.seasons?.includes(s)).length}y
                       </span>
                     </div>
                   ))}
-                  {teammates.length > 7 && (
-                    <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>+{teammates.length - 7} more</div>
-                  )}
                 </>
               )}
             </motion.div>

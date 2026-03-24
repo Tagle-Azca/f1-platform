@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { AnimatePresence } from 'framer-motion'
 import 'leaflet/dist/leaflet.css'
@@ -10,11 +10,13 @@ import CircuitsFilters from '../components/circuits/CircuitsFilters'
 import CircuitsMapView from '../components/circuits/CircuitsMapView'
 import CircuitDetailPanel from '../components/circuits/CircuitDetailPanel'
 import CircuitDNAPanel from '../components/circuits/CircuitDNAPanel'
+import EmptyState from '../components/ui/EmptyState'
 
 export default function CircuitsPage() {
   const { isMobile } = useBreakpoint()
   const [circuits,   setCircuits]   = useState([])
   const [loading,    setLoading]    = useState(true)
+  const [error,      setError]      = useState(false)
   const [selected,   setSelected]   = useState(null)
   const [search,     setSearch]     = useState('')
   const [contFilter, setContFilter] = useState('All')
@@ -23,17 +25,17 @@ export default function CircuitsPage() {
   useEffect(() => {
     circuitsApi.getAll()
       .then(setCircuits)
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])
 
-  const valid = circuits.filter(c => {
+  const valid = useMemo(() => circuits.filter(c => {
     const lat  = parseFloat(c.Location?.lat  || c.lat)
     const long = parseFloat(c.Location?.long || c.long)
     return !isNaN(lat) && !isNaN(long)
-  })
+  }), [circuits])
 
-  const filtered = valid.filter(c => {
+  const filtered = useMemo(() => valid.filter(c => {
     const country = c.Location?.country || c.country || ''
     const name    = c.circuitName || ''
     const loc     = c.Location?.locality || c.locality || ''
@@ -42,7 +44,7 @@ export default function CircuitsPage() {
     const matchCont   = contFilter === 'All' || continent(country) === contFilter
     const matchType   = typeFilter === 'All' || circuitType(c.circuitId) === typeFilter.toLowerCase()
     return matchSearch && matchCont && matchType
-  })
+  }), [valid, search, contFilter, typeFilter])
 
   const sorted = [...filtered].sort((a, b) =>
     (a.Location?.country || a.country || '').localeCompare(b.Location?.country || b.country || '')
@@ -69,8 +71,9 @@ export default function CircuitsPage() {
       />
 
       {loading && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '2rem 0' }}>Loading circuits...</p>}
+      {error && <EmptyState type="error" />}
 
-      {!loading && (
+      {!loading && !error && (
         <>
           <CircuitsMapView
             filtered={filtered}

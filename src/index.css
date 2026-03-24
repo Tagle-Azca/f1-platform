@@ -772,3 +772,11 @@ select option { cursor: pointer; }
   color: var(--tab-color, var(--f1-red));
   background: color-mix(in srgb, var(--tab-color, var(--f1-red)) 15%, transparent);
 }
+
+/* ── Layout utilities ── */
+.flex-center    { display: flex; align-items: center; }
+.flex-col       { display: flex; flex-direction: column; }
+.flex-between   { display: flex; align-items: center; justify-content: space-between; }
+.flex-col-center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.text-truncate  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fill-parent    { position: absolute; inset: 0; }

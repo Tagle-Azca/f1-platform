@@ -11,6 +11,7 @@ import { useBreakpoint }            from '../hooks/useBreakpoint'
 import PageHint                     from '../components/ui/PageHint'
 import DriverDrawer                 from '../components/ui/DriverDrawer'
 import ConstructorDrawer            from '../components/ui/ConstructorDrawer'
+import EmptyState                   from '../components/ui/EmptyState'
 
 export default function StandingsPage() {
   const { isMobile } = useBreakpoint()
@@ -20,6 +21,7 @@ export default function StandingsPage() {
   const [data,          setData]          = useState(null)
   const [ctorData,      setCtorData]      = useState(null)
   const [loading,       setLoading]       = useState(false)
+  const [error,         setError]         = useState(false)
   const [visibleRounds, setVisibleRounds] = useState(999)
   const [isPlaying,     setIsPlaying]     = useState(false)
   const [liveData,      setLiveData]      = useState(null)
@@ -49,6 +51,7 @@ export default function StandingsPage() {
 
   useEffect(() => {
     setLoading(true)
+    setError(false)
     setData(null)
     setCtorData(null)
     setVisibleRounds(999)
@@ -62,7 +65,7 @@ export default function StandingsPage() {
         setCtorData(c)
         setVisibleRounds(d.rounds.length)
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [season])
 
@@ -168,6 +171,8 @@ export default function StandingsPage() {
       />
 
       {liveData && <LiveRaceBanner liveData={liveData} />}
+
+      {error && <EmptyState type="error" />}
 
       {champion && !loading && (
         <ChampionBanner champion={champion} gap={gap} season={season} />

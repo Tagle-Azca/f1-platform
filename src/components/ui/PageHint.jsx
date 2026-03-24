@@ -42,7 +42,7 @@ export default function PageHint({ id, title, text, icon }) {
         transition: 'opacity 0.25s ease',
       }}
     >
-      <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', color: 'rgba(245,197,24,0.75)' }}>{resolvedIcon}</span>
+      <span className="flex-center" style={{ flexShrink: 0, color: 'rgba(245,197,24,0.75)' }}>{resolvedIcon}</span>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{

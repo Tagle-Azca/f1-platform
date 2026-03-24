@@ -1,5 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { useCassandraRaces } from '../hooks/useCassandraRaces'
+import { useDriverTelemetry } from '../hooks/useDriverTelemetry'
+import { useDriverComparison } from '../hooks/useDriverComparison'
+import { useHistoricalTelemetry } from '../hooks/useHistoricalTelemetry'
 import PageWrapper from '../components/layout/PageWrapper'
 import PageHeader from '../components/layout/PageHeader'
 import PageHint from '../components/ui/PageHint'
@@ -15,8 +19,8 @@ import TelemetryModeBadge from '../components/telemetry/TelemetryModeBadge'
 import TelemetryControls from '../components/telemetry/TelemetryControls'
 import DriverComparisonBanner from '../components/telemetry/DriverComparisonBanner'
 import { TELEMETRY_CUTOFF, HISTORICAL_YEARS } from '../components/telemetry/telemetryConstants'
-import { fmtLap, buildStints, stintSlope, raceToCircuitId } from '../components/telemetry/telemetryUtils'
-import { telemetryApi, statsApi, circuitsApi, racesApi } from '../services/api'
+import { buildStints, stintSlope } from '../components/telemetry/telemetryUtils'
+import { telemetryApi } from '../services/api'
 
 // ── Main page ──────────────────────────────────────────
 export default function TelemetryPage() {
@@ -24,88 +28,58 @@ export default function TelemetryPage() {
   // ── Shared state ───────────────────────────────────
   const [year,     setYear]     = useState('')
   const [driverId, setDriverId] = useState('')
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState(null)
+  const [raceId,   setRaceId]   = useState('')
 
-  // ── Cassandra state ────────────────────────────────
-  const [cassRaces,    setCassRaces]    = useState([])
-  const [raceId,       setRaceId]       = useState('')
-  const [cassDrivers,  setCassDrivers]  = useState([])
-  const [laps,         setLaps]         = useState([])
-  const [pitStops,     setPitStops]     = useState([])
+  // ── Cassandra: drivers list ─────────────────────────
+  const [cassDrivers,    setCassDrivers]    = useState([])
   const [loadingDrivers, setLoadingDrivers] = useState(false)
-  const [dbOffline,    setDbOffline]    = useState(false)
-  const autoLoadedRef = useRef(false)
 
   // ── Driver B (comparison) ──────────────────────────
-  const [driverIdB,      setDriverIdB]      = useState('')
-  const [lapsB,          setLapsB]          = useState([])
-  const [pitStopsB,      setPitStopsB]      = useState([])
-  const [loadingB,       setLoadingB]       = useState(false)
-  const [lapsBLoaded,    setLapsBLoaded]    = useState(false)
-
-  // ── Telemetry load flag / race info ────────────────
-  const [telemetryLoaded,  setTelemetryLoaded]  = useState(false)
-  const [totalLaps,        setTotalLaps]        = useState(null)
-  const [raceResult,       setRaceResult]       = useState(null)
-  const [driverStatuses,   setDriverStatuses]   = useState({})
-
-  // ── Safety Car / VSC ───────────────────────────────
-  const [scPeriods, setScPeriods] = useState([])
+  const [driverIdB, setDriverIdB] = useState('')
 
   // ── Sector X-Ray ───────────────────────────────────
-  const [activeSector,  setActiveSector]  = useState(null)
-  const [circuitCoords, setCircuitCoords] = useState(null)
-
-  // ── Historical state ───────────────────────────────
-  const [histDrivers,  setHistDrivers]  = useState([])
-  const [histData,     setHistData]     = useState(null)
-  const [loadingHist,  setLoadingHist]  = useState(false)
+  const [activeSector, setActiveSector] = useState(null)
 
   // ── Mode ───────────────────────────────────────────
   const isHistorical = year !== '' && parseInt(year) < TELEMETRY_CUTOFF
 
-  // ── Shared race-state reset ─────────────────────────
-  function resetRaceState() {
-    setDriverId('')
-    setLaps([])
-    setPitStops([])
-    setDriverIdB('')
-    setLapsB([])
-    setPitStopsB([])
-    setTelemetryLoaded(false)
-    setLapsBLoaded(false)
-    setTotalLaps(null)
-    setRaceResult(null)
-    setDriverStatuses({})
-  }
+  // ── Hooks ──────────────────────────────────────────
+  const { cassRaces, dbOffline } = useCassandraRaces((years, firstRaceId) => {
+    if (years.length) {
+      setYear(years[0])
+      if (firstRaceId) setRaceId(firstRaceId)
+    } else {
+      // offline fallback: firstRaceId contains fallback year string
+      setYear(firstRaceId)
+    }
+  })
 
-  // ── Init: load Cassandra races ─────────────────────
+  const {
+    laps, pitStops, loading, error, telemetryLoaded,
+    totalLaps, raceResult, driverStatuses, scPeriods, circuitCoords,
+    load: loadCassandraTelemetry,
+  } = useDriverTelemetry(raceId, driverId, cassRaces, isHistorical)
+
+  const { lapsB, pitStopsB, loadingB, lapsBLoaded } =
+    useDriverComparison(raceId, driverIdB, isHistorical)
+
+  const {
+    histDrivers, histData, loadingHist,
+    load: loadHistoricalData,
+  } = useHistoricalTelemetry(year, driverId, isHistorical)
+
+  // ── Sync first driver from histDrivers ─────────────
   useEffect(() => {
-    telemetryApi.getAvailableRaces()
-      .then(data => {
-        setCassRaces(data)
-        const years = [...new Set(data.map(r => r.raceId.split('_')[0]))].sort((a, b) => b - a)
-        if (years.length) {
-          setYear(years[0])
-          const first = data.find(r => r.raceId.startsWith(years[0] + '_'))
-          if (first) setRaceId(first.raceId)
-        }
-      })
-      .catch(e => {
-        if (e.message?.includes('503') || e.message?.includes('not connected')) setDbOffline(true)
-        // Still allow historical mode even if Cassandra is offline
-        setYear(String(TELEMETRY_CUTOFF - 1))
-      })
-  }, [])
+    if (isHistorical && histDrivers.length && !driverId) {
+      setDriverId(histDrivers[0].driverId)
+    }
+  }, [histDrivers, isHistorical])
 
   // ── Year change ────────────────────────────────────
   function handleYearChange(y) {
     setYear(y)
-    resetRaceState()
-    setHistData(null)
-    setError(null)
-    autoLoadedRef.current = false
+    setDriverId('')
+    setDriverIdB('')
 
     if (parseInt(y) >= TELEMETRY_CUTOFF) {
       // Cassandra mode: select first race of year
@@ -121,8 +95,8 @@ export default function TelemetryPage() {
   useEffect(() => {
     if (!raceId || isHistorical) return
     setCassDrivers([])
-    resetRaceState()
-    setScPeriods([])
+    setDriverId('')
+    setDriverIdB('')
     setLoadingDrivers(true)
     telemetryApi.getRaceDrivers(raceId)
       .then(data => {
@@ -133,102 +107,6 @@ export default function TelemetryPage() {
       .catch(() => {})
       .finally(() => setLoadingDrivers(false))
   }, [raceId])
-
-  // ── Cassandra: auto-load telemetry ─────────────────
-  useEffect(() => {
-    if (isHistorical || autoLoadedRef.current || !raceId || !driverId) return
-    autoLoadedRef.current = true
-    loadCassandraTelemetry()
-  }, [raceId, driverId])
-
-  function loadCassandraTelemetry() {
-    if (!raceId || !driverId) return
-    setLoading(true)
-    setError(null)
-    setTelemetryLoaded(false)
-    setLaps([])
-    setPitStops([])
-    setScPeriods([])
-    const [season, round] = [raceId.split('_')[0], parseInt(raceId.split('_')[1])]
-    Promise.all([
-      telemetryApi.getLapTimes(raceId, driverId),
-      telemetryApi.getPitStops(raceId, driverId),
-      telemetryApi.getSafetyCar(raceId).catch(() => []),
-      telemetryApi.getRaceInfo(raceId).catch(() => ({ totalLaps: null })),
-      racesApi.getByRound(season, round).catch(() => null),
-    ])
-      .then(([lapData, pitData, scData, infoData, raceData]) => {
-        setLaps(lapData)
-        setPitStops(pitData)
-        setScPeriods(scData)
-        setRaceResult(raceData)
-        setDriverStatuses(infoData.driverStatuses ?? {})
-        const mongoTotal = raceData?.Results?.length
-          ? Math.max(...raceData.Results.map(r => parseInt(r.laps) || 0))
-          : null
-        setTotalLaps(mongoTotal ?? infoData.totalLaps)
-      })
-      .catch(e => setError(e.message))
-      .finally(() => { setLoading(false); setTelemetryLoaded(true) })
-  }
-
-  // ── Circuit coords for sector mini-map ─────────────
-  useEffect(() => {
-    if (!raceId || isHistorical) return
-    const race       = cassRaces.find(r => r.raceId === raceId)
-    const circuitId  = raceToCircuitId(race?.raceName)
-    if (!circuitId) { setCircuitCoords(null); return }
-    circuitsApi.getById(circuitId)
-      .then(c => setCircuitCoords(c?.trackCoords ?? null))
-      .catch(() => setCircuitCoords(null))
-  }, [raceId, cassRaces])
-
-  // ── Driver B: auto-load when selection changes ─────
-  useEffect(() => {
-    if (!driverIdB || isHistorical || !raceId) return
-    setLoadingB(true)
-    setLapsBLoaded(false)
-    setLapsB([])
-    setPitStopsB([])
-    Promise.all([
-      telemetryApi.getLapTimes(raceId, driverIdB),
-      telemetryApi.getPitStops(raceId, driverIdB),
-    ])
-      .then(([lapData, pitData]) => { setLapsB(lapData); setPitStopsB(pitData) })
-      .catch(() => {})
-      .finally(() => { setLoadingB(false); setLapsBLoaded(true) })
-  }, [driverIdB, raceId])
-
-  // ── Historical: load drivers when year changes ─────
-  useEffect(() => {
-    if (!isHistorical || !year) return
-    setHistDrivers([])
-    setDriverId('')
-    setHistData(null)
-    statsApi.seasonDrivers(year)
-      .then(list => {
-        setHistDrivers(list)
-        if (list.length) setDriverId(list[0].driverId)
-      })
-      .catch(() => {})
-  }, [year, isHistorical])
-
-  // ── Historical: auto-load when driver ready ────────
-  useEffect(() => {
-    if (!isHistorical || !driverId || !year) return
-    loadHistoricalData()
-  }, [driverId, isHistorical])
-
-  function loadHistoricalData() {
-    if (!driverId || !year) return
-    setLoadingHist(true)
-    setHistData(null)
-    setError(null)
-    statsApi.historicalPerformance(driverId, year)
-      .then(setHistData)
-      .catch(e => setError(e.message))
-      .finally(() => setLoadingHist(false))
-  }
 
   // ── Derived ────────────────────────────────────────
   const selectedCassDriverB = cassDrivers.find(d => d.driverId === driverIdB)

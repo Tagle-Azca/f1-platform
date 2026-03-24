@@ -3,7 +3,7 @@ export default function TelemetryModeBadge({ isHistorical }) {
   const bgRgb  = isHistorical ? '34,197,94' : '168,85,247'
 
   return (
-    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
+    <div className="flex-center" style={{ gap: '0.5rem', marginBottom: '1rem' }}>
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
         padding: '0.25rem 0.7rem', borderRadius: 99,

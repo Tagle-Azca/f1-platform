@@ -17,7 +17,7 @@ export default function ChartTooltip({ active, payload, label, rounds, cappedRou
         {raceName}
       </p>
       {sorted.map((entry, i) => (
-        <div key={entry.dataKey} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+        <div key={entry.dataKey} className="flex-center" style={{ gap: '0.5rem', marginBottom: '0.2rem' }}>
           <span style={{ fontSize: '0.67rem', color: 'var(--text-muted)', width: 22, textAlign: 'right', flexShrink: 0 }}>
             P{i + 1}
           </span>
