@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import Panel from '../ui/Panel'
 import { ctorColor } from '../../utils/teamColors'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { telemetryApi } from '../../services/api'
 
 const PODIUM_MEDALS = ['#FFD700', '#C0C0C0', '#CD7F32']
 
@@ -116,6 +118,42 @@ function TechRow({ label, value, extra, ctor, dimExtra = true, last = false }) {
   )
 }
 
+function RecapRow({ label, value, last = false }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'baseline',
+      padding: '0.38rem 0',
+      borderBottom: last ? 'none' : '1px solid var(--border-subtle)',
+    }}>
+      <span style={{
+        fontSize: '0.58rem',
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: 'var(--text-muted)',
+        flexShrink: 0,
+        width: 76,
+      }}>
+        {label}
+      </span>
+      <span style={{
+        fontSize: '0.8rem',
+        fontWeight: 700,
+        color: '#fff',
+        paddingLeft: '0.5rem',
+        fontVariantNumeric: 'tabular-nums',
+        letterSpacing: '0.03em',
+      }}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
+const COMPOUND_ABBR  = { SOFT: 'S', MEDIUM: 'M', HARD: 'H', INTERMEDIATE: 'I', WET: 'W' }
+const COMPOUND_COLOR = { SOFT: '#ef4444', MEDIUM: '#eab308', HARD: '#e5e7eb', INTERMEDIATE: '#22c55e', WET: '#3b82f6' }
+
 // Abbreviate driver name: "Max Verstappen" → "M. Verstappen"
 function abbrev(driver) {
   if (!driver) return '—'
@@ -124,19 +162,41 @@ function abbrev(driver) {
 
 export default function LastGPPanel({ history }) {
   const { isMobile } = useBreakpoint()
+
+  // Derive stable primitives before hooks so effects can depend on them
+  const last    = history?.lastRace || history?.races?.[0]
+  const results = last?.Results           || []
+  const qual    = last?.QualifyingResults || []
+  const raceId  = last?.season && last?.round ? `${last.season}_${last.round}` : null
+  const p1      = results.find(r => r.position === '1')
+  const p2      = results.find(r => r.position === '2')
+  const p3      = results.find(r => r.position === '3')
+  const p1num   = parseInt(p1?.Driver?.permanentNumber)
+
+  const [strategyData, setStrategyData] = useState(null)
+
+  useEffect(() => {
+    if (!raceId) return
+    Promise.allSettled([
+      telemetryApi.getTireStrategy(raceId),
+      telemetryApi.getSafetyCar(raceId),
+    ]).then(([stratRes, scRes]) => {
+      const strategy  = stratRes.status === 'fulfilled' && Array.isArray(stratRes.value) ? stratRes.value : []
+      const scPeriods = scRes.status   === 'fulfilled' && Array.isArray(scRes.value)   ? scRes.value   : []
+
+      const winnerEntry = !isNaN(p1num) ? strategy.find(s => s.driverId === p1num) : null
+      const compounds   = winnerEntry?.stints?.length
+        ? winnerEntry.stints.map(s => s.compound?.toUpperCase() || 'UNKNOWN')
+        : []
+
+      const scCount  = scPeriods.filter(p => p.type === 'SC').length
+      const vscCount = scPeriods.filter(p => p.type === 'VSC').length
+
+      setStrategyData({ compounds, scCount, vscCount })
+    })
+  }, [raceId])
+
   if (!history?.races?.length) return null
-
-  // Prefer the fully-populated lastRace document (no .select() in the backend query).
-  // It guarantees Results.FastestLap, QualifyingResults with Q1/Q2/Q3, and grid fields.
-  // Falls back to races[0] for circuits that don't yet have lastRace.
-  const last    = history.lastRace || history.races[0]
-  const results = last.Results           || []
-  const qual    = last.QualifyingResults || []
-
-  // ── Podium ────────────────────────────────────────────
-  const p1 = results.find(r => r.position === '1')
-  const p2 = results.find(r => r.position === '2')
-  const p3 = results.find(r => r.position === '3')
   if (!p1) return null
 
   // ── Pole position ─────────────────────────────────────
@@ -174,6 +234,13 @@ export default function LastGPPanel({ history }) {
     const s = r.status || ''
     return s !== 'Finished' && !/^\+\d+/.test(s)
   })
+
+  // ── Overtakes (sum of net position gains by all finishers) ─
+  const overtakes = results.reduce((sum, r) => {
+    const g = parseInt(r.grid)
+    const f = parseInt(r.position)
+    return (!isNaN(g) && !isNaN(f) && g > f) ? sum + (g - f) : sum
+  }, 0)
 
   const raceName = last.raceName?.replace(' Grand Prix', ' GP') ?? '—'
 
@@ -245,7 +312,7 @@ export default function LastGPPanel({ history }) {
 
       {/* ── Technical ── */}
       {techRows.length > 0 && (
-        <div>
+        <div style={{ marginBottom: '0.85rem' }}>
           <div style={sectionLabelStyle}>Technical</div>
           {techRows.map((row, i) => (
             <TechRow
@@ -259,6 +326,48 @@ export default function LastGPPanel({ history }) {
           ))}
         </div>
       )}
+
+      {/* ── Strategy Recap ── */}
+      <div>
+        <div style={sectionLabelStyle}>Strategy Recap</div>
+        <RecapRow
+          label="Win. Strategy"
+          value={
+            strategyData?.compounds?.length
+              ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.18rem' }}>
+                  {strategyData.compounds.map((c, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.18rem' }}>
+                      {i > 0 && <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.65rem', fontWeight: 400 }}>→</span>}
+                      <span style={{ color: COMPOUND_COLOR[c] || '#fff', fontWeight: 900 }}>
+                        {COMPOUND_ABBR[c] || '?'}
+                      </span>
+                    </span>
+                  ))}
+                </span>
+              )
+              : '—'
+          }
+        />
+        <RecapRow
+          label="Overtakes"
+          value={overtakes > 0 ? `~${overtakes}` : '—'}
+        />
+        <RecapRow
+          label="Safety Car"
+          value={
+            strategyData
+              ? (strategyData.scCount === 0 && strategyData.vscCount === 0)
+                ? 'None'
+                : [
+                    strategyData.scCount  > 0 ? `${strategyData.scCount} SC`  : null,
+                    strategyData.vscCount > 0 ? `${strategyData.vscCount} VSC` : null,
+                  ].filter(Boolean).join(' / ')
+              : '—'
+          }
+          last
+        />
+      </div>
 
       <div style={{ flex: 1 }} />
     </Panel>

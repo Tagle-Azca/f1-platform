@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import Panel from '../ui/Panel'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
 
 const cellStyle  = { padding: '0.28rem 0', borderBottom: '1px solid var(--border-subtle)' }
 const labelStyle = { fontSize: '0.7rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }
@@ -103,6 +102,14 @@ function IconMap() {
   )
 }
 
+function IconClock() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 11, height: 11 }}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+    </svg>
+  )
+}
+
 function CategoryHeader({ icon, label }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.5rem', marginTop: '1.25rem' }}>
@@ -125,7 +132,6 @@ function StatRow({ name, val, last }) {
 }
 
 export default function PoleRecordPanel({ specs }) {
-  const { isMobile } = useBreakpoint()
   if (!specs) return null
 
   const raceDist = (specs.length * specs.laps).toFixed(1)
@@ -147,25 +153,44 @@ export default function PoleRecordPanel({ specs }) {
     ['Gear changes', `${specs.gearChanges}/lap`],
   ]
 
-  if (isMobile) {
-    const flat = [...carDemand, ...performance, ...circuit]
-    return (
-      <Panel padding="none" style={{ padding: '1rem 1.25rem', height: '100%', boxSizing: 'border-box' }}>
-        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-          Track Specs
+  const pitLossCard = specs.pitLoss ? (
+    <div style={{
+      marginTop: '1rem',
+      padding: '0.65rem 0.85rem',
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid var(--border-subtle)',
+      borderRadius: 8,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '0.5rem',
+    }}>
+      <div>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.3rem',
+          fontSize: '0.55rem', fontWeight: 700, letterSpacing: '0.1em',
+          textTransform: 'uppercase', color: 'var(--text-muted)', lineHeight: 1.2,
+        }}>
+          <span style={{ color: 'var(--text-muted)' }}><IconClock /></span>
+          Avg Pit Loss
         </div>
-        <div>
-          {flat.map(([name, val], i) => (
-            <StatRow key={name} name={name} val={val} last={i === flat.length - 1} />
-          ))}
+        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.22)', marginTop: 3, lineHeight: 1.3 }}>
+          Time lost in pit lane
         </div>
-      </Panel>
-    )
-  }
+      </div>
+      <div style={{
+        fontFamily: "'Barlow Condensed', sans-serif",
+        fontSize: '1.7rem', fontWeight: 900,
+        color: '#fff', fontVariantNumeric: 'tabular-nums',
+        lineHeight: 1, flexShrink: 0,
+      }}>
+        {specs.pitLoss}
+        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-muted)', marginLeft: 2 }}>s</span>
+      </div>
+    </div>
+  ) : null
 
-  // Flat 2-col grid: each pair (left, right) shares the same grid row for perfect alignment
-  // Layout: Car Demand (2 rows) + Performance (3 rows) on left; Circuit (5 rows) on right
-  // Row mapping: headers aligned at row 1, first data rows aligned at row 2, Performance header at row 4 with empty right
+  // Same 2-col grid layout for both mobile and desktop
   const P = '0.75rem' // padding around divider
 
   return (
@@ -206,10 +231,12 @@ export default function PoleRecordPanel({ specs }) {
         <div style={{ paddingRight: P }}><StatRow name="Max G-force" val={`${specs.gforce}G`} /></div>
         <div style={{ paddingLeft: P }}><StatRow name="Turns" val={specs.turns} /></div>
 
-        {/* Row 7: last in both columns */}
+        {/* Row 7: last in both columns — symmetry preserved */}
         <div style={{ paddingRight: P }}><StatRow name="Full throttle" val={`${specs.throttle}%`} last /></div>
         <div style={{ paddingLeft: P }}><StatRow name="Gear changes" val={`${specs.gearChanges}/lap`} last /></div>
       </div>
+
+      {pitLossCard}
     </Panel>
   )
 }
