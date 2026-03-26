@@ -15,7 +15,7 @@ export default function GraphCanvas({
 }) {
   const containerRef = useRef()
   const [dims, setDims] = useState({ w: 800, h: 560 })
-  const canvasHeight = isMobile ? Math.round(window.innerHeight * 0.45) : 520
+  const canvasHeight = isMobile ? 420 : 520
 
   useEffect(() => {
     if (!containerRef.current) return

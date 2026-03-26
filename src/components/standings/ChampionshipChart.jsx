@@ -43,9 +43,7 @@ export default function ChampionshipChart({
 
   const activeDrivers = showAll ? drivers : drivers.filter(d => scoringDriverIds.has(d.driverId))
 
-  const chartHeight = isMobile
-    ? Math.round(window.innerHeight * 0.42)
-    : 400
+  const chartHeight = isMobile ? 320 : 400
 
   // Always render full season data so Recharts never re-animates from scratch.
   // The HTML curtain div handles hiding future rounds.

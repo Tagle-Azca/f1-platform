@@ -46,7 +46,7 @@ export default function NavbarMobileDrawer({ open, onClose, nextRace, live, coun
               transition={{ type: 'spring', damping: 30, stiffness: 260 }}
               style={{
                 position: 'fixed', top: 'var(--navbar-height)', right: 0, bottom: 0,
-                width: Math.min(320, window.innerWidth),
+                width: 'min(320px, 100dvw)',
                 background: 'rgba(10,10,10,0.98)', backdropFilter: 'blur(20px)',
                 borderLeft: '1px solid var(--border-color)',
                 zIndex: 99, overflowY: 'auto',

@@ -27,7 +27,7 @@ export default function DriverDrawer({ driver, onClose }) {
             transition={{ type: 'spring', damping: 32, stiffness: 280 }}
             style={{
               position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 201,
-              width: Math.min(580, window.innerWidth),
+              width: 'min(580px, 100dvw)',
               background: 'var(--bg-base)',
               borderLeft: '1px solid var(--border-color)',
               overflowY: 'auto',
