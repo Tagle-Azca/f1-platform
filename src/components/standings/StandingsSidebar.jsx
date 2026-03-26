@@ -90,9 +90,6 @@ function CtorRow({ entry, i }) {
 export default function StandingsSidebar() {
   const location = useLocation()
   const { isTablet } = useBreakpoint()
-
-  // On mobile/tablet the sidebar lives inside the Navbar drawer — hide here
-  if (isTablet) return null
   const [open, setOpen] = useState(() => {
     try { return localStorage.getItem('standings-sidebar') !== 'closed' } catch { return true }
   })
@@ -142,6 +139,9 @@ export default function StandingsSidebar() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  // On mobile/tablet the sidebar lives inside the Navbar drawer — hide here
+  if (isTablet) return null
 
   function toggle() {
     setOpen(v => {

@@ -19,11 +19,16 @@ export default function GraphCanvas({
 
   useEffect(() => {
     if (!containerRef.current) return
-    const ro = new ResizeObserver(([e]) =>
-      setDims({ w: e.contentRect.width, h: e.contentRect.height })
-    )
+    let timer
+    const ro = new ResizeObserver(([e]) => {
+      const { width, height } = e.contentRect
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        if (width > 0 && height > 0) setDims({ w: width, h: height })
+      }, 60)
+    })
     ro.observe(containerRef.current)
-    return () => ro.disconnect()
+    return () => { ro.disconnect(); clearTimeout(timer) }
   }, [])
 
   return (
@@ -63,7 +68,7 @@ export default function GraphCanvas({
           </div>
         )}
 
-        {graphData.nodes.length > 0 && (
+        {graphData.nodes.length > 0 && dims.w > 0 && dims.h > 0 && (
           <ForceGraph2D
             ref={fgRef}
             graphData={graphData}

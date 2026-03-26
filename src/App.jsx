@@ -1,6 +1,6 @@
 import { lazy, Suspense, Component, useEffect } from 'react'
 import { Analytics } from '@vercel/analytics/react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Navbar           from './components/layout/Navbar'
 import StandingsSidebar from './components/standings/StandingsSidebar'
@@ -29,6 +29,11 @@ const fallback = <div className="page" style={{ minHeight: '60vh' }} />
 class ErrorBoundary extends Component {
   state = { error: null }
   static getDerivedStateFromError(error) { return { error } }
+  componentDidUpdate(prevProps) {
+    if (this.state.error && prevProps.location !== this.props.location) {
+      this.setState({ error: null })
+    }
+  }
   render() {
     if (!this.state.error) return this.props.children
     return (
@@ -63,6 +68,11 @@ class ErrorBoundary extends Component {
   }
 }
 
+function LocationBoundary({ children }) {
+  const location = useLocation()
+  return <ErrorBoundary location={location}>{children}</ErrorBoundary>
+}
+
 function App() {
   useEffect(() => {
     const ping = () => fetch(`${import.meta.env.VITE_API_URL}/health`).catch(() => {})
@@ -77,7 +87,7 @@ function App() {
         <div className="app">
           <Navbar />
           <StandingsSidebar />
-          <ErrorBoundary>
+          <LocationBoundary>
             <Suspense fallback={fallback}>
               <Routes>
                 <Route path="/"                      element={<HomePage />}                />
@@ -99,7 +109,7 @@ function App() {
                 <Route path="*"                      element={<NotFoundPage />}            />
               </Routes>
             </Suspense>
-          </ErrorBoundary>
+          </LocationBoundary>
         </div>
       </TooltipProvider>
     </BrowserRouter>
