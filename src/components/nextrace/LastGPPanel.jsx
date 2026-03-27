@@ -167,7 +167,7 @@ export default function LastGPPanel({ history }) {
   const last    = history?.lastRace || history?.races?.[0]
   const results = last?.Results           || []
   const qual    = last?.QualifyingResults || []
-  const raceId  = last?.season && last?.round ? `${last.season}_${last.round}` : null
+  const raceId  = history?.cassandraRaceId ?? null
   const p1      = results.find(r => r.position === '1')
   const p2      = results.find(r => r.position === '2')
   const p3      = results.find(r => r.position === '3')
