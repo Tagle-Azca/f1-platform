@@ -14,6 +14,7 @@ import HomeDbCardsGrid from '../components/home/HomeDbCardsGrid'
 import HomeFooter from '../components/home/HomeFooter'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import BackendError from '../components/ui/BackendError'
+import LiveTimingBanner from '../components/home/LiveTimingBanner'
 
 export default function HomePage() {
   const { isMobile, isTablet } = useBreakpoint()
@@ -61,6 +62,8 @@ export default function HomePage() {
           dashboardApi.get().then(setData).catch(() => setError(true)).finally(() => setLoading(false))
         }} />
       )}
+
+      <LiveTimingBanner />
 
       {/* Main Grid: standings + last race */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.4fr', gap: '1rem', marginBottom: '1rem' }}>
