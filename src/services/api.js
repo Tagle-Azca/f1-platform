@@ -24,6 +24,8 @@ export const racesApi = {
     request(`/api/races?${new URLSearchParams(params)}`),
   getBySeason: (season) => request(`/api/races?season=${season}`),
   getByRound: (season, round) => request(`/api/races/${season}/${round}`),
+  getSessionSnapshot: (season, round, session) =>
+    request(`/api/races/${season}/${round}/snapshot?session=${session}`),
 }
 
 export const circuitsApi = {

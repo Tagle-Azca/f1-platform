@@ -138,6 +138,7 @@ export default function RaceDetailPage() {
               sessionKey={activeTab}
               scheduleEntry={schedule?.[activeTab]}
               season={season}
+              round={round}
               onGoTelemetry={goToTelemetry}
             />
           )}
