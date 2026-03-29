@@ -70,14 +70,14 @@ export default function RaceDetailPage() {
       if (schedule?.fp2) t.push({ id: 'fp2', label: 'FP2' })
       if (schedule?.fp3) t.push({ id: 'fp3', label: 'FP3' })
     }
-    // Qualifying — show if schedule has it or we already have results
-    if (schedule?.qualifying || qualifyingResults.length)
+    // Qualifying — show if schedule has it, we have results, or a live timing snapshot exists
+    if (schedule?.qualifying || qualifyingResults.length || race?.qualifyingSnapshot)
       t.push({ id: 'quali', label: 'Qualifying' })
     // Race — always shown
     t.push({ id: 'race', label: 'Race Results' })
     return t
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [results.length, qualifyingResults.length, sprintResults.length, sprintQualifyingResults.length, schedule, isSprint])
+  }, [results.length, qualifyingResults.length, sprintResults.length, sprintQualifyingResults.length, schedule, isSprint, race?.qualifyingSnapshot])
 
   if (loading) return (
     <PageWrapper>
@@ -155,6 +155,7 @@ export default function RaceDetailPage() {
           {activeTab === 'quali' && (
             <QualifyingTable
               qualifyingResults={qualifyingResults}
+              qualifyingSnapshot={race.qualifyingSnapshot}
               isMobile={isMobile}
               onDriverClick={setSelectedDriver}
               schedule={schedule}

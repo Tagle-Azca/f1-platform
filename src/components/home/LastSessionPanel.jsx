@@ -116,7 +116,7 @@ export default function LastSessionPanel({ session, loading, onDriverClick }) {
         </>
       )}
 
-      {/* Top 3 with times (Qualifying / Sprint Qualifying) */}
+      {/* Top 5 with times (Qualifying / Sprint Qualifying) */}
       {isQualiType && session.top3 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
           {session.top3.map((driver, i) => {

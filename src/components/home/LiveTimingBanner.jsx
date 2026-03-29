@@ -191,25 +191,35 @@ function ColHeader({ children, style }) {
   )
 }
 
-export default function LiveTimingBanner() {
-  const [tower,   setTower]   = useState(null)
-  const [updated, setUpdated] = useState(null)
-  const cancelled             = useRef(false)
-  const { isMobile }          = useBreakpoint()
+/**
+ * Shows a compact completed-session summary when the session just ended.
+ * Accepts optional `tower` prop from HomePage to avoid double-polling.
+ * When live (tower && !tower.completed) the LiveConsoleDashboard is shown instead,
+ * so this component returns null in that case.
+ */
+export default function LiveTimingBanner({ tower: towerProp = null }) {
+  const [internalTower, setInternalTower] = useState(null)
+  const [updated,       setUpdated]       = useState(null)
+  const cancelled                         = useRef(false)
+  const { isMobile }                      = useBreakpoint()
 
+  // Only poll internally when parent hasn't provided the tower
   useEffect(() => {
+    if (towerProp !== null) return  // parent controls the data
     cancelled.current = false
     const poll = () => {
       telemetryApi.getTimingTower()
-        .then(d => { if (!cancelled.current) { setTower(d); if (d) setUpdated(new Date()) } })
+        .then(d => { if (!cancelled.current) { setInternalTower(d); if (d) setUpdated(new Date()) } })
         .catch(() => {})
     }
     poll()
     const id = setInterval(poll, POLL_MS)
     return () => { cancelled.current = true; clearInterval(id) }
-  }, [])
+  }, [towerProp])
 
-  if (!tower) return null
+  const tower = towerProp ?? internalTower
+
+  if (!tower || tower.completed) return null
 
   const cols = isMobile ? COLS_MOBILE : COLS_DESKTOP
 

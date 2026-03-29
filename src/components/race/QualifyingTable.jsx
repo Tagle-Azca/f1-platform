@@ -7,8 +7,71 @@ function formatSessionDT(dateStr, timeStr) {
     + (timeStr ? ' · ' + dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' local' : '')
 }
 
-export default function QualifyingTable({ qualifyingResults, isMobile, onDriverClick, schedule }) {
+function SnapshotTable({ snapshot }) {
+  const rows = snapshot.classification || []
+  return (
+    <div style={{ minWidth: 320 }}>
+      <div style={{ padding: '0.5rem 1.25rem 0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          Live Timing Classification
+        </span>
+        {snapshot.savedAt && (
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+            · saved {new Date(snapshot.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+      </div>
+      <div className="table-header" style={{ display: 'grid', gridTemplateColumns: '2rem 1.5rem 1fr 1fr 5.5rem', gap: '0 0.75rem', padding: '0.45rem 1.25rem' }}>
+        <span>Pos</span><span>#</span><span>Driver</span><span>Team</span><span style={{ textAlign: 'right' }}>Best Lap</span>
+      </div>
+      {rows.map((d, i) => {
+        const color = d.teamColor ? `#${d.teamColor}` : 'var(--text-muted)'
+        const isFirst = i === 0
+        return (
+          <div
+            key={d.driverNum || i}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2rem 1.5rem 1fr 1fr 5.5rem',
+              gap: '0 0.75rem',
+              padding: '0.5rem 1.25rem',
+              alignItems: 'center',
+              borderBottom: i < rows.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+              background: isFirst ? 'var(--surface-3)' : 'transparent',
+              borderLeft: isFirst ? `3px solid ${color}` : '3px solid transparent',
+            }}
+          >
+            <span style={{ fontFamily: 'var(--font-condensed)', fontSize: '1rem', fontWeight: 900, color: isFirst ? color : 'var(--text-muted)' }}>
+              {d.position}
+            </span>
+            <span style={{ fontFamily: 'var(--font-condensed)', fontSize: '0.75rem', fontWeight: 700, color, opacity: 0.8 }}>
+              {d.driverNum}
+            </span>
+            <div>
+              <div style={{ fontSize: '0.82rem', fontWeight: isFirst ? 700 : 500 }}>{d.fullName || d.acronym}</div>
+              {d.acronym && d.fullName && (
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{d.acronym}</div>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div style={{ width: 3, height: 18, borderRadius: 2, background: color, flexShrink: 0 }} />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{d.teamName || '—'}</span>
+            </div>
+            <span style={{ fontSize: '0.78rem', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: isFirst ? color : 'var(--text-primary)' }}>
+              {d.bestLap || '—'}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export default function QualifyingTable({ qualifyingResults, qualifyingSnapshot, isMobile, onDriverClick, schedule }) {
   if (!qualifyingResults.length) {
+    if (qualifyingSnapshot?.classification?.length) {
+      return <SnapshotTable snapshot={qualifyingSnapshot} />
+    }
     return (
       <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
         <p style={{ margin: 0, fontSize: '0.9rem' }}>Qualifying results not available yet</p>

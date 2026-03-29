@@ -46,6 +46,8 @@ export const telemetryApi = {
   getSafetyCar:      (raceId)           => request(`/api/telemetry/safety-car/${raceId}`),
   getRaceInfo:       (raceId)           => request(`/api/telemetry/race-info/${raceId}`),
   getTimingTower:    ()                  => request('/api/telemetry/timing-tower'),
+  getCarPositions:   ()                  => request('/api/telemetry/car-positions'),
+  getCarData:        ()                  => request('/api/telemetry/car-data'),
 }
 
 // ── Dgraph ───────────────────────────────────────────────
