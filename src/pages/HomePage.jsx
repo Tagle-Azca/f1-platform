@@ -29,7 +29,11 @@ export default function HomePage() {
   const [selectedConstructor, setSelectedConstructor] = useState(null)
 
   // Derived session state
-  const sessionState = tower && !tower.completed ? 'live' : tower?.completed ? 'completed' : 'standby'
+  // A completed session older than 3 hours is treated as standby (no banner)
+  const isRecentCompleted = tower?.completed && tower.updatedAt
+    ? (Date.now() - new Date(tower.updatedAt).getTime()) < 3 * 60 * 60 * 1000
+    : tower?.completed ?? false
+  const sessionState = tower && !tower.completed ? 'live' : isRecentCompleted ? 'completed' : 'standby'
   const isLive = sessionState === 'live'
 
   useEffect(() => {
