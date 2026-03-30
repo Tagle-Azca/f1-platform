@@ -49,6 +49,7 @@ export default function RaceDetailPage() {
   const qualifyingResults       = race?.QualifyingResults       || []
   const sprintQualifyingResults = race?.SprintQualifyingResults || []
   const schedule                = race?.schedule                || null
+  const raceSnapshot            = race?.raceSnapshot            || null
 
   // isSprint: backend sets schedule.isSprint; fallback to result arrays if schedule not yet loaded
   const isSprint = !!(schedule?.isSprint || sprintResults.length || sprintQualifyingResults.length)
@@ -90,8 +91,8 @@ export default function RaceDetailPage() {
     </PageWrapper>
   )
 
-  // Default to Race Results if available (and past), otherwise first tab
-  const activeTab  = tab || (results.length ? 'race' : (TABS[0]?.id ?? null))
+  // Default to Race Results tab when race is past, first tab otherwise
+  const activeTab  = tab || (!isUpcoming ? 'race' : (TABS[0]?.id ?? null))
   // A race is "upcoming" only if it hasn't started yet (date + 4h buffer)
   const raceStartMs = race.date
     ? new Date(`${race.date}T${(race.time || '00:00:00').replace(/Z$/i, '')}Z`).getTime()
@@ -125,6 +126,7 @@ export default function RaceDetailPage() {
         <RaceStatCards
           results={results}
           qualifyingResults={qualifyingResults}
+          raceSnapshot={raceSnapshot}
           isMobile={isMobile}
         />
       )}
@@ -152,6 +154,7 @@ export default function RaceDetailPage() {
           {activeTab === 'race' && (
             <RaceResultsTable
               results={results}
+              raceSnapshot={raceSnapshot}
               isMobile={isMobile}
               onDriverClick={setSelectedDriver}
               raceDate={race.date}

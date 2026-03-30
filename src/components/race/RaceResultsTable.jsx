@@ -2,10 +2,77 @@ import { motion } from 'framer-motion'
 import { ctorColor, PODIUM_COLORS } from '../../utils/teamColors'
 import StatusBadge from './StatusBadge'
 import Delta, { positionDelta } from './PositionDelta'
-import { fmtDate } from '../../utils/date'
 
-export default function RaceResultsTable({ results, isMobile, onDriverClick, raceDate }) {
+const PODIUM_BG = ['rgba(255,215,0,0.06)', 'rgba(192,192,192,0.05)', 'rgba(205,127,50,0.05)']
+
+function RaceSnapshotTable({ snapshot }) {
+  const rows = snapshot.classification || []
+  return (
+    <div style={{ minWidth: 320 }}>
+      <div style={{ padding: '0.5rem 1.25rem 0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          Live Timing Classification
+        </span>
+        {snapshot.savedAt && (
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+            · saved {new Date(snapshot.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+        <span style={{ fontSize: '0.65rem', color: '#f59e0b', marginLeft: 'auto' }}>
+          Official results pending · Jolpica publishes within 24h
+        </span>
+      </div>
+      <div className="table-header" style={{ display: 'grid', gridTemplateColumns: '2.5rem 1.5rem 1fr 1fr 6rem', gap: '0 0.75rem', padding: '0.45rem 1.25rem' }}>
+        <span>Pos</span><span>#</span><span>Driver</span><span>Team</span><span style={{ textAlign: 'right' }}>Gap</span>
+      </div>
+      {rows.map((d, i) => {
+        const color = d.teamColor ? `#${d.teamColor}` : 'var(--text-muted)'
+        const isFirst = i === 0
+        return (
+          <div
+            key={d.driverNum || i}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2.5rem 1.5rem 1fr 1fr 6rem',
+              gap: '0 0.75rem',
+              padding: '0.5rem 1.25rem',
+              alignItems: 'center',
+              borderBottom: i < rows.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+              background: PODIUM_BG[i] || 'transparent',
+              borderLeft: i < 3 ? `3px solid ${color}` : '3px solid transparent',
+            }}
+          >
+            <span style={{ fontFamily: 'var(--font-condensed)', fontSize: '1rem', fontWeight: 900, color: isFirst ? color : 'var(--text-muted)' }}>
+              {d.position}
+            </span>
+            <span style={{ fontFamily: 'var(--font-condensed)', fontSize: '0.75rem', fontWeight: 700, color, opacity: 0.8 }}>
+              {d.driverNum}
+            </span>
+            <div>
+              <div style={{ fontSize: '0.82rem', fontWeight: isFirst ? 700 : 500 }}>{d.fullName || d.acronym}</div>
+              {d.acronym && d.fullName && (
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{d.acronym}</div>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div style={{ width: 3, height: 18, borderRadius: 2, background: color, flexShrink: 0 }} />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{d.teamName || '—'}</span>
+            </div>
+            <span style={{ fontSize: '0.75rem', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: isFirst ? color : 'var(--text-muted)' }}>
+              {isFirst ? 'WINNER' : (d.stat || d.bestLap || '—')}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export default function RaceResultsTable({ results, raceSnapshot, isMobile, onDriverClick, raceDate }) {
   if (!results.length) {
+    if (raceSnapshot?.classification?.length) {
+      return <RaceSnapshotTable snapshot={raceSnapshot} />
+    }
     return (
       <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
         <div style={{ opacity: 0.15, marginBottom: '0.75rem', display: 'flex', justifyContent: 'center' }}>
@@ -13,8 +80,8 @@ export default function RaceResultsTable({ results, isMobile, onDriverClick, rac
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
           </svg>
         </div>
-        <p style={{ margin: 0, fontSize: '0.9rem' }}>Results not available yet</p>
-        <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem' }}>Check back after the race on {fmtDate(raceDate)}</p>
+        <p style={{ margin: 0, fontSize: '0.9rem' }}>Official results pending</p>
+        <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem' }}>Jolpica publishes results within 24h of the race</p>
       </div>
     )
   }
