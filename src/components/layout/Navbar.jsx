@@ -4,6 +4,7 @@ import { useBreakpoint } from '../../hooks/useBreakpoint'
 import { useNavbar } from '../../hooks/useNavbar'
 import NavbarDesktopCountdown from './NavbarDesktopCountdown'
 import NavbarMobileDrawer from './NavbarMobileDrawer'
+import GuestProfile from '../auth/GuestProfile'
 
 const I = (d) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 15, height: 15, flexShrink: 0 }}>
@@ -114,6 +115,8 @@ export default function Navbar() {
             nextRace={nextRace} live={live} countdown={countdown}
             isUrgent={isUrgent} flagUrl={flagUrl}
           />
+
+          <GuestProfile />
 
           {/* Hamburger */}
           {isTablet && (

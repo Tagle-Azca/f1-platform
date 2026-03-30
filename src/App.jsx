@@ -2,6 +2,7 @@ import { lazy, Suspense, Component, useEffect } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { AuthProvider } from './contexts/AuthContext'
 import Navbar           from './components/layout/Navbar'
 import StandingsSidebar from './components/standings/StandingsSidebar'
 import ScrollFade       from './components/ui/ScrollFade'
@@ -83,6 +84,7 @@ function App() {
 
   return (<>
     <BrowserRouter>
+      <AuthProvider>
       <TooltipProvider>
         <div className="app">
           <Navbar />
@@ -112,6 +114,7 @@ function App() {
           </LocationBoundary>
         </div>
       </TooltipProvider>
+      </AuthProvider>
     </BrowserRouter>
     <ScrollFade />
     <Analytics />
