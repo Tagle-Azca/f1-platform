@@ -34,7 +34,6 @@ export default function RaceHeroPanel({ race }) {
         <p className="page__subtitle" style={{ marginBottom: '0.75rem' }}>
           {race.Circuit?.circuitName} · {race.Circuit?.Location?.locality}, {race.Circuit?.Location?.country} · {fmtDate(race.date)}
         </p>
-        <span className="db-badge db-badge--mongo">MongoDB</span>
       </div>
       {race.Circuit?.trackCoords?.length && (
         <div style={{

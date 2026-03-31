@@ -152,7 +152,45 @@ function RecapRow({ label, value, last = false }) {
 }
 
 const COMPOUND_ABBR  = { SOFT: 'S', MEDIUM: 'M', HARD: 'H', INTERMEDIATE: 'I', WET: 'W' }
-const COMPOUND_COLOR = { SOFT: '#ef4444', MEDIUM: '#eab308', HARD: '#e5e7eb', INTERMEDIATE: '#22c55e', WET: '#3b82f6' }
+const COMPOUND_COLOR = { SOFT: '#e10600', MEDIUM: '#f59e0b', HARD: '#C0C0C0', INTERMEDIATE: '#22c55e', WET: '#3b82f6' }
+
+function WinStrategyTimeline({ stints, totalLaps }) {
+  if (!stints?.length) return null
+  const total = totalLaps || stints.reduce((n, s) => n + (s.laps || 1), 0)
+  return (
+    <div style={{ display: 'flex', gap: 2, flex: 1 }}>
+      {stints.map((stint, i) => {
+        const pct  = Math.max(((stint.laps || 1) / total) * 100, 2)
+        const color = COMPOUND_COLOR[stint.compound] || '#555'
+        const abbr  = COMPOUND_ABBR[stint.compound]  || '?'
+        return (
+          <div
+            key={i}
+            title={`${abbr} · ${stint.laps} laps`}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: `${pct}%`, flexShrink: 0 }}
+          >
+            <div style={{
+              width: '100%',
+              height: 11,
+              background: color,
+              opacity: 0.72,
+              borderRadius: 2,
+            }} />
+            <span style={{
+              fontSize: '0.5rem',
+              fontFamily: 'monospace',
+              color: 'rgba(255,255,255,0.35)',
+              marginTop: 2,
+              lineHeight: 1,
+            }}>
+              {abbr}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 // Abbreviate driver name: "Max Verstappen" → "M. Verstappen"
 function abbrev(driver) {
@@ -176,25 +214,66 @@ export default function LastGPPanel({ history }) {
   const [strategyData, setStrategyData] = useState(null)
 
   useEffect(() => {
-    if (!raceId) return
-    Promise.allSettled([
-      telemetryApi.getTireStrategy(raceId),
-      telemetryApi.getSafetyCar(raceId),
-    ]).then(([stratRes, scRes]) => {
-      const strategy  = stratRes.status === 'fulfilled' && Array.isArray(stratRes.value) ? stratRes.value : []
-      const scPeriods = scRes.status   === 'fulfilled' && Array.isArray(scRes.value)   ? scRes.value   : []
+    console.log('[LastGP] effect ran — last:', last?.raceName, '| season:', last?.season, '| raceId:', raceId, '| p1num:', p1num)
+    if (!last) { console.warn('[LastGP] last is null/undefined — aborting'); return }
 
-      const winnerEntry = !isNaN(p1num) ? strategy.find(s => s.driverId === p1num) : null
-      const compounds   = winnerEntry?.stints?.length
-        ? winnerEntry.stints.map(s => s.compound?.toUpperCase() || 'UNKNOWN')
-        : []
+    const season   = String(last.season ?? '')
+    const raceName = last.raceName ?? ''
+    const locality = last.Circuit?.Location?.locality ?? ''
+    const norm     = s => s.toLowerCase().replace(/grand prix/i, '').trim()
+    const needleName = norm(raceName)
+    const needleLoc  = norm(locality)
+
+    async function loadStrategy(targetRaceId) {
+      const [winnerRes, scRes] = await Promise.allSettled([
+        telemetryApi.getWinnerStrategy(targetRaceId),
+        telemetryApi.getSafetyCar(targetRaceId),
+      ])
+      if (winnerRes.status === 'rejected')
+        console.warn('[LastGP] getWinnerStrategy failed:', winnerRes.reason?.message)
+      const winner    = winnerRes.status === 'fulfilled' && winnerRes.value ? winnerRes.value : null
+      const scPeriods = scRes.status     === 'fulfilled' && Array.isArray(scRes.value) ? scRes.value : []
+
+      const stints = winner?.stints || []
+      // Derive totalLaps from stints if backend didn't supply it
+      const totalLaps = winner?.totalLaps
+        || (stints.length ? Math.max(...stints.map(s => s.lapEnd || 0)) : null)
+        || (stints.length ? stints.reduce((n, s) => n + (s.laps || 0), 0) : null)
+
+      console.log('[LastGP] raceId:', targetRaceId, '| winner:', winner?.acronym, '| stints:', stints.length, '| totalLaps:', totalLaps)
 
       const scCount  = scPeriods.filter(p => p.type === 'SC').length
       const vscCount = scPeriods.filter(p => p.type === 'VSC').length
+      setStrategyData({ stints, totalLaps, scCount, vscCount })
+    }
 
-      setStrategyData({ compounds, scCount, vscCount })
-    })
-  }, [raceId])
+    // Fast path: backend already resolved the Cassandra race ID
+    if (raceId) {
+      loadStrategy(raceId)
+      return
+    }
+
+    // Fallback: match by name only across all available years, pick most recent
+    telemetryApi.getAvailableRaces()
+      .then(available => {
+        const candidates = available.filter(r => {
+          const hay = norm(r.raceName || '')
+          return (
+            (needleName.length >= 4 && hay && (hay.includes(needleName.slice(0, 5)) || needleName.includes(hay.slice(0, 5)))) ||
+            (needleLoc.length  >= 4 && hay && (hay.includes(needleLoc.slice(0,  4)) || needleLoc.includes(hay.slice(0,  4))))
+          )
+        })
+        // Sort by year desc → pick most recent available race at this circuit
+        const match = candidates.sort((a, b) => {
+          const ya = parseInt(a.raceId.split('_')[0]) || 0
+          const yb = parseInt(b.raceId.split('_')[0]) || 0
+          return yb - ya
+        })[0] ?? null
+        console.log('[LastGP] fallback match:', match?.raceId ?? 'none', '| needle:', needleName, '| loc:', needleLoc)
+        if (match) loadStrategy(match.raceId)
+      })
+      .catch(() => {})
+  }, [raceId, last?.season, last?.raceName])
 
   if (!history?.races?.length) return null
   if (!p1) return null
@@ -330,25 +409,30 @@ export default function LastGPPanel({ history }) {
       {/* ── Strategy Recap ── */}
       <div>
         <div style={sectionLabelStyle}>Strategy Recap</div>
-        <RecapRow
-          label="Win. Strategy"
-          value={
-            strategyData?.compounds?.length
-              ? (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.18rem' }}>
-                  {strategyData.compounds.map((c, i) => (
-                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.18rem' }}>
-                      {i > 0 && <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.65rem', fontWeight: 400 }}>→</span>}
-                      <span style={{ color: COMPOUND_COLOR[c] || '#fff', fontWeight: 900 }}>
-                        {COMPOUND_ABBR[c] || '?'}
-                      </span>
-                    </span>
-                  ))}
-                </span>
-              )
-              : '—'
+        {/* ── Win Strategy timeline ── */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0.38rem 0',
+          borderBottom: '1px solid var(--border-subtle)',
+          gap: '0.5rem',
+        }}>
+          <span style={{
+            fontSize: '0.58rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'var(--text-muted)',
+            flexShrink: 0,
+            width: 76,
+          }}>
+            Win. Strategy
+          </span>
+          {strategyData?.stints?.length
+            ? <WinStrategyTimeline stints={strategyData.stints} totalLaps={strategyData.totalLaps} />
+            : <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', paddingLeft: '0.5rem' }}>—</span>
           }
-        />
+        </div>
         <RecapRow
           label="Overtakes"
           value={overtakes > 0 ? `~${overtakes}` : '—'}

@@ -63,7 +63,6 @@ export default function TeammateHistoryPage() {
       <PageHeader
         title="Rivalries"
         subtitle="Explore career overlaps and performance deltas. Compare teammate history or simulate legendary matchups across different eras."
-        badge="dgraph"
       />
 
       {/* ── VS Hero Slots ── */}

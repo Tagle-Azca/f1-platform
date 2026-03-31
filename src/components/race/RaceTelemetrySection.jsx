@@ -77,7 +77,6 @@ export default function RaceTelemetrySection({ season, raceName, circuitLocality
             </button>
           ))}
         </div>
-        <span className="db-badge db-badge--cassandra">Cassandra</span>
       </div>
 
       <div style={{ padding:'1rem 1.25rem' }}>

@@ -3,6 +3,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Accent color — registered as <color> to enable CSS transitions ── */
+@property --accent-color {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #94a3b8;
+}
+
 /* ─────────────────────────────────────────────────────
    SHADCN DARK TOKENS — F1 palette override
    All dark by default (no .dark class needed)
@@ -29,6 +36,10 @@
     --input:                 255 255 255 / 0.07;
     --ring:                  225 6 0;
     --radius:                0.6rem;
+
+    /* ── Accent (team color — updated by PreferencesContext) ── */
+    --accent-color:        #94a3b8;
+    --accent-rgb:          148 163 184;   /* space-separated for Tailwind opacity */
 
     /* F1 Brand */
     --f1-red:              #e10600;
@@ -82,6 +93,7 @@
     --shadow-card:      0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25);
     --shadow-float:     0 8px 28px rgba(0,0,0,0.5);
     --shadow-glow-red:  0 0 20px var(--f1-red-glow);
+    --shadow-glow-accent: 0 8px 28px rgb(var(--accent-rgb) / 0.20);
 
     /* ── DB accent colors ── */
     --dgraph-color:        #ef4444;
@@ -602,6 +614,7 @@ select option { cursor: pointer; }
 .panel--cassandra { border-top: 2px solid var(--cassandra-color); }
 .panel--dgraph    { border-top: 2px solid var(--dgraph-color); }
 .panel--red       { border-top: 2px solid var(--f1-red); }
+.panel--accent    { border-top: 2px solid var(--accent-color); transition: border-color 0.4s ease; }
 
 .last-session-race-link {
   display: flex; align-items: center; gap: 0.4rem;

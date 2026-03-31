@@ -108,7 +108,6 @@ export default function ConstructorStandingsPage() {
           <p className="page__subtitle" style={{ marginBottom: 0 }}>Points evolution round by round</p>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span className="db-badge db-badge--mongo">MongoDB</span>
           <select
             className="input"
             style={{ width: 115 }}

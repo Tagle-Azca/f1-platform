@@ -12,7 +12,7 @@ export default function TelemetryModeBadge({ isHistorical }) {
       }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
         <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color }}>
-          {isHistorical ? 'Historical Mode · MongoDB' : 'Telemetry Mode · Cassandra'}
+          {isHistorical ? 'Historical Mode' : 'Live Telemetry'}
         </span>
       </div>
       {isHistorical && (

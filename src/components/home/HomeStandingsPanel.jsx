@@ -16,7 +16,7 @@ export default function HomeStandingsPanel({ data, loading, standingsTab, onTabC
       transition={{ delay: 0.1, duration: 0.4 }}
       style={{ display: 'flex', flexDirection: 'column' }}
     >
-      <Panel accent="mongo" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+      <Panel accent="accent" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
           <div>
             <TabBar
@@ -24,9 +24,9 @@ export default function HomeStandingsPanel({ data, loading, standingsTab, onTabC
               activeTab={standingsTab}
               onChange={onTabChange}
               variant="pill"
-              accentColor="var(--mongo-color)"
+              accentColor="var(--accent-color)"
             />
-            <div style={{ fontSize: '0.65rem', color: 'var(--mongo-color)', opacity: 0.7, marginTop: '0.25rem' }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--accent-color)', opacity: 0.7, marginTop: '0.25rem', transition: 'color 0.4s' }}>
               Click a row for detailed profile
             </div>
           </div>
@@ -44,7 +44,7 @@ export default function HomeStandingsPanel({ data, loading, standingsTab, onTabC
             <EmptyState type="empty" message="No data yet" height={80} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {data.standings.map((driver, i) => (
+              {data.standings.slice(0, 5).map((driver, i) => (
                 <ResultRow
                   key={driver.driverId}
                   position={driver.position}
@@ -64,7 +64,7 @@ export default function HomeStandingsPanel({ data, loading, standingsTab, onTabC
             <EmptyState type="empty" message="No data yet" height={80} />
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {data.constructorStandings.map((ctor, i) => (
+              {data.constructorStandings.slice(0, 5).map((ctor, i) => (
                 <ResultRow
                   key={ctor.constructorId}
                   position={ctor.position}
@@ -83,7 +83,7 @@ export default function HomeStandingsPanel({ data, loading, standingsTab, onTabC
         <Link
           to={standingsTab === 'drivers' ? '/standings' : '/constructor-standings'}
           style={{
-            alignSelf: 'flex-end', fontSize: '0.75rem', color: '#22c55e',
+            alignSelf: 'flex-end', fontSize: '0.75rem', color: 'var(--accent-color)',
             textDecoration: 'none', letterSpacing: '0.06em', fontWeight: 600,
             fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase',
           }}

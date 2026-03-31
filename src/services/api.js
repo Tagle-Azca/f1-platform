@@ -41,6 +41,7 @@ export const telemetryApi = {
   getRaceDrivers:    (raceId)           => request(`/api/telemetry/drivers/${raceId}`),
   getRacePace:       (raceId, drivers)  => request(`/api/telemetry/pace/${raceId}?drivers=${drivers.join(',')}`),
   getTireStrategy:   (raceId)           => request(`/api/telemetry/strategy/${raceId}`),
+  getWinnerStrategy: (raceId)           => request(`/api/telemetry/strategy/${raceId}/winner`),
   getRacePositions:  (raceId)           => request(`/api/telemetry/positions/${raceId}`),
   getTeamPace:       (teamName, year, raceId) => request(`/api/telemetry/team-pace?teamName=${encodeURIComponent(teamName)}&year=${year}${raceId ? `&raceId=${raceId}` : ''}`),
   getSafetyCar:      (raceId)           => request(`/api/telemetry/safety-car/${raceId}`),

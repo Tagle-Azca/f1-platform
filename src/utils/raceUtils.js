@@ -14,3 +14,23 @@ export function statusColor(s) {
 export function isFinished(status) {
   return status === 'Finished' || status?.startsWith('+')
 }
+
+const DNS_KEYS = ['Did not start', 'Withdrew', 'Did not qualify', 'Not classified']
+
+/**
+ * Classify a race finishing status.
+ * Returns: 'finished' | 'lapped' | 'dnf' | 'dns' | 'unknown'
+ *
+ * 'finished' — crossed the line at full distance
+ * 'lapped'   — completed the race but down one or more laps (e.g. "+1 Lap", "+2 Laps")
+ * 'dnf'      — retired before the checkered flag (mechanical, accident, etc.)
+ * 'dns'      — did not start / not classified
+ * 'unknown'  — status unavailable
+ */
+export function getRaceStatus(statusText) {
+  if (!statusText) return 'unknown'
+  if (statusText === 'Finished') return 'finished'
+  if (statusText.startsWith('+') || statusText.includes('Lap')) return 'lapped'
+  if (DNS_KEYS.some(k => statusText.includes(k))) return 'dns'
+  return 'dnf'
+}

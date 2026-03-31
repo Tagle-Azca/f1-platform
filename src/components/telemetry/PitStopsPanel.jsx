@@ -1,6 +1,6 @@
 import Panel from '../ui/Panel'
 import StatCard from '../ui/StatCard'
-import { COLORS, COLOR_B } from './telemetryConstants'
+import { COLORS } from './telemetryConstants'
 
 function PitColumn({ stops, acronym, color, opposingStops }) {
   return (
@@ -51,7 +51,7 @@ function PitColumn({ stops, acronym, color, opposingStops }) {
   )
 }
 
-export default function PitStopsPanel({ pitStops, pitStopsB, isComparing, driverA, driverB }) {
+export default function PitStopsPanel({ pitStops, pitStopsB, isComparing, driverA, driverB, colorA = COLORS.lap, colorB = '#3b82f6' }) {
   const hasBStops = isComparing && pitStopsB?.length > 0
 
   return (
@@ -61,11 +61,11 @@ export default function PitStopsPanel({ pitStops, pitStopsB, isComparing, driver
         {hasBStops && (
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS.lap }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: colorA }} />
               <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>{driverA?.acronym}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLOR_B }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: colorB }} />
               <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.4)' }}>{driverB?.acronym}</span>
             </div>
           </div>
@@ -74,9 +74,9 @@ export default function PitStopsPanel({ pitStops, pitStopsB, isComparing, driver
 
       {hasBStops ? (
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <PitColumn stops={pitStops} acronym={driverA?.acronym || 'A'} color={COLORS.lap} opposingStops={pitStopsB} />
+          <PitColumn stops={pitStops} acronym={driverA?.acronym || 'A'} color={colorA} opposingStops={pitStopsB} />
           <div style={{ width: 1, background: 'rgba(255,255,255,0.06)', flexShrink: 0 }} />
-          <PitColumn stops={pitStopsB} acronym={driverB?.acronym || 'B'} color={COLOR_B} opposingStops={pitStops} />
+          <PitColumn stops={pitStopsB} acronym={driverB?.acronym || 'B'} color={colorB} opposingStops={pitStops} />
         </div>
       ) : (
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>

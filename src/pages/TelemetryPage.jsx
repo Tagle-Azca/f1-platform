@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { usePreferences } from '../contexts/PreferencesContext'
 import { useCassandraRaces } from '../hooks/useCassandraRaces'
 import { useDriverTelemetry } from '../hooks/useDriverTelemetry'
 import { useDriverComparison } from '../hooks/useDriverComparison'
@@ -18,13 +19,25 @@ import HistoricalSeasonView from '../components/telemetry/HistoricalSeasonView'
 import TelemetryModeBadge from '../components/telemetry/TelemetryModeBadge'
 import TelemetryControls from '../components/telemetry/TelemetryControls'
 import DriverComparisonBanner from '../components/telemetry/DriverComparisonBanner'
-import { TELEMETRY_CUTOFF, HISTORICAL_YEARS } from '../components/telemetry/telemetryConstants'
+import { TELEMETRY_CUTOFF, HISTORICAL_YEARS, COLORS, COLOR_B } from '../components/telemetry/telemetryConstants'
 import { buildStints, stintSlope } from '../components/telemetry/telemetryUtils'
 import { telemetryApi } from '../services/api'
+import { F1_TEAMS } from '../data/f1Teams'
+import { teamNameToColor } from '../utils/teamColors'
+
+/** Returns the teammate's entry from a driver list, or null. */
+function findTeammateIn(favoriteDriverName, list, nameKey) {
+  if (!favoriteDriverName) return null
+  const team = F1_TEAMS.find(t => t.drivers.includes(favoriteDriverName))
+  const teammateName = team?.drivers.find(d => d !== favoriteDriverName)
+  if (!teammateName) return null
+  return list.find(d => (d[nameKey] ?? '').toLowerCase() === teammateName.toLowerCase()) ?? null
+}
 
 // ── Main page ──────────────────────────────────────────
 export default function TelemetryPage() {
   const { isMobile } = useBreakpoint()
+  const { prefs } = usePreferences()
   // ── Shared state ───────────────────────────────────
   const [year,     setYear]     = useState('')
   const [driverId, setDriverId] = useState('')
@@ -68,12 +81,43 @@ export default function TelemetryPage() {
     load: loadHistoricalData,
   } = useHistoricalTelemetry(year, driverId, isHistorical)
 
-  // ── Sync first driver from histDrivers ─────────────
+  // ── Sync driver from histDrivers (prefer favorite) ─
   useEffect(() => {
-    if (isHistorical && histDrivers.length && !driverId) {
+    if (!isHistorical || !histDrivers.length) return
+    const favName = prefs.favoriteDriver?.toLowerCase()
+    const favMatch = favName
+      ? histDrivers.find(d => d.name?.toLowerCase() === favName)
+      : null
+    if (favMatch) {
+      setDriverId(favMatch.driverId)
+      const mate = findTeammateIn(prefs.favoriteDriver, histDrivers, 'name')
+      setDriverIdB(mate ? mate.driverId : '')
+    } else if (!driverId) {
       setDriverId(histDrivers[0].driverId)
     }
   }, [histDrivers, isHistorical])
+
+  // ── Re-select when favorite driver changes in My Garage ─
+  useEffect(() => {
+    if (!prefs.favoriteDriver) return
+    const favName = prefs.favoriteDriver.toLowerCase()
+    if (!isHistorical && cassDrivers.length) {
+      const match = cassDrivers.find(d => d.fullName?.toLowerCase() === favName)
+      if (match) {
+        setDriverId(match.driverId)
+        const mate = findTeammateIn(prefs.favoriteDriver, cassDrivers, 'fullName')
+        setDriverIdB(mate ? mate.driverId : '')
+      }
+    } else if (isHistorical && histDrivers.length) {
+      const match = histDrivers.find(d => d.name?.toLowerCase() === favName)
+      if (match) {
+        setDriverId(match.driverId)
+        const mate = findTeammateIn(prefs.favoriteDriver, histDrivers, 'name')
+        setDriverIdB(mate ? mate.driverId : '')
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefs.favoriteDriver])
 
   // ── Year change ────────────────────────────────────
   function handleYearChange(y) {
@@ -82,10 +126,10 @@ export default function TelemetryPage() {
     setDriverIdB('')
 
     if (parseInt(y) >= TELEMETRY_CUTOFF) {
-      // Cassandra mode: select first race of year
-      const first = cassRaces.find(r => r.raceId.startsWith(y + '_'))
-      if (first) setRaceId(first.raceId)
-      else setRaceId('')
+      // Select the last (most recent) race of the chosen year
+      const racesOfY = cassRaces.filter(r => r.raceId.startsWith(y + '_'))
+      const last = racesOfY[racesOfY.length - 1]
+      setRaceId(last?.raceId ?? '')
     } else {
       setRaceId('')
     }
@@ -102,14 +146,23 @@ export default function TelemetryPage() {
       .then(data => {
         const sorted = [...data].sort((a, b) => a.acronym.localeCompare(b.acronym))
         setCassDrivers(sorted)
-        if (sorted.length) setDriverId(sorted[0].driverId)
+        if (sorted.length) {
+          const favName = prefs.favoriteDriver?.toLowerCase()
+          const favMatch = favName
+            ? sorted.find(d => d.fullName?.toLowerCase() === favName)
+            : null
+          setDriverId(favMatch ? favMatch.driverId : sorted[0].driverId)
+          if (favMatch) {
+            const mate = findTeammateIn(prefs.favoriteDriver, sorted, 'fullName')
+            setDriverIdB(mate ? mate.driverId : '')
+          }
+        }
       })
       .catch(() => {})
       .finally(() => setLoadingDrivers(false))
   }, [raceId])
 
   // ── Derived ────────────────────────────────────────
-  const selectedCassDriverB = cassDrivers.find(d => d.driverId === driverIdB)
   const validLapsB = lapsB.filter(l => l.lap_time > 0)
   const isComparing = validLapsB.length > 0
 
@@ -131,11 +184,27 @@ export default function TelemetryPage() {
     return [...map.values()].sort((x, y) => x.lap_number - y.lap_number)
   }, [laps, lapsB])
 
+  // The driverId that corresponds to the user's favoriteDriver pref
+  const favoriteDriverId = useMemo(() => {
+    if (!prefs.favoriteDriver) return null
+    const favName = prefs.favoriteDriver.toLowerCase()
+    if (!isHistorical) {
+      return cassDrivers.find(d => d.fullName?.toLowerCase() === favName)?.driverId ?? null
+    }
+    return histDrivers.find(d => d.name?.toLowerCase() === favName)?.driverId ?? null
+  }, [prefs.favoriteDriver, cassDrivers, histDrivers, isHistorical])
+
   const cassYears    = [...new Set(cassRaces.map(r => r.raceId.split('_')[0]))].sort((a, b) => b - a)
   const allYears     = [...cassYears, ...HISTORICAL_YEARS]
   const racesOfYear  = cassRaces.filter(r => r.raceId.startsWith(year + '_'))
-  const selectedCassDriver = cassDrivers.find(d => d.driverId === driverId)
-  const selectedHistDriver = histDrivers.find(d => d.driverId === driverId)
+  const selectedCassDriver  = cassDrivers.find(d => d.driverId === driverId)
+  const selectedCassDriverB = cassDrivers.find(d => d.driverId === driverIdB)
+  const selectedHistDriver  = histDrivers.find(d => d.driverId === driverId)
+
+  // Team colors: use team color when available, fall back to legacy defaults
+  const colorA = teamNameToColor(selectedCassDriver?.teamName) ?? COLORS.lap
+  const colorB = teamNameToColor(selectedCassDriverB?.teamName) ?? COLOR_B
+
   const validLaps    = laps.filter(l => l.lap_time > 0)
 
   // Stint/degradation analysis — must come after validLaps
@@ -175,15 +244,14 @@ export default function TelemetryPage() {
       <PageHint
         id="telemetry"
         title="Performance Hub"
-        text="Select a race and a driver to view lap times and pit stop data. Data from 2023 onwards comes from Cassandra."
+        text="Select a race and a driver to view lap times and pit stop data. Historical data is available from 1950 onwards."
         icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 16, height: 16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>}
       />
       <PageHeader
         title="Performance Hub"
         subtitle={isHistorical
-          ? `Historical analysis ${year} · MongoDB`
-          : 'Lap times & telemetry · Cassandra'}
-        badge={isHistorical ? 'mongo' : 'cassandra'}
+          ? `Historical analysis · ${year}`
+          : 'Lap times & telemetry'}
       />
 
       <TelemetryModeBadge isHistorical={isHistorical} />
@@ -206,6 +274,7 @@ export default function TelemetryPage() {
         loadingDrivers={loadingDrivers}  loadingHist={loadingHist}
         driverIdB={driverIdB}  onDriverBChange={setDriverIdB}    laps={laps}  loadingB={loadingB}
         loading={loading}      onLoad={isHistorical ? loadHistoricalData : loadCassandraTelemetry}
+        favoriteDriverId={favoriteDriverId}
       />
 
       {error && (
@@ -223,6 +292,7 @@ export default function TelemetryPage() {
               driverA={selectedCassDriver}   validLaps={validLaps}   bestLap={bestLap}   avgLap={avgLap}   pitStops={pitStops}   statusA={driverStatus}
               driverB={selectedCassDriverB}  validLapsB={validLapsB} bestLapB={bestLapB} avgLapB={avgLapB} pitStopsB={pitStopsB} statusB={driverStatusB}
               lapsBLoaded={lapsBLoaded}
+              colorA={colorA} colorB={colorB}
             />
           )}
 
@@ -240,6 +310,7 @@ export default function TelemetryPage() {
                 driverB={selectedCassDriverB}
                 stintAnalysis={stintAnalysis}
                 isMobile={isMobile}
+                colorA={colorA} colorB={colorB}
               />
 
               {!isComparing && stintAnalysis.length > 0 && (
@@ -260,6 +331,7 @@ export default function TelemetryPage() {
                 isComparing={isComparing}
                 driverA={selectedCassDriver}
                 driverB={selectedCassDriverB}
+                colorA={colorA} colorB={colorB}
               />
             </>
           )}
@@ -271,6 +343,7 @@ export default function TelemetryPage() {
               isComparing={isComparing}
               driverA={selectedCassDriver}
               driverB={selectedCassDriverB}
+              colorA={colorA} colorB={colorB}
             />
           )}
 

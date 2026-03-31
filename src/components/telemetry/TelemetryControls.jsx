@@ -9,6 +9,7 @@ export default function TelemetryControls({
   histDrivers, cassDrivers, loadingDrivers, loadingHist,
   driverIdB, onDriverBChange, laps, loadingB,
   loading, onLoad,
+  favoriteDriverId,
 }) {
   const driverLoading = loadingDrivers || loadingHist
 
@@ -42,7 +43,9 @@ export default function TelemetryControls({
           <select className="input" style={{ width: 240 }} value={driverId} onChange={e => onDriverChange(e.target.value)} disabled={!histDrivers.length}>
             <option value="">Select driver…</option>
             {histDrivers.map(d => (
-              <option key={d.driverId} value={d.driverId}>{d.name}</option>
+              <option key={d.driverId} value={d.driverId}>
+                {d.driverId === favoriteDriverId ? '★ ' : ''}{d.name}{d.driverId === favoriteDriverId ? ' — YOUR DRIVER' : ''}
+              </option>
             ))}
           </select>
         ) : (
@@ -50,7 +53,7 @@ export default function TelemetryControls({
             <option value="">Select driver…</option>
             {cassDrivers.map(d => (
               <option key={d.driverId} value={d.driverId}>
-                {d.acronym} — {d.fullName}{d.teamName ? ` (${d.teamName})` : ''}
+                {d.driverId === favoriteDriverId ? '★ ' : ''}{d.acronym} — {d.fullName}{d.driverId === favoriteDriverId ? ' ★ YOUR DRIVER' : d.teamName ? ` (${d.teamName})` : ''}
               </option>
             ))}
           </select>
@@ -72,7 +75,7 @@ export default function TelemetryControls({
             <option value="">— no comparison —</option>
             {cassDrivers.filter(d => d.driverId !== driverId).map(d => (
               <option key={d.driverId} value={d.driverId}>
-                {d.acronym} — {d.fullName}
+                {d.driverId === favoriteDriverId ? '★ ' : ''}{d.acronym} — {d.fullName}{d.driverId === favoriteDriverId ? ' ★ YOUR DRIVER' : ''}
               </option>
             ))}
           </select>

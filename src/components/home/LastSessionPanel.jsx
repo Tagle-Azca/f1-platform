@@ -8,36 +8,36 @@ import { ctorColor, PODIUM_COLORS } from '../../utils/teamColors'
 const POSITION_SUFFIX = { 1: 'ST', 2: 'ND', 3: 'RD' }
 
 const SESSION_TYPE_COLORS = {
-  Race:              'var(--f1-red)',
+  Race:              'var(--accent-color)',
   Qualifying:        '#f5c518',
-  Sprint:            '#f97316',
-  'Sprint Qualifying': '#f97316',
+  Sprint:            'var(--accent-color)',
+  'Sprint Qualifying': '#f5c518',
   FP1: 'var(--text-secondary)', FP2: 'var(--text-secondary)', FP3: 'var(--text-secondary)',
 }
 
 export default function LastSessionPanel({ session, loading, onDriverClick }) {
   if (loading) {
     return (
-      <Panel accent="red" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+      <Panel accent="accent" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
         <EmptyState type="loading" height={100} />
       </Panel>
     )
   }
   if (!session) {
     return (
-      <Panel accent="red" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+      <Panel accent="accent" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
         <EmptyState type="empty" message="No session data yet" height={100} />
       </Panel>
     )
   }
 
-  const labelColor = SESSION_TYPE_COLORS[session.sessionType] || 'var(--f1-red)'
+  const labelColor = SESSION_TYPE_COLORS[session.sessionType] || 'var(--accent-color)'
   const isPodiumType = session.sessionType === 'Race' || session.sessionType === 'Sprint'
   const isQualiType  = session.sessionType === 'Qualifying' || session.sessionType === 'Sprint Qualifying'
   const isPractice   = ['FP1','FP2','FP3'].includes(session.sessionType)
 
   return (
-    <Panel accent="red" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+    <Panel accent="accent" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span style={{

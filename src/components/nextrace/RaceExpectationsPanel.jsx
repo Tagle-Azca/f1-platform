@@ -97,8 +97,8 @@ export default function RaceExpectationsPanel({ specs }) {
         <span style={{
           fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
           padding: '2px 8px', borderRadius: 4,
-          background: 'rgba(245,158,11,0.12)', color: '#f59e0b',
-          border: '1px solid rgba(245,158,11,0.25)',
+          background: 'rgba(245,158,11,0.12)', color: '#FFFFFF',
+          border: '1px solid rgb(255, 255, 255)',
         }}>
           {strategy}
         </span>

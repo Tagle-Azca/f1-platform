@@ -2,9 +2,11 @@ import { LEGENDARY, SEASON_STORIES, PODIUM_COLORS } from '../../utils/teamColors
 import Panel from '../ui/Panel'
 import ResultRow from '../ui/ResultRow'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { usePreferences } from '../../contexts/PreferencesContext'
 
 export default function StandingsTable({ currentStandings, currentRound, season, loading, onDriverClick }) {
   const { isMobile } = useBreakpoint()
+  const { prefs } = usePreferences()
   const twoCol = !isMobile && currentStandings.length > 12
   const half   = Math.ceil(currentStandings.length / 2)
   const col1   = currentStandings.slice(0, half)
@@ -13,6 +15,7 @@ export default function StandingsTable({ currentStandings, currentRound, season,
   function makeRow(d, globalIdx) {
     const prev      = currentStandings[globalIdx - 1]
     const gapToPrev = prev ? prev.pts - d.pts : null
+    const isFocus   = prefs.favoriteDriver && d.name === prefs.favoriteDriver
     return (
       <ResultRow
         key={d.driverId}
@@ -50,9 +53,12 @@ export default function StandingsTable({ currentStandings, currentRound, season,
         onClick={onDriverClick ? () => onDriverClick({ driverId: d.driverId, name: d.name }) : undefined}
         style={{
           borderBottom: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 0,
-          paddingLeft: 0,
+          borderRadius: isFocus ? 6 : 0,
+          paddingLeft: isFocus ? '0.25rem' : 0,
           paddingRight: twoCol && !onDriverClick ? '0.25rem' : undefined,
+          background: isFocus ? `${d.color}10` : 'transparent',
+          borderLeft: isFocus ? `2px solid ${d.color}` : '2px solid transparent',
+          transition: 'background 0.4s, border-color 0.4s',
         }}
       />
     )

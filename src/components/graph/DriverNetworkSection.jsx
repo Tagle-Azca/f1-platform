@@ -62,7 +62,6 @@ export default function DriverNetworkSection({ driverId, driverName }) {
         }}>
           Career Network
         </span>
-        <span className="db-badge db-badge--dgraph">Dgraph</span>
       </div>
 
       {/* Canvas */}

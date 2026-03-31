@@ -41,7 +41,6 @@ export default function CircuitDetail({ circuitId }) {
         borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '0.75rem',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-          <span className="db-badge db-badge--mongo">MongoDB</span>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Circuit</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>

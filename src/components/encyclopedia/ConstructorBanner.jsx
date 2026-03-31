@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { statsApi } from '../../services/api'
 import { ctorColor } from '../../utils/teamColors'
+import ConstructorLogo from '../ui/ConstructorLogo'
 
 const WIKI_SLUGS = {
   ferrari:        'Scuderia_Ferrari',
@@ -42,17 +43,7 @@ const WIKI_SLUGS = {
 }
 
 function ConstructorCard({ ctor, onClick }) {
-  const [logoUrl, setLogoUrl] = useState(null)
   const color = ctorColor(ctor.constructorId)
-
-  useEffect(() => {
-    const slug = WIKI_SLUGS[ctor.constructorId]
-    if (!slug) return
-    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${slug}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => d?.thumbnail?.source && setLogoUrl(d.thumbnail.source))
-      .catch(() => {})
-  }, [ctor.constructorId])
 
   return (
     <button
@@ -83,29 +74,13 @@ function ConstructorCard({ ctor, onClick }) {
         e.currentTarget.style.transform   = 'none'
       }}
     >
-      {logoUrl ? (
-        <img
-          src={logoUrl}
-          alt={ctor.name}
-          style={{
-            width: 72, height: 72, borderRadius: 8,
-            objectFit: 'contain',
-            background: 'rgba(255,255,255,0.06)',
-            padding: 4,
-          }}
-        />
-      ) : (
-        <div style={{
-          width: 72, height: 72, borderRadius: 8,
-          background: `${color}22`,
-          border: `2px solid ${color}55`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.1rem', fontWeight: 800, color,
-          letterSpacing: '-0.02em',
-        }}>
-          {ctor.name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase()}
-        </div>
-      )}
+      <ConstructorLogo
+        constructorId={ctor.constructorId}
+        name={ctor.name}
+        color={color}
+        size={72}
+        radius={10}
+      />
 
       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
         {ctor.name}

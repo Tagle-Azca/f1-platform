@@ -1,12 +1,14 @@
 import AccentBanner from '../ui/AccentBanner'
 import DriverBannerCard from './DriverBannerCard'
-import { COLOR_B } from './telemetryConstants'
+import { COLORS, COLOR_B } from './telemetryConstants'
 
 export default function DriverComparisonBanner({
   isMobile,
   driverA, validLaps, bestLap, avgLap, pitStops, statusA,
   driverB, validLapsB, bestLapB, avgLapB, pitStopsB, statusB,
   lapsBLoaded,
+  colorA = COLORS.lap,
+  colorB = COLOR_B,
 }) {
   return (
     <AccentBanner
@@ -23,7 +25,7 @@ export default function DriverComparisonBanner({
           bestLap={bestLap}
           avgLap={avgLap}
           pitStops={pitStops}
-          color="var(--cassandra-color)"
+          color={colorA}
           isMobile={isMobile}
           status={statusA}
         />
@@ -40,7 +42,7 @@ export default function DriverComparisonBanner({
               bestLap={bestLapB}
               avgLap={avgLapB}
               pitStops={pitStopsB}
-              color={COLOR_B}
+              color={colorB}
               isMobile={isMobile}
               status={statusB}
             />

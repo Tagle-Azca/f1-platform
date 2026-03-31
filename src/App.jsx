@@ -2,7 +2,8 @@ import { lazy, Suspense, Component, useEffect } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider }        from './contexts/AuthContext'
+import { PreferencesProvider } from './contexts/PreferencesContext'
 import Navbar           from './components/layout/Navbar'
 import StandingsSidebar from './components/standings/StandingsSidebar'
 import ScrollFade       from './components/ui/ScrollFade'
@@ -24,6 +25,7 @@ const NextRacePage             = lazy(() => import('./pages/NextRacePage'))
 const LivePage                 = lazy(() => import('./pages/LivePage'))
 const NotFoundPage             = lazy(() => import('./pages/NotFoundPage'))
 const GraphPage                = lazy(() => import('./pages/GraphPage'))
+const RegisterPage             = lazy(() => import('./pages/RegisterPage'))
 
 const fallback = <div className="page" style={{ minHeight: '60vh' }} />
 
@@ -85,6 +87,7 @@ function App() {
   return (<>
     <BrowserRouter>
       <AuthProvider>
+      <PreferencesProvider>
       <TooltipProvider>
         <div className="app">
           <Navbar />
@@ -108,12 +111,14 @@ function App() {
                 <Route path="/next-race"             element={<NextRacePage />}            />
                 <Route path="/live"                  element={<LivePage />}                />
                 <Route path="/graph"                 element={<GraphPage />}               />
+                <Route path="/register"              element={<RegisterPage />}            />
                 <Route path="*"                      element={<NotFoundPage />}            />
               </Routes>
             </Suspense>
           </LocationBoundary>
         </div>
       </TooltipProvider>
+      </PreferencesProvider>
       </AuthProvider>
     </BrowserRouter>
     <ScrollFade />

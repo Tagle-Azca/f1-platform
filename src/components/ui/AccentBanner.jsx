@@ -29,6 +29,7 @@ export default function AccentBanner({
         borderLeft:  `3px solid ${color}`,
         borderRadius: radius,
         padding:     pad,
+        transition:  'background 0.4s ease, border-color 0.4s ease',
         ...style,
       }}
     >

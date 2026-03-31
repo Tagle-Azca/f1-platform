@@ -13,6 +13,10 @@ export default {
         condensed: ['Barlow Condensed', ...fontFamily.sans],
       },
       colors: {
+        // Team accent — updates live via CSS variable when user selects a team/driver.
+        // Supports all Tailwind opacity modifiers: bg-accent/10, border-accent/30, etc.
+        accent: 'rgb(var(--accent-rgb) / <alpha-value>)',
+
         f1: {
           red:  '#e10600',
           dark: '#a00400',

@@ -40,7 +40,7 @@ export default function HomeHero({ race }) {
           textTransform: 'uppercase',
           lineHeight: 1,
           margin: 0,
-          background: 'linear-gradient(to bottom, #fff 60%, #888)',
+          background: 'linear-gradient(to bottom, #fff 40%, var(--accent-color))',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
         }}
@@ -92,7 +92,7 @@ export default function HomeHero({ race }) {
             <>
               <div style={{
                 fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.15em',
-                textTransform: 'uppercase', color: '#e10600',
+                textTransform: 'uppercase', color: 'var(--accent-color)',
               }}>
                 {race.currentSession.label} · LIVE NOW
               </div>

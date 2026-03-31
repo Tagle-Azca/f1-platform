@@ -58,7 +58,6 @@ export default function TireStrategyPage() {
       <PageHeader
         title="Tire Strategy"
         subtitle="Compound stints per driver · full race at a glance"
-        badge="cassandra"
         actions={
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             <ControlGroup label="Season" width={90}>

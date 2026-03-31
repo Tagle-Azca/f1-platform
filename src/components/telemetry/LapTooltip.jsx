@@ -1,5 +1,5 @@
-const COLOR_A = '#e10600'
-const COLOR_B = '#3b82f6'
+const FALLBACK_A = '#e10600'
+const FALLBACK_B = '#3b82f6'
 
 function fmtLap(secs) {
   if (!secs || secs <= 0) return '—'
@@ -9,15 +9,16 @@ function fmtLap(secs) {
 }
 
 // Single-driver mode (original)
-function SingleTooltip({ payload, label, pitStops }) {
+function SingleTooltip({ payload, label, pitStops, colorA }) {
   const isPit = pitStops?.some(p => p.lap === label)
+  const ca = colorA || FALLBACK_A
   return (
     <div style={{
       background: 'rgba(8,8,8,0.98)', border: '1px solid rgba(255,255,255,0.12)',
       borderRadius: 8, padding: '0.55rem 0.8rem', minWidth: 130,
     }}>
       <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginBottom: 3 }}>Lap {label}</div>
-      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: COLOR_A, fontVariantNumeric: 'tabular-nums' }}>
+      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: ca, fontVariantNumeric: 'tabular-nums' }}>
         {fmtLap(payload[0]?.value)}
       </div>
       {isPit && (
@@ -31,12 +32,14 @@ function SingleTooltip({ payload, label, pitStops }) {
 }
 
 // Comparison mode
-function CompareTooltip({ payload, label, pitStops, pitStopsB, driverA, driverB }) {
+function CompareTooltip({ payload, label, pitStops, pitStopsB, driverA, driverB, colorA, colorB }) {
   const isPitA = pitStops?.some(p => p.lap === label)
   const isPitB = pitStopsB?.some(p => p.lap === label)
   const timeA  = payload.find(p => p.dataKey === 'a')?.value
   const timeB  = payload.find(p => p.dataKey === 'b')?.value
   const deltaMs = timeA && timeB ? Math.round((timeB - timeA) * 1000) : null
+  const ca = colorA || FALLBACK_A
+  const cb = colorB || FALLBACK_B
 
   return (
     <div style={{
@@ -47,9 +50,9 @@ function CompareTooltip({ payload, label, pitStops, pitStopsB, driverA, driverB 
 
       {/* Driver A */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-        <div style={{ width: 14, height: 2.5, background: COLOR_A, borderRadius: 1, flexShrink: 0 }} />
+        <div style={{ width: 14, height: 2.5, background: ca, borderRadius: 1, flexShrink: 0 }} />
         <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', width: 28 }}>{driverA?.acronym}</span>
-        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: COLOR_A, fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: ca, fontVariantNumeric: 'tabular-nums' }}>
           {fmtLap(timeA)}
         </span>
         {isPitA && <span style={{ fontSize: '0.55rem', color: '#fbbf24', fontWeight: 700, marginLeft: 'auto' }}>PIT</span>}
@@ -57,9 +60,9 @@ function CompareTooltip({ payload, label, pitStops, pitStopsB, driverA, driverB 
 
       {/* Driver B */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <div style={{ width: 14, height: 2.5, background: COLOR_B, borderRadius: 1, flexShrink: 0, opacity: 0.85 }} />
+        <div style={{ width: 14, height: 2.5, background: cb, borderRadius: 1, flexShrink: 0, opacity: 0.85 }} />
         <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', width: 28 }}>{driverB?.acronym}</span>
-        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: COLOR_B, fontVariantNumeric: 'tabular-nums' }}>
+        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: cb, fontVariantNumeric: 'tabular-nums' }}>
           {fmtLap(timeB)}
         </span>
         {isPitB && <span style={{ fontSize: '0.55rem', color: '#fbbf24', fontWeight: 700, marginLeft: 'auto' }}>PIT</span>}
@@ -74,7 +77,7 @@ function CompareTooltip({ payload, label, pitStops, pitStopsB, driverA, driverB 
           <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.35)' }}>Δ</span>
           <span style={{
             fontSize: '0.88rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-            color: deltaMs > 0 ? COLOR_A : COLOR_B,
+            color: deltaMs > 0 ? ca : cb,
           }}>
             {deltaMs > 0 ? '+' : ''}{deltaMs}ms
           </span>
@@ -91,10 +94,10 @@ function CompareTooltip({ payload, label, pitStops, pitStopsB, driverA, driverB 
   )
 }
 
-export default function LapTooltip({ active, payload, label, pitStops, pitStopsB, driverA, driverB }) {
+export default function LapTooltip({ active, payload, label, pitStops, pitStopsB, driverA, driverB, colorA, colorB }) {
   if (!active || !payload?.length) return null
   if (driverB) {
-    return <CompareTooltip payload={payload} label={label} pitStops={pitStops} pitStopsB={pitStopsB} driverA={driverA} driverB={driverB} />
+    return <CompareTooltip payload={payload} label={label} pitStops={pitStops} pitStopsB={pitStopsB} driverA={driverA} driverB={driverB} colorA={colorA} colorB={colorB} />
   }
-  return <SingleTooltip payload={payload} label={label} pitStops={pitStops} />
+  return <SingleTooltip payload={payload} label={label} pitStops={pitStops} colorA={colorA} />
 }

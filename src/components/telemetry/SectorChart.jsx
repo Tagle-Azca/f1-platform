@@ -6,12 +6,12 @@ import {
 import CircuitSilhouette from '../circuit/CircuitSilhouette'
 import SectorTooltip from './SectorTooltip'
 import Panel from '../ui/Panel'
-import { COLORS, COLOR_B } from './telemetryConstants'
+import { COLORS } from './telemetryConstants'
 
 const SECTOR_KEYS = ['sector1', 'sector2', 'sector3']
 
 // Sector summary card shown in compare mode
-function SectorDeltaCard({ label, color, bestA, bestB, acronymA, acronymB }) {
+function SectorDeltaCard({ label, color, bestA, bestB, acronymA, acronymB, colorA, colorB }) {
   if (bestA == null || bestB == null) return null
   const delta = bestB - bestA  // positive = A faster
   const fmtS  = v => v != null ? `${v.toFixed(3)}s` : '—'
@@ -28,17 +28,17 @@ function SectorDeltaCard({ label, color, bestA, bestB, acronymA, acronymB }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)' }}>{acronymA}</span>
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: aFaster ? COLORS.lap : 'var(--text-secondary)' }}>{fmtS(bestA)}</span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: aFaster ? colorA : 'var(--text-secondary)' }}>{fmtS(bestA)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)' }}>{acronymB}</span>
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: !aFaster ? COLOR_B : 'var(--text-secondary)' }}>{fmtS(bestB)}</span>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: !aFaster ? colorB : 'var(--text-secondary)' }}>{fmtS(bestB)}</span>
         </div>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '0.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)' }}>Δ best</span>
           <span style={{
             fontSize: '0.72rem', fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-            color: aFaster ? COLORS.lap : COLOR_B,
+            color: aFaster ? colorA : colorB,
           }}>
             {aFaster ? `${acronymA} +` : `${acronymB} +`}{Math.abs(delta * 1000).toFixed(0)}ms
           </span>
@@ -60,6 +60,8 @@ export default function SectorChart({
   isComparing,
   driverA,
   driverB,
+  colorA = '#e10600',
+  colorB = '#3b82f6',
 }) {
   // Merged per-lap sector data for comparison chart
   const mergedSectorData = useMemo(() => {
@@ -137,9 +139,9 @@ export default function SectorChart({
       {/* Sector best-time summary in compare mode */}
       {isComparing && (
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-          <SectorDeltaCard label="S1" color={COLORS.s1} bestA={bestA.s1} bestB={bestB.s1} acronymA={driverA?.acronym} acronymB={driverB?.acronym} />
-          <SectorDeltaCard label="S2" color={COLORS.s2} bestA={bestA.s2} bestB={bestB.s2} acronymA={driverA?.acronym} acronymB={driverB?.acronym} />
-          <SectorDeltaCard label="S3" color={COLORS.s3} bestA={bestA.s3} bestB={bestB.s3} acronymA={driverA?.acronym} acronymB={driverB?.acronym} />
+          <SectorDeltaCard label="S1" color={COLORS.s1} bestA={bestA.s1} bestB={bestB.s1} acronymA={driverA?.acronym} acronymB={driverB?.acronym} colorA={colorA} colorB={colorB} />
+          <SectorDeltaCard label="S2" color={COLORS.s2} bestA={bestA.s2} bestB={bestB.s2} acronymA={driverA?.acronym} acronymB={driverB?.acronym} colorA={colorA} colorB={colorB} />
+          <SectorDeltaCard label="S3" color={COLORS.s3} bestA={bestA.s3} bestB={bestB.s3} acronymA={driverA?.acronym} acronymB={driverB?.acronym} colorA={colorA} colorB={colorB} />
         </div>
       )}
 

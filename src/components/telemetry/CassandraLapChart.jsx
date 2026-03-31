@@ -7,6 +7,10 @@ import LapTooltip from './LapTooltip'
 import { COLORS, COLOR_B, COMPOUND_COLORS } from './telemetryConstants'
 import { fmtLap } from './telemetryUtils'
 
+// Default fallbacks if no team color resolved
+const DEFAULT_A = COLORS.lap
+const DEFAULT_B = COLOR_B
+
 // Compound-colored dot — hidden on mobile to keep the chart readable
 function CompoundDot({ cx, cy, payload, compoundKey, isMobile }) {
   if (isMobile) return null
@@ -28,6 +32,8 @@ export default function CassandraLapChart({
   driverB,
   stintAnalysis,
   isMobile,
+  colorA = DEFAULT_A,
+  colorB = DEFAULT_B,
 }) {
   return (
     <Panel accent="cassandra" className="card" style={{ marginBottom: '0.85rem', borderTop: '2px solid rgba(168,85,247,0.35)' }}>
@@ -36,7 +42,7 @@ export default function CassandraLapChart({
           <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lap Times</h2>
           <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
             {isComparing
-              ? 'Solid = Driver A · Dashed = Driver B · hover for Δ delta'
+              ? 'Solid = Driver A · Dashed = Driver B · hover for delta'
               : isMobile
                 ? 'Orange band = SC · Yellow band = VSC'
                 : 'Dots colored by tyre compound · Orange band = SC · Yellow band = VSC'}
@@ -59,11 +65,11 @@ export default function CassandraLapChart({
         {isComparing && (
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <div style={{ width: 18, height: 2.5, background: COLORS.lap, borderRadius: 1 }} />
+              <div style={{ width: 18, height: 2.5, background: colorA, borderRadius: 1 }} />
               <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.5)' }}>{driverA?.acronym}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke={COLOR_B} strokeWidth="2.5" strokeDasharray="4 3" /></svg>
+              <svg width="18" height="4"><line x1="0" y1="2" x2="18" y2="2" stroke={colorB} strokeWidth="2.5" strokeDasharray="4 3" /></svg>
               <span style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.5)' }}>{driverB?.acronym}</span>
             </div>
           </div>
@@ -72,19 +78,32 @@ export default function CassandraLapChart({
 
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={mergedLaps} margin={{ top: 8, right: 24, left: 0, bottom: 5 }}>
+          {/* Recharts extends ReferenceArea to chart edge when x2 is out-of-range.
+              Cap every band to the actual data bounds so DNF drivers don't get orange-washed. */}
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
           <XAxis dataKey="lap_number" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.06)' }} label={{ value: 'Lap', position: 'insideBottomRight', fill: 'rgba(255,255,255,0.3)', fontSize: 10, offset: -4 }} />
           <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} tickLine={false} axisLine={false} width={55} domain={['auto', 'auto']} tickFormatter={fmtLap} />
-          <Tooltip content={<LapTooltip pitStops={pitStops} pitStopsB={pitStopsB} driverA={driverA} driverB={isComparing ? driverB : null} />} />
+          <Tooltip content={<LapTooltip pitStops={pitStops} pitStopsB={pitStopsB} driverA={driverA} driverB={isComparing ? driverB : null} colorA={colorA} colorB={colorB} />} />
 
-          {/* SC / VSC bands */}
-          {scPeriods.map((p, i) => (
-            <ReferenceArea key={i} x1={p.lapStart} x2={p.lapEnd}
-              fill={p.type === 'SC' ? '#f59e0b' : '#facc15'} fillOpacity={0.10}
-              stroke={p.type === 'SC' ? '#f59e0b' : '#facc15'} strokeOpacity={0.3} strokeWidth={1}
-              label={{ value: p.type, position: 'insideTop', fill: p.type === 'SC' ? '#f59e0b' : '#facc15', fontSize: 9, fontWeight: 700 }}
-            />
-          ))}
+          {/* SC / VSC bands — clamped to actual lap range */}
+          {(() => {
+            const maxLap = mergedLaps.length ? mergedLaps[mergedLaps.length - 1].lap_number : 0
+            const minLap = mergedLaps.length ? mergedLaps[0].lap_number : 0
+            return scPeriods
+              .filter(p => p.lapStart <= maxLap && p.lapEnd >= minLap)
+              .map((p, i) => {
+                const x1 = Math.max(p.lapStart, minLap)
+                const x2 = Math.min(p.lapEnd, maxLap)
+                const color = p.type === 'SC' ? '#f59e0b' : '#facc15'
+                return (
+                  <ReferenceArea key={i} x1={x1} x2={x2}
+                    fill={color} fillOpacity={0.10}
+                    stroke={color} strokeOpacity={0.3} strokeWidth={1}
+                    label={{ value: p.type, position: 'insideTop', fill: color, fontSize: 9, fontWeight: 700 }}
+                  />
+                )
+              })
+          })()}
 
           {/* Avg line — single-driver only */}
           {!isComparing && avgLap && (
@@ -99,25 +118,25 @@ export default function CassandraLapChart({
               label={{ value: `P${p.stop_number}`, position: 'top', fill: '#fbbf24', fontSize: 9 }} />
           ))}
           {isComparing && pitStopsB.map(p => (
-            <ReferenceLine key={`b-${p.stop_number}`} x={p.lap} stroke={`${COLOR_B}55`} strokeWidth={1.5} strokeDasharray="4 3" />
+            <ReferenceLine key={`b-${p.stop_number}`} x={p.lap} stroke={`${colorB}55`} strokeWidth={1.5} strokeDasharray="4 3" />
           ))}
 
           {/* Driver A — solid */}
           <Line
             type="monotone" dataKey="a" name={driverA?.acronym || 'A'}
-            stroke={COLORS.lap}
+            stroke={colorA}
             dot={<CompoundDot compoundKey="compound_a" isMobile={isMobile} />}
-            strokeWidth={2} activeDot={{ r: 5, fill: COLORS.lap, strokeWidth: 0 }}
+            strokeWidth={2} activeDot={{ r: 5, fill: colorA, strokeWidth: 0 }}
             connectNulls={false}
           />
-          {/* Driver B — dashed */}
+          {/* Driver B — dashed, same color if teammates */}
           {driverIdB && (
             <Line
               type="monotone" dataKey="b" name={driverB?.acronym || 'B'}
-              stroke={COLOR_B}
+              stroke={colorB}
               dot={<CompoundDot compoundKey="compound_b" isMobile={isMobile} />}
               strokeWidth={2} strokeDasharray="5 4"
-              activeDot={{ r: 5, fill: COLOR_B, strokeWidth: 0 }}
+              activeDot={{ r: 5, fill: colorB, strokeWidth: 0 }}
               connectNulls={false}
             />
           )}

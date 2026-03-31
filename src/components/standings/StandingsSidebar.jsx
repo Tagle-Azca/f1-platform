@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { statsApi } from '../../services/api'
-import { CTOR_COLORS, driverColor } from '../../utils/teamColors'
+import { CTOR_COLORS } from '../../utils/teamColors'
 import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { usePreferences } from '../../contexts/PreferencesContext'
 
 const SIDEBAR_W = 192
 
@@ -11,13 +12,41 @@ function teamColor(constructorId) {
   return CTOR_COLORS[constructorId] || '#888'
 }
 
+function PositionDelta({ delta }) {
+  if (delta === 0) return (
+    <span style={{
+      fontSize: '0.52rem', fontWeight: 700,
+      color: 'rgba(255,255,255,0.2)',
+      flexShrink: 0, width: 18, textAlign: 'center', lineHeight: 1,
+    }}>
+      =
+    </span>
+  )
+  const up = delta > 0
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 1,
+      fontSize: '0.52rem', fontWeight: 800,
+      color: up ? '#22c55e' : '#ef4444',
+      flexShrink: 0, width: 18, justifyContent: 'center', lineHeight: 1,
+    }}>
+      {up ? '▲' : '▼'}{Math.abs(delta)}
+    </span>
+  )
+}
+
 function DriverRow({ entry, i }) {
   const color = teamColor(entry.constructorId)
+  const { prefs } = usePreferences()
+  const isFocus = prefs.favoriteDriver && entry.name === prefs.favoriteDriver
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '0.45rem',
+      display: 'flex', alignItems: 'center', gap: '0.35rem',
       padding: '0.3rem 0.75rem',
       borderBottom: '1px solid rgba(255,255,255,0.04)',
+      background: isFocus ? `${color}12` : 'transparent',
+      borderLeft: isFocus ? `2px solid ${color}` : '2px solid transparent',
+      transition: 'background 0.4s, border-color 0.4s',
     }}>
       <span style={{
         fontFamily: "'Barlow Condensed', sans-serif",
@@ -27,6 +56,7 @@ function DriverRow({ entry, i }) {
       }}>
         {i + 1}
       </span>
+      <PositionDelta delta={entry.posChange} />
       <div style={{ width: 3, height: 20, borderRadius: 2, background: color, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
@@ -56,7 +86,7 @@ function CtorRow({ entry, i }) {
   const color = teamColor(entry.constructorId)
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '0.45rem',
+      display: 'flex', alignItems: 'center', gap: '0.35rem',
       padding: '0.36rem 0.75rem',
       borderBottom: '1px solid rgba(255,255,255,0.04)',
     }}>
@@ -68,6 +98,7 @@ function CtorRow({ entry, i }) {
       }}>
         {i + 1}
       </span>
+      <PositionDelta delta={entry.posChange} />
       <div style={{ width: 3, height: 20, borderRadius: 2, background: color, flexShrink: 0 }} />
       <span style={{
         flex: 1, fontSize: '0.76rem', fontWeight: i === 0 ? 700 : 500,
@@ -85,6 +116,32 @@ function CtorRow({ entry, i }) {
       </span>
     </div>
   )
+}
+
+/** Compute per-entry position change between the last two rounds. */
+function computePosChanges(entries, getPoints, idKey) {
+  const lastIdx = entries[0]?.cumulative?.length - 1 ?? -1
+  const prevIdx = lastIdx - 1
+
+  const current = entries
+    .map(e => ({ id: e[idKey], pts: getPoints(e, lastIdx) }))
+    .sort((a, b) => b.pts - a.pts)
+
+  const prevPositions = {}
+  if (prevIdx >= 0) {
+    const prev = [...entries]
+      .map(e => ({ id: e[idKey], pts: getPoints(e, prevIdx) }))
+      .sort((a, b) => b.pts - a.pts)
+    prev.forEach((e, i) => { prevPositions[e.id] = i + 1 })
+  }
+
+  const changes = {}
+  current.forEach((e, i) => {
+    const currPos = i + 1
+    const prevPos = prevPositions[e.id] ?? currPos
+    changes[e.id] = prevIdx >= 0 ? prevPos - currPos : 0
+  })
+  return changes
 }
 
 export default function StandingsSidebar() {
@@ -110,13 +167,18 @@ export default function StandingsSidebar() {
         // ── Drivers ──────────────────────────────────────────────
         if (ds?.drivers && ds.rounds?.length) {
           const lastIdx = ds.rounds.length - 1
+          const getDriverPts = (d, idx) => Math.round((d.cumulative?.[idx] ?? 0) * 10) / 10
+          const changes = computePosChanges(ds.drivers, getDriverPts, 'driverId')
+
           const sorted = ds.drivers
             .map(d => ({
               driverId:      d.driverId,
               name:          d.name,
               team:          d.team   || '',
               constructorId: d.teamId || '',
-              points:        Math.round((d.cumulative?.[lastIdx] ?? 0) * 10) / 10,
+              points:        getDriverPts(d, lastIdx),
+              posChange:     changes[d.driverId] ?? 0,
+              cumulative:    d.cumulative,
             }))
             .sort((a, b) => b.points - a.points)
           setDrivers(sorted)
@@ -126,11 +188,16 @@ export default function StandingsSidebar() {
         // ── Constructors ─────────────────────────────────────────
         if (cs?.constructors && cs.rounds?.length) {
           const lastIdx = cs.rounds.length - 1
+          const getCtorPts = (c, idx) => Math.round((c.cumulative?.[idx] ?? 0) * 10) / 10
+          const changes = computePosChanges(cs.constructors, getCtorPts, 'constructorId')
+
           const sorted = cs.constructors
             .map(c => ({
               constructorId: c.constructorId,
               name:          c.name,
-              points:        Math.round((c.cumulative?.[lastIdx] ?? 0) * 10) / 10,
+              points:        getCtorPts(c, lastIdx),
+              posChange:     changes[c.constructorId] ?? 0,
+              cumulative:    c.cumulative,
             }))
             .sort((a, b) => b.points - a.points)
           setCtors(sorted)

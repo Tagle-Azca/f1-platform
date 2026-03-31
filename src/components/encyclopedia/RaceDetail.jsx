@@ -26,7 +26,6 @@ export default function RaceDetail({ season, round }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
       <div style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-          <span className="db-badge db-badge--mongo">MongoDB</span>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Season {season} · Round {round}</span>
           {race.date && <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{fmtDate(race.date)}</span>}
         </div>

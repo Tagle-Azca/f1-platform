@@ -53,7 +53,7 @@ export default function EncyclopediaPage() {
       />
 
       <h1 className="page__title">Race Encyclopedia</h1>
-      <p className="page__subtitle">The full history of F1 since 1950 · Data from MongoDB</p>
+      <p className="page__subtitle">The full history of F1 since 1950</p>
 
       {selected && (
         <button

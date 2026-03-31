@@ -122,7 +122,7 @@ export default function GhostLapsPanel({ circuit }) {
             Ghost Laps
           </div>
           <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2 }}>
-            Compare driver lap times side-by-side · Cassandra
+            Compare driver lap times side-by-side
           </div>
         </div>
       </div>
@@ -285,7 +285,7 @@ export default function GhostLapsPanel({ circuit }) {
 
       {!racesLoading && !error && races.length === 0 && (
         <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          No Cassandra telemetry data available for this circuit.
+          No telemetry data available for this circuit.
         </div>
       )}
     </motion.div>

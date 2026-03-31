@@ -158,7 +158,7 @@ export default function CircuitDNAPanel({ circuit, compact = false }) {
           Circuit DNA
         </div>
         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
-          Historical character analysis · {data?.total ?? '—'} races · MongoDB
+          Historical character analysis · {data?.total ?? '—'} races
         </div>
       </div>
 

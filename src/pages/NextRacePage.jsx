@@ -52,10 +52,17 @@ export default function NextRacePage() {
     if (!dates.length) return
     const start = dates.reduce((a, b) => a < b ? a : b)
     const end   = dates.reduce((a, b) => a > b ? a : b)
+
+    // Open-Meteo forecast only covers the next 16 days — skip if race is too far out
+    const today      = new Date(); today.setHours(0, 0, 0, 0)
+    const startDate  = new Date(start)
+    const diffDays   = Math.floor((startDate - today) / 86400000)
+    if (diffDays > 16) return
+
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${clat}&longitude=${clng}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=auto&start_date=${start}&end_date=${end}`)
-      .then(r => r.json())
+      .then(r => { if (!r.ok) return null; return r.json() })
       .then(data => {
-        if (!data.daily) return
+        if (!data?.daily) return
         const map = {}
         data.daily.time.forEach((date, i) => {
           map[date] = {

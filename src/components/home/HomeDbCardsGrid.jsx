@@ -5,8 +5,7 @@ import DbCardBody from './DbCardBody'
 
 const DB_CARDS = [
   {
-    db: 'mongo', name: 'MongoDB', color: '#22c55e',
-    glow: 'rgba(34,197,94,0.12)', ring: 'rgba(34,197,94,0.22)',
+    db: 'mongo',
     title: 'Season at a Glance',
     subtitle: 'Standings · Races · Circuits',
     links: [
@@ -17,8 +16,7 @@ const DB_CARDS = [
     ],
   },
   {
-    db: 'cassandra', name: 'Cassandra', color: '#a855f7',
-    glow: 'rgba(168,85,247,0.12)', ring: 'rgba(168,85,247,0.22)',
+    db: 'cassandra',
     title: 'Driver Spotlight',
     subtitle: 'Telemetry · Pace · Tire Strategy',
     links: [
@@ -28,8 +26,7 @@ const DB_CARDS = [
     ],
   },
   {
-    db: 'dgraph', name: 'Dgraph', color: '#ef4444',
-    glow: 'rgba(239,68,68,0.12)', ring: 'rgba(239,68,68,0.22)',
+    db: 'dgraph',
     title: 'Season Records',
     subtitle: 'Networks · Careers · Connections',
     links: [
@@ -42,28 +39,29 @@ const DB_CARDS = [
 export default function HomeDbCardsGrid({ data, isMobile, isTablet }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '1rem', marginTop: '0.5rem' }}>
-      {DB_CARDS.map(({ db, color, glow, ring, title, subtitle, links }, i) => (
+      {DB_CARDS.map(({ db, title, subtitle, links }, i) => (
         <motion.div
           key={db}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 + i * 0.08, duration: 0.4 }}
-          whileHover={{ y: -2, boxShadow: `0 8px 28px ${glow}` }}
+          whileHover={{ y: -2, boxShadow: 'var(--shadow-glow-accent)' }}
           style={{ position: 'relative', overflow: 'hidden' }}
         >
-          <Panel accent={db} style={{ height: '100%', position: 'relative' }}>
+          <Panel accent="accent" style={{ height: '100%', position: 'relative' }}>
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, height: 100,
-              background: `radial-gradient(ellipse at 50% 0%, ${glow} 0%, transparent 70%)`,
+              background: 'radial-gradient(ellipse at 50% 0%, rgb(var(--accent-rgb) / 0.12) 0%, transparent 70%)',
               pointerEvents: 'none',
+              transition: 'background 0.4s ease',
             }} />
             <div style={{ position: 'relative' }}>
               <div style={{ marginBottom: '0.75rem' }}>
                 <div style={{
                   fontFamily: "'Barlow Condensed', sans-serif",
                   fontSize: '1.05rem', fontWeight: 800, letterSpacing: '0.04em',
-                  textTransform: 'uppercase', color,
-                  lineHeight: 1.15,
+                  textTransform: 'uppercase', color: 'var(--accent-color)',
+                  lineHeight: 1.15, transition: 'color 0.4s ease',
                 }}>
                   {title}
                 </div>
@@ -79,20 +77,22 @@ export default function HomeDbCardsGrid({ data, isMobile, isTablet }) {
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                       padding: '0.4rem 0.85rem',
-                      borderRadius: 6, border: `1px solid ${ring}`,
-                      background: glow, color,
+                      borderRadius: 6,
+                      border: '1px solid rgb(var(--accent-rgb) / 0.22)',
+                      background: 'rgb(var(--accent-rgb) / 0.10)',
+                      color: 'var(--accent-color)',
                       fontFamily: "'Barlow Condensed', sans-serif",
                       fontSize: '0.78rem', fontWeight: 700,
                       letterSpacing: '0.07em', textTransform: 'uppercase',
                       textDecoration: 'none', transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => {
-                      e.currentTarget.style.background = glow.replace('0.12', '0.22')
-                      e.currentTarget.style.borderColor = color
+                      e.currentTarget.style.background = 'rgb(var(--accent-rgb) / 0.22)'
+                      e.currentTarget.style.borderColor = 'var(--accent-color)'
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.background = glow
-                      e.currentTarget.style.borderColor = ring
+                      e.currentTarget.style.background = 'rgb(var(--accent-rgb) / 0.10)'
+                      e.currentTarget.style.borderColor = 'rgb(var(--accent-rgb) / 0.22)'
                     }}
                   >
                     {label} <span style={{ opacity: 0.6, fontSize: '0.7rem' }}>→</span>

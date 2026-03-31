@@ -166,8 +166,7 @@ export default function DriversPage() {
       {/* Header */}
       <PageHeader
         title="Drivers"
-        subtitle={loading ? 'Loading...' : `${filtered.length} drivers · ${year} season · MongoDB`}
-        badge="mongo"
+        subtitle={loading ? 'Loading...' : `${filtered.length} drivers · ${year} season`}
         actions={
           <input
             className="input"

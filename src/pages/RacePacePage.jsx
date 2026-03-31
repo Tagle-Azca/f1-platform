@@ -150,7 +150,6 @@ export default function RacePacePage() {
       <PageHeader
         title="Race Pace Analysis"
         subtitle="Lap-by-lap time comparison · up to 5 drivers"
-        badge="cassandra"
         actions={
           <ControlGroup label="Race" width={200}>
             <select className="input" style={{ width: 200 }} value={selectedRace} onChange={e => setSelectedRace(e.target.value)}>

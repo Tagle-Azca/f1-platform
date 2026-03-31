@@ -9,11 +9,20 @@ export function useCassandraRaces(onInit) {
   useEffect(() => {
     telemetryApi.getAvailableRaces()
       .then(data => {
-        setCassRaces(data)
-        const years = [...new Set(data.map(r => r.raceId.split('_')[0]))].sort((a, b) => b - a)
+        // Sort by year DESC, then round ASC within each year
+        const sorted = [...data].sort((a, b) => {
+          const [ya, ra] = a.raceId.split('_')
+          const [yb, rb] = b.raceId.split('_')
+          if (ya !== yb) return parseInt(yb) - parseInt(ya)
+          return parseInt(ra) - parseInt(rb)
+        })
+        setCassRaces(sorted)
+        const years = [...new Set(sorted.map(r => r.raceId.split('_')[0]))].sort((a, b) => b - a)
         if (years.length) {
-          const first = data.find(r => r.raceId.startsWith(years[0] + '_'))
-          onInit(years, first?.raceId ?? '')
+          // Auto-select the LAST (most recent) race of the latest year
+          const racesOfLatest = sorted.filter(r => r.raceId.startsWith(years[0] + '_'))
+          const last = racesOfLatest[racesOfLatest.length - 1]
+          onInit(years, last?.raceId ?? '')
         }
       })
       .catch(e => {
