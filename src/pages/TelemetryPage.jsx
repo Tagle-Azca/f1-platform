@@ -25,6 +25,11 @@ import { telemetryApi } from '../services/api'
 import { F1_TEAMS } from '../data/f1Teams'
 import { teamNameToColor } from '../utils/teamColors'
 
+/** Only show races whose start date is in the past (or no date known). */
+function isPastRace(r) {
+  return r.isLive || !r.date || new Date(r.date) <= new Date()
+}
+
 /** Returns the teammate's entry from a driver list, or null. */
 function findTeammateIn(favoriteDriverName, list, nameKey) {
   if (!favoriteDriverName) return null
@@ -126,8 +131,8 @@ export default function TelemetryPage() {
     setDriverIdB('')
 
     if (parseInt(y) >= TELEMETRY_CUTOFF) {
-      // Select the last (most recent) race of the chosen year
-      const racesOfY = cassRaces.filter(r => r.raceId.startsWith(y + '_'))
+      // Select the last (most recent) past race of the chosen year
+      const racesOfY = cassRaces.filter(r => r.raceId.startsWith(y + '_') && isPastRace(r))
       const last = racesOfY[racesOfY.length - 1]
       setRaceId(last?.raceId ?? '')
     } else {
@@ -196,7 +201,7 @@ export default function TelemetryPage() {
 
   const cassYears    = [...new Set(cassRaces.map(r => r.raceId.split('_')[0]))].sort((a, b) => b - a)
   const allYears     = [...cassYears, ...HISTORICAL_YEARS]
-  const racesOfYear  = cassRaces.filter(r => r.raceId.startsWith(year + '_'))
+  const racesOfYear  = cassRaces.filter(r => r.raceId.startsWith(year + '_') && isPastRace(r))
   const selectedCassDriver  = cassDrivers.find(d => d.driverId === driverId)
   const selectedCassDriverB = cassDrivers.find(d => d.driverId === driverIdB)
   const selectedHistDriver  = histDrivers.find(d => d.driverId === driverId)

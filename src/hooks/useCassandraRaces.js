@@ -19,8 +19,10 @@ export function useCassandraRaces(onInit) {
         setCassRaces(sorted)
         const years = [...new Set(sorted.map(r => r.raceId.split('_')[0]))].sort((a, b) => b - a)
         if (years.length) {
-          // Auto-select the LAST (most recent) race of the latest year
-          const racesOfLatest = sorted.filter(r => r.raceId.startsWith(years[0] + '_'))
+          // Auto-select the LAST (most recent) past race of the latest year
+          const now = new Date()
+          const isPast = r => r.isLive || !r.date || new Date(r.date) <= now
+          const racesOfLatest = sorted.filter(r => r.raceId.startsWith(years[0] + '_') && isPast(r))
           const last = racesOfLatest[racesOfLatest.length - 1]
           onInit(years, last?.raceId ?? '')
         }

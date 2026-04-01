@@ -152,39 +152,47 @@ function RecapRow({ label, value, last = false }) {
 }
 
 const COMPOUND_ABBR  = { SOFT: 'S', MEDIUM: 'M', HARD: 'H', INTERMEDIATE: 'I', WET: 'W' }
-const COMPOUND_COLOR = { SOFT: '#e10600', MEDIUM: '#f59e0b', HARD: '#C0C0C0', INTERMEDIATE: '#22c55e', WET: '#3b82f6' }
+const COMPOUND_COLOR = { SOFT: '#e10600', MEDIUM: '#F5DA0B', HARD: '#C0C0C0', INTERMEDIATE: '#22c55e', WET: '#3b82f6' }
 
-function WinStrategyTimeline({ stints, totalLaps }) {
+function WinStrategyTimeline({ stints }) {
   if (!stints?.length) return null
-  const total = totalLaps || stints.reduce((n, s) => n + (s.laps || 1), 0)
   return (
-    <div style={{ display: 'flex', gap: 2, flex: 1 }}>
+    <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
       {stints.map((stint, i) => {
-        const pct  = Math.max(((stint.laps || 1) / total) * 100, 2)
         const color = COMPOUND_COLOR[stint.compound] || '#555'
         const abbr  = COMPOUND_ABBR[stint.compound]  || '?'
+        const tip   = stint.laps ? `${abbr} · ${stint.laps} laps` : abbr
         return (
-          <div
-            key={i}
-            title={`${abbr} · ${stint.laps} laps`}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: `${pct}%`, flexShrink: 0 }}
-          >
-            <div style={{
-              width: '100%',
-              height: 11,
-              background: color,
-              opacity: 0.72,
-              borderRadius: 2,
-            }} />
-            <span style={{
-              fontSize: '0.5rem',
-              fontFamily: 'monospace',
-              color: 'rgba(255,255,255,0.35)',
-              marginTop: 2,
-              lineHeight: 1,
-            }}>
-              {abbr}
-            </span>
+          <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+            {i > 0 && (
+              <div style={{ width: 8, height: 1, background: 'var(--border-subtle)', flexShrink: 0 }} />
+            )}
+            <div
+              title={tip}
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                border: `2.5px solid ${color}`,
+                background: 'var(--surface-1, #0f0f0f)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                cursor: 'default',
+              }}
+            >
+              <span style={{
+                fontSize: '0.5rem',
+                fontFamily: 'monospace',
+                fontWeight: 700,
+                color,
+                lineHeight: 1,
+                userSelect: 'none',
+              }}>
+                {abbr}
+              </span>
+            </div>
           </div>
         )
       })}
@@ -308,11 +316,17 @@ export default function LastGPPanel({ history }) {
 
   const fastestTime = fastest?.FastestLap?.Time?.time ?? null
 
-  // ── DNFs ──────────────────────────────────────────────
-  const dnfs = results.filter(r => {
+  // ── DNF / DNS — race results only ─────────────────────
+  const isFinished = r => {
     const s = r.status || ''
-    return s !== 'Finished' && !/^\+\d+/.test(s)
-  })
+    return s === 'Finished' || /^\+\d+\s*Lap/.test(s)
+  }
+  const isDNS = r => {
+    const s = (r.status || '').toLowerCase()
+    return s.includes('did not start') || s === 'dns' || s.includes('withdrew') || r.grid === '0'
+  }
+  const dnfs = results.filter(r => !isFinished(r) && !isDNS(r))
+  const dnss = results.filter(r => isDNS(r))
 
   // ── Overtakes (sum of net position gains by all finishers) ─
   const overtakes = results.reduce((sum, r) => {
@@ -337,12 +351,8 @@ export default function LastGPPanel({ history }) {
       extra: fastestTime,
       ctor:  fastest.Constructor?.constructorId,
     } : null,
-    dnfs.length > 0 ? {
-      label: 'DNFs',
-      value: String(dnfs.length),
-      extra: dnfs.slice(0, 2).map(r => r.Driver.familyName).join(' · '),
-      ctor:  null,
-    } : null,
+    dnfs.length > 0 ? { label: 'DNF', value: String(dnfs.length), extra: null, ctor: null } : null,
+    dnss.length > 0 ? { label: 'DNS', value: String(dnss.length), extra: null, ctor: null } : null,
   ].filter(Boolean)
 
   return (
@@ -429,7 +439,7 @@ export default function LastGPPanel({ history }) {
             Win. Strategy
           </span>
           {strategyData?.stints?.length
-            ? <WinStrategyTimeline stints={strategyData.stints} totalLaps={strategyData.totalLaps} />
+            ? <WinStrategyTimeline stints={strategyData.stints} />
             : <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff', paddingLeft: '0.5rem' }}>—</span>
           }
         </div>

@@ -91,8 +91,6 @@ export default function RaceDetailPage() {
     </PageWrapper>
   )
 
-  // Default to Race Results tab when race is past, first tab otherwise
-  const activeTab  = tab || (!isUpcoming ? 'race' : (TABS[0]?.id ?? null))
   // A race is "upcoming" only if it hasn't started yet (date + 4h buffer)
   const raceStartMs = race.date
     ? new Date(`${race.date}T${(race.time || '00:00:00').replace(/Z$/i, '')}Z`).getTime()
@@ -100,6 +98,9 @@ export default function RaceDetailPage() {
   const isUpcoming = raceStartMs
     ? Date.now() < raceStartMs + 4 * 60 * 60 * 1000
     : !results.length
+
+  // Default to Race Results tab when race is past, first tab otherwise
+  const activeTab = tab || (!isUpcoming ? 'race' : (TABS[0]?.id ?? null))
 
   return (
     <>
