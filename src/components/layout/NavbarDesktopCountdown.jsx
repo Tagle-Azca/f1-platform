@@ -5,11 +5,38 @@ import { useBreakpoint } from '../../hooks/useBreakpoint'
 export default function NavbarDesktopCountdown({ nextRace, live, countdown, isUrgent, flagUrl }) {
   const navigate  = useNavigate()
   const location  = useLocation()
-  const { isTablet } = useBreakpoint()
+  const { isTablet, isMobile } = useBreakpoint()
   const isHome    = location.pathname === '/'
   const [hover, setHover] = useState(false)
 
   if (!nextRace || (!live && !countdown)) return null
+
+  // ── Mobile: compact pill — just flag + live dot or time numbers ──
+  if (isMobile) {
+    return (
+      <button
+        onClick={() => navigate(live ? '/live' : '/next-race')}
+        style={{
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '0.35rem',
+          background: live ? 'rgba(239,68,68,0.10)' : isUrgent ? 'rgba(225,6,0,0.07)' : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${live ? 'rgba(239,68,68,0.35)' : isUrgent ? 'rgba(225,6,0,0.4)' : 'rgba(255,255,255,0.08)'}`,
+          borderRadius: 7, padding: '0.3rem 0.45rem',
+          animation: isUrgent && !live ? 'urgent-glow 1.8s ease-in-out infinite' : 'none',
+          flexShrink: 0,
+        }}
+      >
+        {flagUrl && <img src={flagUrl} alt={nextRace.country} style={{ width: 18, height: 'auto', borderRadius: 2, flexShrink: 0 }} />}
+        {live ? (
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite', flexShrink: 0 }} />
+        ) : countdown ? (
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.78rem', fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: '#fff', whiteSpace: 'nowrap', lineHeight: 1 }}>
+            {String(countdown.d).padStart(2,'0')}<span style={{ fontSize: '0.52rem', color: 'var(--text-muted)' }}>d</span>{String(countdown.h).padStart(2,'0')}<span style={{ fontSize: '0.52rem', color: 'var(--text-muted)' }}>h</span>{String(countdown.m).padStart(2,'0')}<span style={{ fontSize: '0.52rem', color: 'var(--text-muted)' }}>m</span>
+          </span>
+        ) : null}
+      </button>
+    )
+  }
 
   return (
     <div style={{ position: 'relative' }}>

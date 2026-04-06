@@ -51,6 +51,8 @@ export default function GarageDrawer({ open, onClose }) {
     onClose()
   }
 
+  if (!open) return null
+
   return (
     <>
       {/* Backdrop */}
@@ -60,9 +62,6 @@ export default function GarageDrawer({ open, onClose }) {
           position: 'fixed', inset: 0, zIndex: 1100,
           background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-          opacity: open ? 1 : 0,
-          pointerEvents: open ? 'all' : 'none',
-          transition: 'opacity 0.25s ease',
         }}
       />
 
@@ -76,8 +75,6 @@ export default function GarageDrawer({ open, onClose }) {
         backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
         boxShadow: '-24px 0 80px rgba(0,0,0,0.6)',
         display: 'flex', flexDirection: 'column',
-        transform: open ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.28s cubic-bezier(0.16,1,0.3,1)',
       }}>
 
         {/* Header */}
