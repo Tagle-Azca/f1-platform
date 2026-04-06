@@ -13,7 +13,7 @@ const PULSE_STYLE = `
   }
 `
 
-export default function DriverSpotlightCard({ data }) {
+export default function DriverSpotlightCard({ data, isNarrow = false }) {
   const { isMobile } = useBreakpoint()
   const {
     spotlight, driverTeam, isYourDriver, pulseKey,
@@ -64,24 +64,28 @@ export default function DriverSpotlightCard({ data }) {
           isMobile={isMobile}
         />
 
-        <PredictionRow
-          predicted={predicted}
-          confidence={confidence}
-          lastPos={lastPos}
-          lastRaceName={lastRaceName}
-          qualiGap={qualiGap}
-          mateSurname={mateSurname}
-          isMobile={isMobile}
-        />
+        {!isNarrow && (
+          <>
+            <PredictionRow
+              predicted={predicted}
+              confidence={confidence}
+              lastPos={lastPos}
+              lastRaceName={lastRaceName}
+              qualiGap={qualiGap}
+              mateSurname={mateSurname}
+              isMobile={isMobile}
+            />
 
-        {insight && (
-          <div style={{ fontSize: isMobile ? '0.62rem' : '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '0.65rem' }}>
-            {insight}
-          </div>
-        )}
+            {insight && (
+              <div style={{ fontSize: isMobile ? '0.62rem' : '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '0.65rem' }}>
+                {insight}
+              </div>
+            )}
 
-        {isYourDriver && (
-          <H2HBars rows={h2hRows} mateSurname={mateSurname} teamColor={teamColor} isMobile={isMobile} />
+            {isYourDriver && (
+              <H2HBars rows={h2hRows} mateSurname={mateSurname} teamColor={teamColor} isMobile={isMobile} />
+            )}
+          </>
         )}
       </div>
     </>

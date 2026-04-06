@@ -29,7 +29,7 @@ export default function PredictionRow({ predicted, confidence, lastPos, lastRace
     }}>
       <Cell label="Pred. Finish" isMobile={isMobile}>
         <div style={{ fontSize: valSize, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", lineHeight: 1, color: predColor }}>
-          {predicted ? `P${predicted}` : '—'}
+          {predicted ? (predicted === 10 ? 'P10+' : `P${predicted}`) : '—'}
         </div>
         {confidence && (
           <div style={{ fontSize: subSize, fontWeight: 700, color: CONFIDENCE_COLOR[confidence], marginTop: 3, letterSpacing: '0.06em' }}>

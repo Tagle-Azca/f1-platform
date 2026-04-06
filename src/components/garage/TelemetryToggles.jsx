@@ -106,27 +106,6 @@ export default function TelemetryToggles() {
         />
       </div>
 
-      {/* Data layers */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-        <SectionLabel>Dashboard Data Layers</SectionLabel>
-        {[
-          { key: 'tireLife',    label: 'Tyre Life',     sub: 'Predicted degradation curves' },
-          { key: 'gForce',      label: 'G-Force',       sub: 'Lateral & longitudinal loads' },
-          { key: 'drsZones',    label: 'DRS Zones',     sub: 'Activation points on map' },
-          { key: 'sectorTimes', label: 'Sector Times',  sub: 'Split breakdown per driver' },
-        ].map(({ key, label, sub }) => (
-          <Row
-            key={key} label={label} sub={sub}
-            right={
-              <Toggle
-                on={draft.dataLayers[key]}
-                onChange={v => setLayer(key, v)}
-              />
-            }
-          />
-        ))}
-      </div>
-
     </div>
   )
 }

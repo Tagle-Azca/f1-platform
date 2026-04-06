@@ -1,7 +1,8 @@
 export const CONFIDENCE_COLOR = { High: '#22c55e', Medium: '#f59e0b', Low: '#e10600' }
 
 export function predictFinish(points, roundsDone) {
-  if (!points || !roundsDone || roundsDone < 2) return null
+  if (points == null || !roundsDone || roundsDone < 2) return null
+  if (points === 0) return null
   const avg = points / roundsDone
   if (avg >= 22) return 1
   if (avg >= 16) return 2
@@ -12,7 +13,7 @@ export function predictFinish(points, roundsDone) {
   if (avg >= 4)  return 7
   if (avg >= 2)  return 8
   if (avg >= 1)  return 9
-  return null
+  return 10
 }
 
 export function confidenceFor(predicted, roundsDone) {

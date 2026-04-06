@@ -84,11 +84,16 @@ function DriverRow({ entry, i }) {
 
 function CtorRow({ entry, i }) {
   const color = teamColor(entry.constructorId)
+  const { prefs } = usePreferences()
+  const isFocus = prefs.favoriteTeam && entry.constructorId === prefs.favoriteTeam
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '0.35rem',
       padding: '0.36rem 0.75rem',
       borderBottom: '1px solid rgba(255,255,255,0.04)',
+      background: isFocus ? `${color}12` : 'transparent',
+      borderLeft: isFocus ? `2px solid ${color}` : '2px solid transparent',
+      transition: 'background 0.4s, border-color 0.4s',
     }}>
       <span style={{
         fontFamily: "'Barlow Condensed', sans-serif",

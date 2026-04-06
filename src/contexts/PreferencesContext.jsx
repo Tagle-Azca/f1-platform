@@ -24,11 +24,20 @@ function effectiveAccent(favoriteTeam, favoriteDriver) {
   return NEUTRAL_ACCENT
 }
 
+const DEFAULT_LAYOUT = {
+  order:         ['cassandra', 'mongo', 'dgraph'],
+  enabled:       ['cassandra', 'mongo', 'dgraph'],
+  featured:      'cassandra',
+  sections:      ['standings-row', 'db-cards'],
+  standingsLeft: true,
+}
+
 const DEFAULT = {
-  favoriteTeam:   null,
-  favoriteDriver: null,
-  units:       { speed: 'kmh', temp: 'celsius' },
-  dataLayers:  { tireLife: true, gForce: false, drsZones: true, sectorTimes: true },
+  favoriteTeam:    null,
+  favoriteDriver:  null,
+  units:           { speed: 'kmh', temp: 'celsius' },
+  dataLayers:      { tireLife: true, gForce: false, drsZones: true, sectorTimes: true },
+  dashboardLayout: DEFAULT_LAYOUT,
 }
 
 const LS_KEY = 'pw_prefs_ext'
@@ -67,8 +76,9 @@ export function PreferencesProvider({ children }) {
       // DB is source of truth when logged in; localStorage is fallback for non-logged-in or network failures
       favoriteTeam:   user?.preferences?.favoriteTeam   || ext.favoriteTeam   || null,
       favoriteDriver: user?.preferences?.favoriteDriver || ext.favoriteDriver || null,
-      units:      ext.units      ?? DEFAULT.units,
-      dataLayers: ext.dataLayers ?? DEFAULT.dataLayers,
+      units:           ext.units           ?? DEFAULT.units,
+      dataLayers:      ext.dataLayers      ?? DEFAULT.dataLayers,
+      dashboardLayout: ext.dashboardLayout ?? DEFAULT_LAYOUT,
     }
     setPrefs(loaded)
     setDraftRaw(loaded)
@@ -98,14 +108,23 @@ export function PreferencesProvider({ children }) {
     saveExtended({ units: DEFAULT.units, dataLayers: DEFAULT.dataLayers, favoriteTeam: null, favoriteDriver: null })
   }, [])
 
+  // Layout changes apply immediately (no Apply button needed)
+  const setLayout = useCallback((layout) => {
+    const ext = loadExtended()
+    saveExtended({ ...ext, dashboardLayout: layout })
+    setPrefs(p  => ({ ...p,  dashboardLayout: layout }))
+    setDraftRaw(p => ({ ...p, dashboardLayout: layout }))
+  }, [])
+
   const applyChanges = useCallback(async () => {
     // Optimistic update — apply immediately so UI doesn't reset
     setPrefs(draft)
     saveExtended({
-      units:          draft.units,
-      dataLayers:     draft.dataLayers,
-      favoriteTeam:   draft.favoriteTeam   || null,
-      favoriteDriver: draft.favoriteDriver || null,
+      units:           draft.units,
+      dataLayers:      draft.dataLayers,
+      favoriteTeam:    draft.favoriteTeam    || null,
+      favoriteDriver:  draft.favoriteDriver  || null,
+      dashboardLayout: draft.dashboardLayout ?? DEFAULT_LAYOUT,
     })
 
     if (!user) return
@@ -124,7 +143,7 @@ export function PreferencesProvider({ children }) {
   return (
     <PreferencesContext.Provider value={{
       prefs, draft,
-      setDraft, applyChanges, resetDraft, resetAll,
+      setDraft, setLayout, applyChanges, resetDraft, resetAll,
       previewAccent, accentColor,
     }}>
       {children}

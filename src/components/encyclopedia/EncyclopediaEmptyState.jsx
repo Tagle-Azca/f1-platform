@@ -1,5 +1,6 @@
 import DriverBanner from './DriverBanner'
 import ConstructorBanner from './ConstructorBanner'
+import FavoriteHighlight from './FavoriteHighlight'
 
 const INFO_CARDS = [
   { title: 'Grand Prix',    desc: 'Search any GP from 1950 to today' },
@@ -25,6 +26,7 @@ export default function EncyclopediaEmptyState({ bannerSeason, onSeasonChange, y
         </select>
       </div>
 
+      <FavoriteHighlight onSelect={onSelect} />
       <DriverBanner season={bannerSeason} onDriverSelect={onSelect} />
       <ConstructorBanner season={bannerSeason} onSelect={onSelect} />
 

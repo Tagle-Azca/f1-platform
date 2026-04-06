@@ -13,12 +13,17 @@ import HomeStandingsPanel from '../components/home/HomeStandingsPanel'
 import HomeDbCardsGrid from '../components/home/HomeDbCardsGrid'
 import HomeFooter from '../components/home/HomeFooter'
 import { useBreakpoint } from '../hooks/useBreakpoint'
+import { usePreferences } from '../contexts/PreferencesContext'
 import BackendError from '../components/ui/BackendError'
 import LiveTimingBanner from '../components/home/LiveTimingBanner'
 import LiveConsoleDashboard from '../components/home/LiveConsoleDashboard'
 
 export default function HomePage() {
   const { isMobile, isTablet } = useBreakpoint()
+  const { prefs } = usePreferences()
+  const layout       = prefs.dashboardLayout ?? {}
+  const sections     = layout.sections     ?? ['standings-row', 'db-cards']
+  const standingsLeft = layout.standingsLeft ?? true
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(false)
@@ -88,8 +93,7 @@ export default function HomePage() {
 
       {/* ── Session state machine ──────────────────────────── */}
       <AnimatePresence mode="wait">
-        {isLive ? (
-          // LIVE MODE: full timing console + track radar
+        {isLive && (
           <motion.div
             key="live-console"
             initial={{ opacity: 0, y: -8 }}
@@ -99,44 +103,47 @@ export default function HomePage() {
           >
             <LiveConsoleDashboard tower={tower} isMobile={isMobile} />
           </motion.div>
-        ) : (
-          // STANDINGS MODE: normal dashboard layout
+        )}
+      </AnimatePresence>
+
+      {!isLive && (() => {
+        const standingsRow = (
           <motion.div
             key="standings"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {/* Completed banner (shows summary when session just ended) */}
             <LiveTimingBanner tower={tower} />
-
-            {/* Main grid: standings + last session */}
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.4fr', gap: '1rem', marginBottom: '1rem' }}>
-              <HomeStandingsPanel
-                data={data}
-                loading={loading}
-                standingsTab={standingsTab}
-                onTabChange={setStandingsTab}
-                onDriverClick={setSelectedDriver}
-                onConstructorClick={setSelectedConstructor}
-              />
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.18, duration: 0.4 }}
-                style={{ display: 'flex', flexDirection: 'column' }}
-              >
-                {liveData ? <LiveRacePanel live={liveData} /> : (
-                  <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />
-                )}
-              </motion.div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : (standingsLeft ? '1fr 1.4fr' : '1.4fr 1fr'),
+              gap: '1rem', marginBottom: '1rem',
+            }}>
+              {standingsLeft ? (
+                <>
+                  <HomeStandingsPanel data={data} loading={loading} standingsTab={standingsTab} onTabChange={setStandingsTab} onDriverClick={setSelectedDriver} onConstructorClick={setSelectedConstructor} />
+                  <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.4 }} style={{ display: 'flex', flexDirection: 'column' }}>
+                    {liveData ? <LiveRacePanel live={liveData} /> : <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />}
+                  </motion.div>
+                </>
+              ) : (
+                <>
+                  <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.4 }} style={{ display: 'flex', flexDirection: 'column' }}>
+                    {liveData ? <LiveRacePanel live={liveData} /> : <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />}
+                  </motion.div>
+                  <HomeStandingsPanel data={data} loading={loading} standingsTab={standingsTab} onTabChange={setStandingsTab} onDriverClick={setSelectedDriver} onConstructorClick={setSelectedConstructor} />
+                </>
+              )}
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        )
 
-      <HomeDbCardsGrid data={data} isMobile={isMobile} isTablet={isTablet} />
+        const dbCards = <HomeDbCardsGrid key="db-cards" data={data} isMobile={isMobile} isTablet={isTablet} />
+
+        const blocks = { 'standings-row': standingsRow, 'db-cards': dbCards }
+        return sections.map(key => blocks[key] ?? null)
+      })()}
 
       <HomeFooter />
 
