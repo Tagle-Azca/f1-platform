@@ -61,6 +61,7 @@ export default function DriverSpotlightCard({ data }) {
           leaderPoints={leaderPoints}
           remaining={remaining}
           teamColor={teamColor}
+          isMobile={isMobile}
         />
 
         <PredictionRow
@@ -70,16 +71,17 @@ export default function DriverSpotlightCard({ data }) {
           lastRaceName={lastRaceName}
           qualiGap={qualiGap}
           mateSurname={mateSurname}
+          isMobile={isMobile}
         />
 
         {insight && (
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '0.65rem' }}>
+          <div style={{ fontSize: isMobile ? '0.62rem' : '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: '0.65rem' }}>
             {insight}
           </div>
         )}
 
         {isYourDriver && (
-          <H2HBars rows={h2hRows} mateSurname={mateSurname} teamColor={teamColor} />
+          <H2HBars rows={h2hRows} mateSurname={mateSurname} teamColor={teamColor} isMobile={isMobile} />
         )}
       </div>
     </>
