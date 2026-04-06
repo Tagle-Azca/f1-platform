@@ -144,8 +144,8 @@ export default function HomeDbCardsGrid({ data, isMobile, isTablet }) {
     )
   }
 
-  // ── Tablet: 2-column, Spotlight first
-  if (isTablet) {
+  // ── Tablet: 2-column, Spotlight first (not mobile)
+  if (isTablet && !isMobile) {
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginTop: '0.5rem' }}>
         <CardWrapper card={SPOTLIGHT}    data={data} hasFavorite={hasFavorite} />

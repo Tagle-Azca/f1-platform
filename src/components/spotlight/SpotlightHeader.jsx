@@ -2,7 +2,7 @@ import ConstructorLogo from '../ui/ConstructorLogo'
 
 export default function SpotlightHeader({ spotlight, driverTeam, driverPhoto, teamColor, isYourDriver, trend, trendColor, showTrend, isMobile }) {
   const initials = spotlight.name?.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
-  const SIZE = isMobile ? 64 : 102
+  const SIZE = isMobile ? 48 : 102
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>

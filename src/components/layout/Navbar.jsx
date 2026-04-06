@@ -47,7 +47,7 @@ export default function Navbar() {
         background: 'var(--surface-1)',
         backdropFilter: 'blur(20px)',
         borderBottom: '1px solid var(--border-color)',
-        position: 'sticky', top: 0, zIndex: 100,
+        position: 'sticky', top: 0, zIndex: 40,
         gap: '0.75rem',
       }}>
 

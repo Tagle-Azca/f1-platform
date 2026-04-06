@@ -53,6 +53,25 @@ export default function NavbarMobileDrawer({ open, onClose, nextRace, live, coun
                 display: 'flex', flexDirection: 'column',
               }}
             >
+              {/* Drawer header with close button */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.85rem 1rem 0.5rem', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Menu</span>
+                <button
+                  onClick={onClose}
+                  aria-label="Close menu"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 32, height: 32, borderRadius: 7,
+                    background: 'var(--surface-3)', border: '1px solid var(--border-subtle)',
+                    color: 'var(--text-secondary)', cursor: 'pointer',
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 16, height: 16 }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
               <div style={{ padding: '1.25rem 1rem', flex: 1 }}>
 
                 {/* Nav links */}
