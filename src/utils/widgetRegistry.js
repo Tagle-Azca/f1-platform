@@ -8,7 +8,7 @@ export const WIDGET_REGISTRY = {
     label:    'Driver Spotlight',
     desc:     'Telemetry · Pace · Strategy',
     icon:     '🏎',
-    minCols:  2,   // rich layout, needs wide slot
+    minCols:  2,
     category: 'personal',
   },
   team: {
@@ -37,11 +37,12 @@ export const WIDGET_REGISTRY = {
   },
 }
 
-export const ALL_WIDGET_IDS = Object.keys(WIDGET_REGISTRY)
+export const ALL_WIDGET_IDS  = Object.keys(WIDGET_REGISTRY)
 export const DEFAULT_ENABLED = ['cassandra', 'mongo', 'dgraph']
 export const DEFAULT_ORDER   = ['cassandra', 'mongo', 'dgraph']
+export const DEFAULT_PAGE_ORDER = ['standings', 'lastSession', 'cassandra', 'mongo', 'dgraph']
 
-const SECTION_IDS = ['standings', 'lastSession']
+export const SECTION_IDS = ['standings', 'lastSession']
 
 /** Returns true if the widget would be in a narrow (1fr) slot given layout */
 export function isNarrowSlot(widgetId, layout) {
@@ -57,9 +58,25 @@ export function hasConstraintViolation(widgetId, layout) {
   return isNarrowSlot(widgetId, layout)
 }
 
-/** Build a flat unified list from the current layout */
+/**
+ * Returns the flat unified list of all items in display order.
+ * New format: uses layout.pageOrder directly.
+ * Legacy fallback: derives from sections + standingsLeft + order.
+ */
 export function getUnifiedList(layout) {
-  const { sections = ['standings-row', 'db-cards'], standingsLeft = true, order = [], enabled = [] } = layout ?? {}
+  const { pageOrder, sections = ['standings-row', 'db-cards'], standingsLeft = true, order = [], enabled = [] } = layout ?? {}
+
+  if (pageOrder) {
+    // Filter out disabled widgets; keep section items always
+    const result = pageOrder.filter(id => SECTION_IDS.includes(id) || enabled.includes(id))
+    // Safety net: append enabled widgets not yet in pageOrder
+    for (const id of enabled) {
+      if (!SECTION_IDS.includes(id) && !result.includes(id)) result.push(id)
+    }
+    return result
+  }
+
+  // Legacy fallback
   const result = []
   for (const section of sections) {
     if (section === 'standings-row') {
@@ -68,7 +85,6 @@ export function getUnifiedList(layout) {
       result.push(...order.filter(id => enabled.includes(id)))
     }
   }
-  // Append any enabled widgets not yet in result (safety net)
   for (const id of enabled) {
     if (!SECTION_IDS.includes(id) && !result.includes(id)) result.push(id)
   }
@@ -78,14 +94,30 @@ export function getUnifiedList(layout) {
 /** Derive layout fields from a reordered unified list */
 export function layoutFromUnified(unified, layout) {
   const widgetIds = unified.filter(id => !SECTION_IDS.includes(id))
-  const sIdx = unified.indexOf('standings')
-  const lIdx = unified.indexOf('lastSession')
-  const firstWidget = widgetIds.length > 0 ? unified.indexOf(widgetIds[0]) : unified.length
-  const sectionRowFirst = Math.min(sIdx < 0 ? Infinity : sIdx, lIdx < 0 ? Infinity : lIdx) <= firstWidget
   return {
     ...layout,
-    standingsLeft: sIdx <= lIdx,
-    sections: sectionRowFirst ? ['standings-row', 'db-cards'] : ['db-cards', 'standings-row'],
-    order: widgetIds,
+    pageOrder: unified,
+    order:     widgetIds,
   }
+}
+
+/**
+ * Split a unified list into renderable page segments:
+ * { type: 'standings' | 'lastSession' | 'widgets', ids?: string[] }
+ */
+export function getPageSegments(layout) {
+  const unified = getUnifiedList(layout)
+  const segments = []
+  let widgetBuffer = []
+
+  for (const id of unified) {
+    if (SECTION_IDS.includes(id)) {
+      if (widgetBuffer.length) { segments.push({ type: 'widgets', ids: [...widgetBuffer] }); widgetBuffer = [] }
+      segments.push({ type: id })
+    } else {
+      widgetBuffer.push(id)
+    }
+  }
+  if (widgetBuffer.length) segments.push({ type: 'widgets', ids: widgetBuffer })
+  return segments
 }

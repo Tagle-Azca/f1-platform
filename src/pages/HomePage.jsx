@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { HOME_LIVE_POLL_INTERVAL } from '../constants'
+import { getPageSegments } from '../utils/widgetRegistry'
 import PageWrapper from '../components/layout/PageWrapper'
 import DriverDrawer from '../components/ui/DriverDrawer'
 import ConstructorDrawer from '../components/ui/ConstructorDrawer'
@@ -21,9 +22,8 @@ import LiveConsoleDashboard from '../components/home/LiveConsoleDashboard'
 export default function HomePage() {
   const { isMobile, isTablet } = useBreakpoint()
   const { prefs } = usePreferences()
-  const layout       = prefs.dashboardLayout ?? {}
-  const sections     = layout.sections     ?? ['standings-row', 'db-cards']
-  const standingsLeft = layout.standingsLeft ?? true
+  const layout   = prefs.dashboardLayout ?? {}
+  const segments = getPageSegments(layout)
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(false)
@@ -106,44 +106,27 @@ export default function HomePage() {
         )}
       </AnimatePresence>
 
-      {!isLive && (() => {
-        const standingsRow = (
-          <motion.div
-            key="standings"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <LiveTimingBanner tower={tower} />
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : (standingsLeft ? '1fr 1.4fr' : '1.4fr 1fr'),
-              gap: '1rem', marginBottom: '1rem',
-            }}>
-              {standingsLeft ? (
-                <>
-                  <HomeStandingsPanel data={data} loading={loading} standingsTab={standingsTab} onTabChange={setStandingsTab} onDriverClick={setSelectedDriver} onConstructorClick={setSelectedConstructor} />
-                  <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.4 }} style={{ display: 'flex', flexDirection: 'column' }}>
-                    {liveData ? <LiveRacePanel live={liveData} /> : <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />}
-                  </motion.div>
-                </>
-              ) : (
-                <>
-                  <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18, duration: 0.4 }} style={{ display: 'flex', flexDirection: 'column' }}>
-                    {liveData ? <LiveRacePanel live={liveData} /> : <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />}
-                  </motion.div>
-                  <HomeStandingsPanel data={data} loading={loading} standingsTab={standingsTab} onTabChange={setStandingsTab} onDriverClick={setSelectedDriver} onConstructorClick={setSelectedConstructor} />
-                </>
-              )}
-            </div>
-          </motion.div>
-        )
-
-        const dbCards = <HomeDbCardsGrid key="db-cards" data={data} isMobile={isMobile} isTablet={isTablet} />
-
-        const blocks = { 'standings-row': standingsRow, 'db-cards': dbCards }
-        return sections.map(key => blocks[key] ?? null)
-      })()}
+      {!isLive && (
+        <>
+          <LiveTimingBanner tower={tower} />
+          {segments.map((seg, si) => {
+            if (seg.type === 'standings') return (
+              <motion.div key="standings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} style={{ marginBottom: '1rem' }}>
+                <HomeStandingsPanel data={data} loading={loading} standingsTab={standingsTab} onTabChange={setStandingsTab} onDriverClick={setSelectedDriver} onConstructorClick={setSelectedConstructor} />
+              </motion.div>
+            )
+            if (seg.type === 'lastSession') return (
+              <motion.div key="lastSession" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} style={{ marginBottom: '1rem' }}>
+                {liveData ? <LiveRacePanel live={liveData} /> : <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />}
+              </motion.div>
+            )
+            if (seg.type === 'widgets') return (
+              <HomeDbCardsGrid key={`widgets-${si}`} widgetIds={seg.ids} data={data} isMobile={isMobile} isTablet={isTablet} />
+            )
+            return null
+          })}
+        </>
+      )}
 
       <HomeFooter />
 

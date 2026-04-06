@@ -25,11 +25,10 @@ function effectiveAccent(favoriteTeam, favoriteDriver) {
 }
 
 const DEFAULT_LAYOUT = {
-  order:         ['cassandra', 'mongo', 'dgraph'],
-  enabled:       ['cassandra', 'mongo', 'dgraph'],
-  featured:      'cassandra',
-  sections:      ['standings-row', 'db-cards'],
-  standingsLeft: true,
+  order:     ['cassandra', 'mongo', 'dgraph'],
+  enabled:   ['cassandra', 'mongo', 'dgraph'],
+  featured:  'cassandra',
+  pageOrder: ['standings', 'lastSession', 'cassandra', 'mongo', 'dgraph'],
 }
 
 const DEFAULT = {

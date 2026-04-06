@@ -53,10 +53,11 @@ const CARDS_CONFIG = {
   },
 }
 
-function CardWrapper({ card, data, hasFavorite, layout, style = {} }) {
+function CardWrapper({ card, data, hasFavorite, layout, isAlone = false, style = {} }) {
   const { db, title, subtitle, links } = card
   const isPersonal   = db === 'cassandra' || db === 'team'
-  const hasViolation = hasConstraintViolation(db, layout)
+  // No violation when alone (card is always full-width in that case)
+  const hasViolation = !isAlone && hasConstraintViolation(db, layout)
 
   return (
     <motion.div
@@ -129,54 +130,45 @@ function CardWrapper({ card, data, hasFavorite, layout, style = {} }) {
   )
 }
 
-const DEFAULT_ORDER   = ['cassandra', 'mongo', 'dgraph']
-const DEFAULT_ENABLED = ['cassandra', 'mongo', 'dgraph']
-const DEFAULT_FEATURED = 'cassandra'
-
-export default function HomeDbCardsGrid({ data, isMobile, isTablet }) {
+export default function HomeDbCardsGrid({ data, isMobile, isTablet, widgetIds }) {
   const { prefs } = usePreferences()
   const hasFavorite = !!prefs.favoriteDriver
 
   const layout   = prefs.dashboardLayout ?? {}
-  const order    = layout.order    ?? DEFAULT_ORDER
-  const enabled  = layout.enabled  ?? DEFAULT_ENABLED
-  const featured = layout.featured ?? DEFAULT_FEATURED
+  const featured = layout.featured ?? 'cassandra'
 
-  // Only render enabled widgets, in user-defined order
-  const cards = order
-    .filter(db => enabled.includes(db) && CARDS_CONFIG[db])
+  // Render only the widgets passed in, in the given order
+  const cards = widgetIds
+    .filter(db => CARDS_CONFIG[db])
     .map(db => CARDS_CONFIG[db])
 
   if (!cards.length) return null
 
-  const featuredCard = CARDS_CONFIG[featured] && enabled.includes(featured)
+  const alone        = cards.length === 1
+  const featuredCard = (CARDS_CONFIG[featured] && widgetIds.includes(featured))
     ? CARDS_CONFIG[featured]
     : cards[0]
 
-  // ── Desktop: featured (2fr) + others stacked (1fr) ──
-  if (!isMobile && !isTablet) {
-    const others = cards.filter(c => c.db !== featuredCard.db)
+  // ── Mobile: stacked ──
+  if (isMobile) {
     return (
       <>
         <style>{CONTAINER_CSS}</style>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
-          <CardWrapper card={featuredCard} data={data} hasFavorite={hasFavorite} layout={layout} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {others.map(card => <CardWrapper key={card.db} card={card} data={data} hasFavorite={hasFavorite} layout={layout} />)}
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
+          {cards.map(card => <CardWrapper key={card.db} card={card} data={data} hasFavorite={hasFavorite} layout={layout} isAlone={alone} />)}
         </div>
       </>
     )
   }
 
   // ── Tablet: 2-column ──
-  if (isTablet && !isMobile) {
+  if (isTablet) {
     const [first, second, third] = cards
     return (
       <>
         <style>{CONTAINER_CSS}</style>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginTop: '0.5rem' }}>
-          <CardWrapper card={first} data={data} hasFavorite={hasFavorite} layout={layout} />
+        <div style={{ display: 'grid', gridTemplateColumns: alone ? '1fr' : 'repeat(2, 1fr)', gap: '1rem', marginTop: '0.5rem' }}>
+          <CardWrapper card={first} data={data} hasFavorite={hasFavorite} layout={layout} isAlone={alone} />
           {second && <CardWrapper card={second} data={data} hasFavorite={hasFavorite} layout={layout} />}
           {third  && <CardWrapper card={third}  data={data} hasFavorite={hasFavorite} layout={layout} style={{ gridColumn: '1 / -1' }} />}
         </div>
@@ -184,12 +176,27 @@ export default function HomeDbCardsGrid({ data, isMobile, isTablet }) {
     )
   }
 
-  // ── Mobile: stacked ──
+  // ── Desktop: alone = full-width | multiple = featured (2fr) + others stacked (1fr) ──
+  if (alone) {
+    return (
+      <>
+        <style>{CONTAINER_CSS}</style>
+        <div style={{ marginTop: '0.5rem' }}>
+          <CardWrapper card={featuredCard} data={data} hasFavorite={hasFavorite} layout={layout} isAlone />
+        </div>
+      </>
+    )
+  }
+
+  const others = cards.filter(c => c.db !== featuredCard.db)
   return (
     <>
       <style>{CONTAINER_CSS}</style>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
-        {cards.map(card => <CardWrapper key={card.db} card={card} data={data} hasFavorite={hasFavorite} layout={layout} />)}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+        <CardWrapper card={featuredCard} data={data} hasFavorite={hasFavorite} layout={layout} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {others.map(card => <CardWrapper key={card.db} card={card} data={data} hasFavorite={hasFavorite} layout={layout} />)}
+        </div>
       </div>
     </>
   )
