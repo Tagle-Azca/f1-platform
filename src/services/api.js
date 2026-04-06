@@ -71,6 +71,8 @@ export const dashboardApi = {
   get:               () => request('/api/dashboard'),
   getLive:           () => request('/api/dashboard/live'),
   getClassification: () => request('/api/dashboard/live'),
+  getTeammateH2H:    (driver, season) =>
+    request(`/api/dashboard/h2h?${new URLSearchParams({ driver, season })}`),
 }
 
 // ── Constructors (MongoDB aggregations) ─────────────────

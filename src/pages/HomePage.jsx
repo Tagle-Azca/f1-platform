@@ -73,7 +73,7 @@ export default function HomePage() {
     <>
     <PageWrapper>
 
-      <HomeHero race={data?.nextRace ?? null} />
+      <HomeHero race={data?.nextRace ?? null} data={data} />
 
       {!loading && data?.nextRace && (
         <NextRaceBanner race={data.nextRace} totalRounds={data.totalRounds} />
