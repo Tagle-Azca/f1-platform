@@ -39,8 +39,7 @@ const CARDS_CONFIG = {
     db: 'mongo', title: 'Season at a Glance', subtitle: 'Standings · Races · Circuits',
     links: [
       { to: '/races',                 label: 'Races' },
-      { to: '/standings',             label: 'Driver Championship' },
-      { to: '/constructor-standings', label: 'Constructors' },
+      { to: '/standings', label: 'Season Standings' },
       { to: '/circuits',              label: 'Circuits Map' },
     ],
   },
