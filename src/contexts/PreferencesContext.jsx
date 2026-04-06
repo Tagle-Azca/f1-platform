@@ -36,7 +36,6 @@ const DEFAULT = {
   favoriteTeam:    null,
   favoriteDriver:  null,
   units:           { speed: 'kmh', temp: 'celsius' },
-  dataLayers:      { tireLife: true, gForce: false, drsZones: true, sectorTimes: true },
   dashboardLayout: DEFAULT_LAYOUT,
 }
 
@@ -77,7 +76,6 @@ export function PreferencesProvider({ children }) {
       favoriteTeam:   user?.preferences?.favoriteTeam   || ext.favoriteTeam   || null,
       favoriteDriver: user?.preferences?.favoriteDriver || ext.favoriteDriver || null,
       units:           ext.units           ?? DEFAULT.units,
-      dataLayers:      ext.dataLayers      ?? DEFAULT.dataLayers,
       dashboardLayout: ext.dashboardLayout ?? DEFAULT_LAYOUT,
     }
     setPrefs(loaded)
@@ -105,7 +103,7 @@ export function PreferencesProvider({ children }) {
   const resetAll = useCallback(() => {
     setDraftRaw(DEFAULT)
     applyAccentVars(NEUTRAL_ACCENT)
-    saveExtended({ units: DEFAULT.units, dataLayers: DEFAULT.dataLayers, favoriteTeam: null, favoriteDriver: null })
+    saveExtended({ units: DEFAULT.units, favoriteTeam: null, favoriteDriver: null })
   }, [])
 
   // Layout changes apply immediately (no Apply button needed)
@@ -121,7 +119,6 @@ export function PreferencesProvider({ children }) {
     setPrefs(draft)
     saveExtended({
       units:           draft.units,
-      dataLayers:      draft.dataLayers,
       favoriteTeam:    draft.favoriteTeam    || null,
       favoriteDriver:  draft.favoriteDriver  || null,
       dashboardLayout: draft.dashboardLayout ?? DEFAULT_LAYOUT,

@@ -14,10 +14,17 @@ const SECTION_META = {
 
 const SECTION_IDS = ['standings', 'lastSession']
 
-function DragHandle() {
+function DragHandle({ onTouchStart, onTouchMove, onTouchEnd }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"
-      style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.18)', flexShrink: 0, cursor: 'grab' }}>
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{
+        width: 22, height: 22, padding: 4, boxSizing: 'border-box',
+        color: 'rgba(255,255,255,0.25)', flexShrink: 0,
+        cursor: 'grab', touchAction: 'none', WebkitUserSelect: 'none',
+      }}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
     </svg>
   )
@@ -27,7 +34,7 @@ function DragGhost({ ghost }) {
   if (!ghost) return null
   return (
     <div style={{
-      position: 'fixed', top: ghost.y + 14, left: ghost.x + 14,
+      position: 'fixed', top: ghost.y + 18, left: Math.min(ghost.x + 14, window.innerWidth - 140),
       pointerEvents: 'none', zIndex: 9999,
       background: 'rgba(10,10,10,0.95)', border: '1px solid rgba(255,255,255,0.15)',
       borderRadius: 6, padding: '4px 8px',
@@ -44,12 +51,34 @@ export default function DashboardLayoutPicker() {
   const layout   = prefs.dashboardLayout ?? DEFAULT_LAYOUT
   const { enabled = [], featured = 'cassandra' } = layout
 
+  // ── Mouse drag state ──
   const dragItem = useRef(null)
   const dragOver = useRef(null)
-  const [ghost, setGhost] = useState(null)
+  // ── Touch drag state ──
+  const touchItem = useRef(null)
+  const touchOver = useRef(null)
 
-  const unified        = getUnifiedList(layout)
+  const [ghost, setGhost]           = useState(null)
+  const [draggingId, setDraggingId] = useState(null)
+
+  const unified         = getUnifiedList(layout)
   const disabledWidgets = ALL_WIDGET_IDS.filter(id => !enabled.includes(id))
+
+  // ── Helpers ──
+  function ghostLabel(targetId) {
+    if (SECTION_IDS.includes(targetId)) return SECTION_META[targetId]?.label ?? targetId
+    const order = layout.order ?? []
+    return (targetId === featured || order[0] === targetId) ? 'Featured (2-col)' : 'Side (1-col)'
+  }
+
+  function applyReorder(draggedId, overId) {
+    if (!draggedId || !overId || draggedId === overId) return
+    const next = [...unified]
+    const fi = next.indexOf(draggedId), ti = next.indexOf(overId)
+    if (fi === -1 || ti === -1) return
+    next.splice(fi, 1); next.splice(ti, 0, draggedId)
+    setLayout(layoutFromUnified(next, layout))
+  }
 
   // ── Widget enable/disable ──
   function toggleWidget(id) {
@@ -64,27 +93,36 @@ export default function DashboardLayoutPicker() {
     }
   }
 
-  // ── Drag & drop ──
-  function dragStart(e, id) { dragItem.current = id; e.dataTransfer.effectAllowed = 'move' }
-  function dragEnter(id)    { if (id !== dragItem.current) dragOver.current = id }
-  function dragEnd() {
-    if (dragItem.current && dragOver.current && dragItem.current !== dragOver.current) {
-      const next = [...unified]
-      const fi   = next.indexOf(dragItem.current)
-      const ti   = next.indexOf(dragOver.current)
-      next.splice(fi, 1); next.splice(ti, 0, dragItem.current)
-      setLayout(layoutFromUnified(next, layout))
-    }
-    dragItem.current = null; dragOver.current = null; setGhost(null)
+  // ── Mouse drag handlers ──
+  function onDragStart(e, id) { dragItem.current = id; setDraggingId(id); e.dataTransfer.effectAllowed = 'move' }
+  function onDragEnter(id)    { if (id !== dragItem.current) dragOver.current = id }
+  function onDragOver(e, id)  { e.preventDefault(); setGhost({ x: e.clientX, y: e.clientY, targetLabel: ghostLabel(id) }) }
+  function onDragEnd() {
+    applyReorder(dragItem.current, dragOver.current)
+    dragItem.current = null; dragOver.current = null
+    setDraggingId(null); setGhost(null)
   }
-  function dragMove(e, targetId) {
-    if (!SECTION_IDS.includes(targetId)) {
-      const order = layout.order ?? []
-      const isFeaturedSlot = targetId === featured || order[0] === targetId
-      setGhost({ x: e.clientX, y: e.clientY, targetLabel: isFeaturedSlot ? 'Featured (2-col)' : 'Side (1-col)' })
-    } else {
-      setGhost({ x: e.clientX, y: e.clientY, targetLabel: SECTION_META[targetId]?.label ?? targetId })
-    }
+
+  // ── Touch drag handlers (attached to DragHandle only) ──
+  function onTouchStart(e, id) {
+    touchItem.current = id; touchOver.current = null
+    setDraggingId(id)
+    const t = e.touches[0]
+    setGhost({ x: t.clientX, y: t.clientY, targetLabel: ghostLabel(id) })
+  }
+  function onTouchMove(e) {
+    const t = e.touches[0]
+    // Find the list row under the finger
+    const el  = document.elementFromPoint(t.clientX, t.clientY)
+    const row = el?.closest('[data-drag-id]')
+    const overId = row?.dataset.dragId ?? null
+    if (overId && overId !== touchItem.current) touchOver.current = overId
+    setGhost({ x: t.clientX, y: t.clientY, targetLabel: ghostLabel(touchOver.current ?? touchItem.current) })
+  }
+  function onTouchEnd() {
+    applyReorder(touchItem.current, touchOver.current)
+    touchItem.current = null; touchOver.current = null
+    setDraggingId(null); setGhost(null)
   }
 
   function moveItem(id, dir) {
@@ -95,36 +133,41 @@ export default function DashboardLayoutPicker() {
     setLayout(layoutFromUnified(next, layout))
   }
 
-  const rowBase = (highlighted) => ({
-    display: 'flex', alignItems: 'center', gap: '0.6rem',
-    padding: '0.5rem 0.6rem', borderRadius: 8, cursor: 'grab',
-    border: `1px solid ${highlighted ? 'rgba(255,183,0,0.35)' : 'rgba(255,255,255,0.08)'}`,
-    background: highlighted ? 'rgba(255,183,0,0.06)' : 'rgba(255,255,255,0.03)',
+  const rowBase = (highlighted, isDragging) => ({
+    display: 'flex', alignItems: 'center', gap: '0.5rem',
+    padding: '0.55rem 0.6rem', borderRadius: 8,
+    border: `1px solid ${highlighted ? 'rgba(255,183,0,0.35)' : isDragging ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)'}`,
+    background: highlighted ? 'rgba(255,183,0,0.06)' : isDragging ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
     transition: 'border-color 0.15s, background 0.15s', userSelect: 'none',
   })
 
   return (
     <>
       <DragGhost ghost={ghost} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
         <p style={{ margin: '0 0 0.5rem', fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
-          Drag to reorder · ★ = featured card · ✕ = hide widget
+          Drag ≡ to reorder · ★ = featured · ✕ = hide
         </p>
 
-        {/* ── Unified list ── */}
         {unified.map((id, i) => {
-          const isSection = SECTION_IDS.includes(id)
+          const isSection  = SECTION_IDS.includes(id)
+          const isDragging = draggingId === id
 
           if (isSection) {
             const meta = SECTION_META[id]
             return (
-              <div key={id} draggable style={rowBase(false)}
-                onDragStart={e => dragStart(e, id)}
-                onDragEnter={() => dragEnter(id)}
-                onDragOver={e => { e.preventDefault(); dragMove(e, id) }}
-                onDragEnd={dragEnd}
+              <div key={id} data-drag-id={id} draggable
+                style={rowBase(false, isDragging)}
+                onDragStart={e => onDragStart(e, id)}
+                onDragEnter={() => onDragEnter(id)}
+                onDragOver={e => onDragOver(e, id)}
+                onDragEnd={onDragEnd}
               >
-                <DragHandle />
+                <DragHandle
+                  onTouchStart={e => onTouchStart(e, id)}
+                  onTouchMove={onTouchMove}
+                  onTouchEnd={onTouchEnd}
+                />
                 <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>{meta.icon}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2 }}>{meta.label}</div>
@@ -137,16 +180,21 @@ export default function DashboardLayoutPicker() {
 
           const w = WIDGET_REGISTRY[id]
           if (!w) return null
-          const isFeatured  = featured === id
+          const isFeatured   = featured === id
           const hasViolation = hasConstraintViolation(id, layout)
           return (
-            <div key={id} draggable style={rowBase(isFeatured)}
-              onDragStart={e => dragStart(e, id)}
-              onDragEnter={() => dragEnter(id)}
-              onDragOver={e => { e.preventDefault(); dragMove(e, id) }}
-              onDragEnd={dragEnd}
+            <div key={id} data-drag-id={id} draggable
+              style={rowBase(isFeatured, isDragging)}
+              onDragStart={e => onDragStart(e, id)}
+              onDragEnter={() => onDragEnter(id)}
+              onDragOver={e => onDragOver(e, id)}
+              onDragEnd={onDragEnd}
             >
-              <DragHandle />
+              <DragHandle
+                onTouchStart={e => onTouchStart(e, id)}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+              />
               <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>{w.icon}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -156,14 +204,12 @@ export default function DashboardLayoutPicker() {
                 <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.3)' }}>{w.desc}</div>
               </div>
               <ArrowButtons i={i} total={unified.length} onMove={d => moveItem(id, d)} />
-              {/* Featured star */}
               <button onClick={() => setLayout({ ...layout, featured: id })} title={isFeatured ? 'Featured' : 'Set as featured'}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', flexShrink: 0, lineHeight: 1, opacity: isFeatured ? 1 : 0.25, transition: 'opacity 0.2s', filter: isFeatured ? 'drop-shadow(0 0 4px rgba(255,183,0,0.7))' : 'none' }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem', flexShrink: 0, lineHeight: 1, padding: '4px', opacity: isFeatured ? 1 : 0.22, transition: 'opacity 0.2s', filter: isFeatured ? 'drop-shadow(0 0 4px rgba(255,183,0,0.7))' : 'none' }}>
                 ★
               </button>
-              {/* Disable */}
               <button onClick={() => toggleWidget(id)} title="Hide widget"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0, lineHeight: 1, color: 'rgba(255,255,255,0.25)', transition: 'color 0.15s' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', flexShrink: 0, lineHeight: 1, padding: '4px', color: 'rgba(255,255,255,0.25)', transition: 'color 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
                 onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.25)'}
               >✕</button>
@@ -180,14 +226,14 @@ export default function DashboardLayoutPicker() {
             {disabledWidgets.map(id => {
               const w = WIDGET_REGISTRY[id]
               return (
-                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0.6rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', opacity: 0.5, userSelect: 'none' }}>
+                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 0.6rem', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)', opacity: 0.5, userSelect: 'none' }}>
                   <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>{w.icon}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', lineHeight: 1.2 }}>{w.label}</div>
                     <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.2)' }}>{w.desc}</div>
                   </div>
                   <button onClick={() => toggleWidget(id)}
-                    style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 5, cursor: 'pointer', padding: '2px 8px', fontSize: '0.62rem', fontWeight: 700, color: '#22c55e', flexShrink: 0 }}
+                    style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 5, cursor: 'pointer', padding: '4px 10px', fontSize: '0.62rem', fontWeight: 700, color: '#22c55e', flexShrink: 0 }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.22)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'rgba(34,197,94,0.12)' }}
                   >+ Add</button>
@@ -203,13 +249,22 @@ export default function DashboardLayoutPicker() {
 
 function ArrowButtons({ i, total, onMove }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-      {[[-1, '▲'], [1, '▼']].map(([d, a]) => (
-        <button key={d} onClick={() => onMove(d)} disabled={d === -1 ? i === 0 : i === total - 1}
-          style={{ width: 18, height: 14, borderRadius: 3, background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.22)', fontSize: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (d === -1 ? i === 0 : i === total - 1) ? 0.2 : 1 }}>
-          {a}
-        </button>
-      ))}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {[[-1, '▲'], [1, '▼']].map(([d, a]) => {
+        const disabled = d === -1 ? i === 0 : i === total - 1
+        return (
+          <button key={d} onClick={() => onMove(d)} disabled={disabled}
+            style={{
+              width: 24, height: 18, borderRadius: 4,
+              background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer',
+              color: 'rgba(255,255,255,0.3)', fontSize: '0.5rem',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: disabled ? 0.15 : 1,
+            }}>
+            {a}
+          </button>
+        )
+      })}
     </div>
   )
 }

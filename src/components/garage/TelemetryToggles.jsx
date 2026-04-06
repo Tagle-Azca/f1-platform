@@ -1,27 +1,5 @@
 import { usePreferences } from '../../contexts/PreferencesContext'
 
-function Toggle({ on, onChange }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!on)}
-      style={{
-        width: 36, height: 20, borderRadius: 10, flexShrink: 0,
-        background: on ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)',
-        border: 'none', cursor: 'pointer', position: 'relative',
-        transition: 'background 0.2s',
-        padding: 0,
-      }}
-    >
-      <span style={{
-        position: 'absolute', top: 3, left: on ? 19 : 3,
-        width: 14, height: 14, borderRadius: '50%',
-        background: on ? '#000' : 'rgba(255,255,255,0.5)',
-        transition: 'left 0.2s, background 0.2s',
-      }} />
-    </button>
-  )
-}
 
 function SegmentedControl({ options, value, onChange }) {
   return (
@@ -72,10 +50,6 @@ export default function TelemetryToggles() {
   function setUnit(key, val) {
     setDraft(d => ({ ...d, units: { ...d.units, [key]: val } }))
   }
-  function setLayer(key, val) {
-    setDraft(d => ({ ...d, dataLayers: { ...d.dataLayers, [key]: val } }))
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
 
