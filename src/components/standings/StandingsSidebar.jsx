@@ -125,7 +125,7 @@ function CtorRow({ entry, i }) {
 
 /** Compute per-entry position change between the last two rounds. */
 function computePosChanges(entries, getPoints, idKey) {
-  const lastIdx = entries[0]?.cumulative?.length - 1 ?? -1
+  const lastIdx = (entries[0]?.cumulative?.length ?? 0) - 1
   const prevIdx = lastIdx - 1
 
   const current = entries
