@@ -1,32 +1,24 @@
 /**
  * StatCard — label / value / optional sub-value card.
- * Used in race detail stats (Winner, Pole, Fastest Lap, DNFs).
  *
  * Props:
  *   label   string
  *   value   string | number
  *   sub?    string
- *   accent? string   — hex color for left border accent
+ *   accent? string   — color (data) for the left border accent, via --accent-bar
  *   size?   'sm' | 'md'   default 'sm'
  */
 export default function StatCard({ label, value, sub, accent, size = 'sm' }) {
   return (
     <div
-      className="panel panel--sm"
-      style={accent ? { borderLeft: `3px solid ${accent}` } : undefined}
+      className={`panel panel--sm ${accent ? 'border-l-[3px] border-l-[var(--accent-bar)]' : ''}`}
+      style={accent ? { '--accent-bar': accent } : undefined}
     >
-      <div className="label" style={{ marginBottom: '0.35rem' }}>{label}</div>
-      <div
-        className="value"
-        style={{ fontSize: size === 'md' ? '1.5rem' : '0.95rem' }}
-      >
+      <div className="label mb-pw-2">{label}</div>
+      <div className={`value ${size === 'md' ? 'text-2xl' : 'text-base'}`}>
         {value}
       </div>
-      {sub && (
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-          {sub}
-        </div>
-      )}
+      {sub && <div className="text-xs text-ink-3 mt-pw-1">{sub}</div>}
     </div>
   )
 }

@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,75 +10,148 @@
 }
 
 /* ─────────────────────────────────────────────────────
-   SHADCN DARK TOKENS — F1 palette override
-   All dark by default (no .dark class needed)
+   DESIGN TOKENS
+   --pw-* is the canonical layer (contrast verified by
+   scripts/contrast.mjs, see src/styles/tokens.md).
+   Legacy --surface-*, --text-*, --border-* and the shadcn
+   vars below are ALIASES of --pw-* so untouched pages follow.
+   Dark only: there is no light theme.
 ───────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background:            11 11 11;
-    --foreground:            240 240 240;
-    --card:                  22 22 22;
-    --card-foreground:       240 240 240;
-    --popover:               22 22 22;
-    --popover-foreground:    240 240 240;
-    --primary:               225 6 0;
-    --primary-foreground:    255 255 255;
-    --secondary:             255 255 255 / 0.09;
-    --secondary-foreground:  200 200 200;
-    --muted:                 255 255 255 / 0.06;
-    --muted-foreground:      110 110 110;
-    --accent:                255 255 255 / 0.1;
-    --accent-foreground:     240 240 240;
-    --destructive:           225 6 0;
-    --destructive-foreground:255 255 255;
-    --border:                255 255 255 / 0.11;
-    --input:                 255 255 255 / 0.07;
-    --ring:                  225 6 0;
-    --radius:                0.6rem;
+    /* ── Canonical --pw-* tokens ── */
+    --pw-bg:         #121418;  /* page ground */
+    --pw-panel:      #191c21;  /* standard panel fill */
+    --pw-sidebar:    #161a1f;  /* sidebar fill */
+    --pw-edge:       rgba(255,255,255,.075);  /* panel border (decorative) */
+    --pw-edge-soft:  rgba(255,255,255,.05);   /* dividers (decorative) */
+
+    --pw-ink:   #eef1f4;  /* primary text */
+    --pw-ink-2: #a2abb4;  /* secondary text */
+    --pw-ink-3: #939da8;  /* labels, captions: floor, never darker */
+
+    --pw-steel:      #8fb4d8;               /* links, primary button, active nav, focus ring */
+    --pw-steel-hi:   #b9d3ec;               /* hover */
+    --pw-steel-soft: rgba(143,180,216,.12); /* active nav bg, highlighted row */
+
+    --pw-pos:    #6fce9a;  /* improving */
+    --pw-neg:    #e08585;  /* losing */
+    --pw-red:    #e0574e;  /* live indicator, UI + large text only */
+    --pw-red-soft: rgba(224,87,78,.15);     /* live chip fill */
+    --pw-violet: #c9a0e8;  /* fastest lap */
+    --pw-yellow: #f5c518;  /* yellow flag / safety car / leader marker */
+    --pw-orange: #fb923c;  /* in pit */
+    --pw-mono:   'IBM Plex Mono', ui-monospace, monospace;
+    --pw-display: 'Geist Variable', 'Geist Fallback', Arial, sans-serif;
+
+
+    /* ── Pass 2: raised surface + viz palette (single source: src/styles/vizPalette.js) ── */
+    --pw-raise:  #1e2329;               /* tooltip / popover surface */
+    --pw-hover:  rgba(255,255,255,.04); /* row and list hover */
+    --viz-axis:      var(--pw-ink-3);
+    --viz-grid:      rgba(255,255,255,.07);
+    --viz-baseline:  rgba(255,255,255,.22);
+    --viz-track:     rgba(255,255,255,.08);
+    --viz-now:       var(--pw-steel);
+    --viz-series-1:  var(--pw-steel);
+    --viz-series-2:  var(--pw-ink-2);
+    --viz-tyre-soft:   #ef4444;
+    --viz-tyre-medium: #eab308;
+    --viz-tyre-hard:   #e5e7eb;
+    --viz-tyre-inter:  #22c55e;
+    --viz-tyre-wet:    #60a5fa;
+    --viz-tyre-ink:    #121418;
+    --viz-type-permanent: #5cc8c4;
+    --viz-type-street:    #ec8fb4;
+    --viz-type-hybrid:    #d2b98c;
+    --viz-sector-best: var(--pw-violet);
+    --viz-sector-pb:   var(--pw-pos);
+    --viz-sector-slow: var(--pw-yellow);
+    --viz-flash-gain:    rgba(111,206,154,.18);
+    --viz-flash-loss:    rgba(224,133,133,.18);
+    --viz-flash-neutral: var(--pw-steel-soft);
+
+    /* ── Motion ── */
+    --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+    --dur-press:  100ms;
+    --dur-fast:   150ms;
+    --dur-base:   240ms;
+    --dur-enter:  480ms;
+    --dur-bars:   600ms;
+    --dur-draw:   900ms;
+    --dur-flash:  700ms;
+
+    --sidebar-width: 236px;
+    --header-height: 48px;
+    --tabbar-height: 56px;
 
     /* ── Accent (team color — updated by PreferencesContext) ── */
     --accent-color:        #94a3b8;
     --accent-rgb:          148 163 184;   /* space-separated for Tailwind opacity */
 
-    /* F1 Brand */
+    /* F1 Brand (legacy pages) */
     --f1-red:              #e10600;
     --f1-red-dark:         #a00400;
     --f1-red-glow:         rgba(225,6,0,0.25);
 
-    /* ── Surfaces (elevation system) ── */
-    --bg-base:             #0b0b0b;
-    --surface-0:           #0b0b0b;
-    --surface-1:           rgba(16,16,16,0.94);
-    --surface-2:           rgba(22,22,22,0.92);
-    --surface-3:           rgba(30,30,30,0.95);
-    --surface-popup:       rgba(10,10,10,0.98);
+    /* ── Legacy surfaces → --pw-* ── */
+    --bg-base:             var(--pw-bg);
+    --surface-0:           var(--pw-bg);
+    --surface-1:           var(--pw-sidebar);
+    --surface-2:           var(--pw-panel);
+    --surface-3:           #20242a;
+    --surface-popup:       #14171b;
     --bg-surface:          var(--surface-2);
     --bg-surface-hover:    var(--surface-3);
 
-    /* ── Borders ── */
+    /* ── Legacy borders → --pw-* ── */
     --border-color:        rgba(255,255,255,0.11);
     --border-hover:        rgba(255,255,255,0.22);
-    --border-subtle:       rgba(255,255,255,0.07);
+    --border-subtle:       var(--pw-edge);
     --border-strong:       rgba(255,255,255,0.18);
 
-    /* ── Text hierarchy ── */
-    --text-primary:        #f0f0f0;
-    --text-secondary:      #999;
-    --text-muted:          #c2c2c2;
-    --text-code:           #e2e2e2;
-    --text-dim:            rgba(255,255,255,0.28);
+    /* ── Legacy text → --pw-* (muted was brighter than secondary; fixed) ── */
+    --text-primary:        var(--pw-ink);
+    --text-secondary:      var(--pw-ink-2);
+    --text-muted:          var(--pw-ink-3);
+    --text-code:           var(--pw-ink);
+    --text-dim:            var(--pw-ink-3);   /* old rgba(.28) failed AA */
 
-    /* ── Typography ── */
+    /* ── shadcn vars (space-separated rgb) → --pw-* values ── */
+    --background:            18 20 24;
+    --foreground:            238 241 244;
+    --card:                  25 28 33;
+    --card-foreground:       238 241 244;
+    --popover:               25 28 33;
+    --popover-foreground:    238 241 244;
+    --primary:               143 180 216;
+    --primary-foreground:    18 20 24;
+    --secondary:             255 255 255 / 0.09;
+    --secondary-foreground:  162 171 180;
+    --muted:                 255 255 255 / 0.06;
+    --muted-foreground:      147 157 168;
+    --accent:                255 255 255 / 0.1;
+    --accent-foreground:     238 241 244;
+    --destructive:           224 133 133;
+    --destructive-foreground:18 20 24;
+    --border:                255 255 255 / 0.11;
+    --input:                 255 255 255 / 0.07;
+    --ring:                  143 180 216;
+    --radius:                0.75rem;
+
+    /* ── Typography (px-based 12/14/16 scale; body is 16 on mobile, 15 from md) ── */
     --font-condensed:      'Barlow Condensed', sans-serif;
-    --text-2xs:            0.60rem;
-    --text-xs:             0.68rem;
-    --text-sm:             0.78rem;
-    --text-base:           0.88rem;
-    --text-lg:             1.05rem;
+    --text-2xs:            0.75rem;
+    --text-xs:             0.75rem;
+    --text-sm:             0.875rem;
+    --text-base:           1rem;
+    --text-lg:             1.125rem;
     --text-xl:             1.25rem;
     --text-2xl:            1.5rem;
+    --text-display:        2.25rem;
 
-    /* ── Spacing ── */
+    /* ── Spacing (legacy keys kept; new 4px grid is pw-1..pw-8 in tailwind) ── */
     --space-1:  0.25rem;
     --space-2:  0.4rem;
     --space-3:  0.6rem;
@@ -106,7 +178,7 @@
     --dgraph-glow:         rgba(239,68,68,0.12);
     --dgraph-ring:         rgba(239,68,68,0.22);
 
-    /* ── Layout ── */
+    /* ── Radii: two for new work (md 12px, pill); xs/sm/lg legacy ── */
     --navbar-height:       64px;
     --radius-xs:           4px;
     --radius-sm:           8px;
@@ -116,6 +188,16 @@
 
     --transition-fast:     150ms ease;
     --transition-med:      300ms ease;
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --text-base:    0.9375rem;
+      --text-xl:      1.375rem;
+      --text-2xl:     1.75rem;
+      --text-display: 3rem;
+      --header-height: 64px;
+    }
   }
 
   * {
@@ -128,57 +210,71 @@
     font-family: 'Barlow', 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    color-scheme: dark;
+    font-size: 100%;
+    scroll-padding-top: var(--header-height);
+    scroll-padding-bottom: 72px;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
     color: var(--text-primary);
+    background-color: var(--pw-bg);
     font-family: 'Barlow', 'Segoe UI', sans-serif;
-
-    background-color: #111;
-background-image:
-  linear-gradient(rgba(0,0,0,0.9) 1px, transparent 1px),
-  linear-gradient(90deg, rgba(0,0,0,0.9) 1px, transparent 1px),
-  /* 135deg → 45deg para que el brillo sea horizontal */
-  linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.08) 75%),
-  linear-gradient(45deg, rgba(255,255,255,0.02) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.02) 75%);
-/* 8px 12px → 12px 8px: más ancho que alto = horizontal */
-background-size: 10px 7px, 10px 7px, 20px 14px, 20px 14px;
-background-position: 0 0, 0 0, 0 0, 10px 7px;
-background-attachment: fixed;
-
+    font-size: var(--text-base);
     position: relative;
     overflow-x: hidden;
+  }
+
+  /* One focus ring for everything (WCAG 2.4.7 / 1.4.11). */
+  :focus-visible {
+    outline: 2px solid var(--pw-steel);
+    outline-offset: 2px;
+  }
+  .input:focus-visible { outline: 2px solid var(--pw-steel); outline-offset: 2px; }
+
+  /* Reduced motion: effectively disable animation and transitions (DoD-11). */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: 
-      /* Vignette original */
-      radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.5) 100%),
-      /* ← ESTO crea el flujo diagonal de página completa */
-     repeating-linear-gradient(
-  45deg,
-  transparent             0px,
-  transparent             80px,
-  rgba(255,255,255,0.01)  80px,
-  rgba(255,255,255,0.01)  110px
-);
-    pointer-events: none;
-    z-index: 0;
+/* ─────────────────────────────────────────────────────
+   SKIP LINK (first focusable element)
+───────────────────────────────────────────────────── */
+.skip-link {
+  position: fixed; left: 8px; top: -64px; z-index: 1100;
+  padding: 12px 16px; border-radius: var(--radius-md);
+  background: var(--pw-steel); color: var(--pw-bg);
+  font-weight: 700; text-decoration: none;
+  transition: top var(--transition-fast);
 }
+.skip-link:focus { top: 8px; }
+
+.sr-only-live {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
 }
 
 /* ─────────────────────────────────────────────────────
    APP SHELL
 ───────────────────────────────────────────────────── */
-#root, .app {
+#root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+  flex: 1;
 }
 
 /* ─────────────────────────────────────────────────────
@@ -301,7 +397,6 @@ p, span, li {
   font-family: 'Barlow', sans-serif;
   font-size: 0.9rem;
   padding: 0.6rem 1rem;
-  outline: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   cursor: pointer;
 }
@@ -332,16 +427,18 @@ select option { cursor: pointer; }
   text-transform: uppercase;
   cursor: pointer;
   border: none;
+  min-height: 44px;
+  justify-content: center;
   transition: all var(--transition-fast);
 }
+@media (min-width: 768px) and (pointer: fine) { .btn { min-height: 36px; } }
 
 .btn--primary {
-  background: var(--f1-red);
-  color: #fff;
+  background: var(--pw-steel);
+  color: var(--pw-bg);
 }
 .btn--primary:hover {
-  background: var(--f1-red-dark);
-  box-shadow: 0 0 20px var(--f1-red-glow);
+  background: var(--pw-steel-hi);
 }
 
 .btn--ghost {
@@ -367,6 +464,8 @@ select option { cursor: pointer; }
 /* ── Responsive page overflow guard ─────────────────── */
 @media (max-width: 1023px) {
   .page { overflow-x: hidden; }
+  /* `clip` guards against horizontal bleed without making .page a scroll container, so `position: sticky` inside still works */
+  .page.page--clip { overflow-x: clip; }
   /* Tables / wide content: enable horizontal scroll */
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
@@ -393,92 +492,7 @@ select option { cursor: pointer; }
   color: var(--text-muted);
 }
 
-/* ─────────────────────────────────────────────────────
-   MAP MARKERS
-───────────────────────────────────────────────────── */
-.f1-marker {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.f1-marker__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #e10600;
-  border: 2px solid rgba(255,255,255,0.6);
-  box-shadow: 0 0 6px rgba(225,6,0,0.6);
-  transition: all 0.2s;
-  position: relative;
-  z-index: 2;
-}
-
-.f1-marker__ring {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(225,6,0,0.3);
-  animation: marker-ring 2.5s ease-out infinite;
-}
-
-.f1-marker__ring2 {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(225,6,0,0.15);
-  animation: marker-ring 2.5s ease-out 1.25s infinite;
-}
-
-.f1-marker--selected .f1-marker__dot {
-  width: 14px;
-  height: 14px;
-  background: #e10600;
-  border-color: #fff;
-  box-shadow: 0 0 16px rgba(225,6,0,0.9), 0 0 4px #fff;
-}
-
-.f1-marker--selected .f1-marker__ring {
-  inset: -7px;
-  border-color: rgba(225,6,0,0.6);
-  animation: marker-ring-sel 1.5s ease-out infinite;
-}
-
-.f1-marker--selected .f1-marker__ring2 {
-  inset: -12px;
-  border-color: rgba(225,6,0,0.25);
-  animation: marker-ring-sel 1.5s ease-out 0.75s infinite;
-}
-
-@keyframes marker-ring {
-  0%   { transform: scale(1);   opacity: 0.6; }
-  100% { transform: scale(2.4); opacity: 0;   }
-}
-
-@keyframes marker-ring-sel {
-  0%   { transform: scale(1);   opacity: 0.8; }
-  100% { transform: scale(2.2); opacity: 0;   }
-}
-
-/* Leaflet popup overrides */
-.leaflet-popup-content-wrapper {
-  background: rgba(14,14,14,0.97) !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
-  border-radius: 10px !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
-  color: #f0f0f0 !important;
-  backdrop-filter: blur(12px);
-}
-
-.leaflet-popup-tip {
-  background: rgba(14,14,14,0.97) !important;
-}
-
-.leaflet-popup-content {
-  margin: 12px 16px !important;
-}
-
+/* Leaflet container font (Circuits map pins and controls live in the Circuits map block at the end of this file) */
 .leaflet-container {
   font-family: 'Barlow', sans-serif !important;
 }
@@ -598,16 +612,38 @@ select option { cursor: pointer; }
   color: var(--text-primary);
 }
 
+/* Section — unboxed block separated by a hairline (pass 2). .panel is untouched. */
+@layer components {
+  .section { border-top: 1px solid var(--pw-edge); padding-top: var(--space-6); }
+
+  /* Pass-2 type scale. Display face is Geist; numerals are tabular. */
+  .text-hero    { font-family: var(--pw-display); font-size: 2rem; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; }
+  .text-title   { font-family: var(--pw-display); font-size: 1.75rem; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; }
+  .text-stat    { font-family: var(--pw-display); font-size: 1.75rem; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .text-count   { font-family: var(--pw-display); font-size: 2.5rem; line-height: 1; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .text-heading { font-family: var(--pw-display); font-size: 1.25rem; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+  @media (min-width: 768px) {
+    .text-hero  { font-size: 3rem; }
+    .text-title { font-size: 2rem; }
+    .text-stat  { font-size: 2.25rem; }
+    .text-count { font-size: 3.5rem; }
+    .text-heading { font-size: 1.375rem; }
+  }
+  /* Dense numerals: timing, gaps, laps, times. */
+  .num { font-family: var(--pw-mono); font-size: 0.8125rem; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  @media (min-width: 768px) { .num { font-size: 0.875rem; } }
+}
+
 /* Panel — elevated surface card */
 .panel {
-  background: var(--surface-2);
-  border: 1px solid var(--border-color);
+  background: var(--pw-panel);
+  border: 1px solid var(--pw-edge);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
 }
 
 .panel--sm  { padding: var(--space-4); }
-.panel--md  { padding: var(--space-6); }
+.panel--md  { padding: var(--space-5); }
+@media (min-width: 768px) { .panel--md { padding: var(--space-6); } }
 .panel--lg  { padding: var(--space-7) var(--space-8); }
 
 .panel--mongo     { border-top: 2px solid var(--mongo-color); }
@@ -651,28 +687,56 @@ select option { cursor: pointer; }
   align-items: center;
   gap: var(--space-2);
   padding: 0.2rem var(--space-3);
-  background: rgba(225,6,0,0.10);
-  border: 1px solid rgba(225,6,0,0.25);
+  background: var(--pw-red-soft);
+  border: 1px solid rgba(224,87,78,0.4);
   border-radius: var(--radius-pill);
   font-size: var(--text-xs);
-  font-family: var(--font-condensed);
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  color: var(--f1-red);
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--pw-ink);
 }
 
 .live-pill__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--f1-red);
+  background: var(--pw-red);
   animation: pulse-dot 2s ease-in-out infinite;
   flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-pill__dot { animation: none; }
 }
 
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+@keyframes liveblink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* Championship-battle replay slider — thumb pseudo-elements can't be Tailwind utilities */
+input[type=range].pw-round-slider {
+  -webkit-appearance: none; appearance: none;
+  height: 5px; border-radius: 99px; background: rgba(255,255,255,.09);
+}
+input[type=range].pw-round-slider:focus-visible { outline: 2px solid var(--pw-steel); outline-offset: 4px; }
+input[type=range].pw-round-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: var(--pw-steel); border: 3px solid var(--pw-panel);
+  box-shadow: 0 0 0 1px rgba(143,180,216,.5);
+  cursor: pointer;
+}
+input[type=range].pw-round-slider::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--pw-steel); border: 3px solid var(--pw-panel);
+  cursor: pointer;
 }
 
 @keyframes cd-bounce {
@@ -761,14 +825,19 @@ select option { cursor: pointer; }
 .tab-bar {
   display: flex;
   gap: 0.2rem;
-  background: var(--surface-2);
-  border-radius: var(--radius-sm);
-  padding: 0.18rem;
+  background: var(--pw-panel);
+  border: 1px solid var(--pw-edge);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  overflow-x: auto;
+  max-width: 100%;
 }
 
 .tab-bar__btn {
-  padding: 0.28rem var(--space-5);
-  border-radius: 6px;
+  padding: 0 var(--space-5);
+  min-height: 44px;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
   font-family: var(--font-condensed);
@@ -782,14 +851,165 @@ select option { cursor: pointer; }
 }
 
 .tab-bar__btn--active {
-  color: var(--tab-color, var(--f1-red));
-  background: color-mix(in srgb, var(--tab-color, var(--f1-red)) 15%, transparent);
+  color: var(--tab-color, var(--pw-steel));
+  background: color-mix(in srgb, var(--tab-color, var(--pw-steel)) 15%, transparent);
 }
+@media (min-width: 768px) and (pointer: fine) { .tab-bar__btn { min-height: 32px; } }
 
-/* ── Layout utilities ── */
+/* ── Layout utilities (in the components layer so Tailwind utilities such as `hidden` can override them) ── */
+@layer components {
 .flex-center    { display: flex; align-items: center; }
 .flex-col       { display: flex; flex-direction: column; }
 .flex-between   { display: flex; align-items: center; justify-content: space-between; }
 .flex-col-center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .text-truncate  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fill-parent    { position: absolute; inset: 0; }
+
+/* ── Track status banner: tone is a data-driven CSS var, text always present ── */
+.status-banner {
+  --tone: var(--pw-yellow);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 16px; border-radius: var(--radius-md);
+  color: var(--pw-ink);
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+}
+.status-banner__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tone); }
+.status-banner__label { font-family: 'Barlow', 'Segoe UI', sans-serif; font-weight: 600; font-size: var(--text-sm); }
+.tone-red    { --tone: var(--pw-red); }
+.tone-white  { --tone: var(--pw-ink); }
+}
+
+/* Form placeholders / native select options on dark surfaces (AA: ink-3 on panel is 6.2:1) */
+input::placeholder { color: var(--pw-ink-3); }
+select option { background: var(--pw-panel); color: var(--pw-ink); }
+
+/* ── Viz motion helpers (pass 2): scale from the left edge without inline styles ── */
+.viz-grow { transform-box: fill-box; transform-origin: left center; }
+@media (prefers-reduced-motion: reduce) {
+  .viz-pulse { animation: none !important; }
+}
+@keyframes viz-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+.viz-pulse { animation: viz-pulse 1.6s ease-in-out infinite; }
+.viz-center { transform-box: fill-box; transform-origin: center; }
+
+/* Plain-case tab bar (pass 2, in-scope pages): same buttons, sentence case Barlow */
+.tab-bar--plain .tab-bar__btn {
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  border-radius: var(--radius-md);
+}
+.tab-bar--plain { border-radius: var(--radius-md); }
+
+/* ── Live tower: value flash (opacity only, toggled through data-flash) and stale dimming ── */
+.flash-cell { position: relative; }
+.flash-cell::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; background: var(--flash-bg, transparent);
+}
+.flash-cell[data-flash="gain"]    { --flash-bg: var(--viz-flash-gain); }
+.flash-cell[data-flash="loss"]    { --flash-bg: var(--viz-flash-loss); }
+.flash-cell[data-flash="neutral"] { --flash-bg: var(--viz-flash-neutral); }
+.flash-cell[data-flash]::after { animation: viz-flash var(--dur-flash) var(--ease-out); }
+@keyframes viz-flash { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .flash-cell[data-flash]::after { animation: none; } }
+/* Stale feed: bars and tyre discs dim to 40%; text keeps full opacity (DoD-21). */
+[data-stale="true"] svg[data-gapbar] { opacity: .4; }
+
+/* Sentence-case button (pass 2, in-scope pages): same .btn, Barlow, 12px radius */
+.btn--sentence {
+  font-family: 'Barlow', 'Segoe UI', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  border-radius: var(--radius-md);
+}
+
+/* Unlayered on purpose: Tailwind drops unused @layer classes and TyreBadge builds `tyre--*` dynamically. */
+/* ── Tyre compound badge (data colors live here, not in JSX) ── */
+.tyre {
+  --c: #9ca3af; --c-ink: #121418;
+  display: inline-grid; place-items: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--c); color: var(--c-ink);
+  font-size: 12px; font-weight: 800; line-height: 1; flex-shrink: 0;
+}
+.tyre--SOFT         { --c: var(--viz-tyre-soft);   --c-ink: var(--viz-tyre-ink); }
+.tyre--MEDIUM       { --c: var(--viz-tyre-medium); --c-ink: var(--viz-tyre-ink); }
+.tyre--HARD         { --c: var(--viz-tyre-hard);   --c-ink: var(--viz-tyre-ink); }
+.tyre--INTERMEDIATE { --c: var(--viz-tyre-inter);  --c-ink: var(--viz-tyre-ink); }
+.tyre--WET          { --c: var(--viz-tyre-wet);    --c-ink: var(--viz-tyre-ink); }
+.tyre--lg { width: 22px; height: 22px; }
+/* Stale live data: the disc dims, never the text around it (DoD-21). */
+/* Only the disc fill dims; the letter flips to ink so it keeps >= 4.5:1 on the dimmed disc. */
+/* The global `p, span, li` color rule would otherwise force the letter span to ink-2 (1.0-1.6:1 on the discs). */
+.tyre > span { color: inherit; }
+[data-stale="true"] .tyre { background: color-mix(in srgb, var(--c) 40%, transparent); color: var(--pw-ink); }
+
+
+/* ── Standings replay scrubber: a native range, filled up to --pct (set from data) ── */
+.replay-range { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer; }
+.replay-range:focus-visible { outline: none; }
+.replay-range::-webkit-slider-runnable-track { height: 4px; border-radius: 9999px; background: linear-gradient(to right, var(--viz-now) var(--pct, 100%), var(--viz-track) var(--pct, 100%)); }
+.replay-range::-moz-range-track { height: 4px; border-radius: 9999px; background: var(--viz-track); }
+.replay-range::-moz-range-progress { height: 4px; border-radius: 9999px; background: var(--viz-now); }
+.replay-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 9999px; background: var(--pw-steel); border: 2px solid var(--pw-bg); }
+.replay-range::-moz-range-thumb { width: 16px; height: 16px; border-radius: 9999px; background: var(--pw-steel); border: 2px solid var(--pw-bg); }
+.replay-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--pw-steel); outline-offset: 2px; }
+.replay-range:focus-visible::-moz-range-thumb { outline: 2px solid var(--pw-steel); outline-offset: 2px; }
+.replay-range[aria-disabled="true"] { opacity: 0.6; cursor: default; }
+
+/* ── Standings chart: lines re-weight smoothly when the highlighted set changes ── */
+.st-line .recharts-line-curve { transition: stroke-opacity 240ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .st-line .recharts-line-curve { transition: none; } }
+
+/* ── Standings row detail: opens by growing grid rows (no height animation) ── */
+.st-expand { display: grid; grid-template-rows: 1fr; animation: st-expand 240ms var(--ease-out); }
+@keyframes st-expand { from { grid-template-rows: 0fr; opacity: 0; } to { grid-template-rows: 1fr; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .st-expand { animation: none; } }
+
+/* ── Circuits (pass 4): circuit-type tone via data-type. Graphics only (dots, rules, pins), never a text colour. ── */
+[data-type="permanent"] { --type-tone: var(--viz-type-permanent); }
+[data-type="street"]    { --type-tone: var(--viz-type-street); }
+[data-type="hybrid"]    { --type-tone: var(--viz-type-hybrid); }
+.type-dot  { width: 8px; height: 8px; flex-shrink: 0; border-radius: 9999px; background: var(--type-tone, var(--pw-ink-3)); }
+.tone-rule { height: 2px; border-radius: 9999px; background: var(--type-tone, var(--pw-ink-3)); }
+
+/* ── Circuits map (pass 4): pins, controls and canvas on tokens. No glow, no looping motion. ── */
+[data-circuits-map] .leaflet-container { background: var(--pw-bg); }
+[data-circuits-map] .cmap-grat { stroke: var(--viz-grid); }
+[data-circuits-map] .cmark-wrap { display: flex; align-items: center; justify-content: center; border-radius: 9999px; background: transparent; border: 0; }
+[data-circuits-map] .cmark-wrap:focus-visible { outline: 2px solid var(--pw-steel); outline-offset: 2px; }
+[data-circuits-map] .cmark { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+[data-circuits-map] .cmark__dot { display: block;
+  box-sizing: content-box; position: relative; width: 12px; height: 12px; border-radius: 9999px;
+  background: var(--type-tone, var(--pw-ink-3)); border: 2px solid var(--pw-bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pw-ink) 50%, transparent);
+  transition: transform var(--dur-fast, .15s) var(--ease-out, ease-out), border-color var(--dur-fast, .15s) var(--ease-out, ease-out);
+}
+[data-circuits-map] .cmark--cal .cmark__dot { width: 6px; height: 6px; background: var(--pw-bg); border: 3px solid var(--type-tone, var(--pw-ink-3)); }
+[data-circuits-map] .cmark-wrap--hover .cmark__dot { transform: scale(1.25); }
+[data-circuits-map] .cmark-wrap--selected .cmark__dot { width: 16px; height: 16px; border-color: var(--pw-ink); }
+[data-circuits-map] .cmark-wrap--selected.cmark--cal .cmark__dot, [data-circuits-map] .cmark-wrap--selected .cmark--cal .cmark__dot { width: 10px; height: 10px; border-color: var(--type-tone, var(--pw-ink-3)); }
+[data-circuits-map] .cmark-wrap--selected .cmark__dot::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -16.5px 0 0 -16.5px;
+  border: 1.5px solid var(--pw-steel); border-radius: 9999px; pointer-events: none;
+}
+/* Overlapping pins merge into a count bubble (see groupByPixels); ink on raise, tone-free so it never reads as a type */
+[data-circuits-map] .cmark--cluster .cmark__count { display: flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 9999px; background: var(--pw-raise); border: 2px solid var(--pw-ink-2); color: var(--pw-ink); font-size: 12px; font-weight: 600; }
+[data-circuits-map] .cmark-wrap--cluster:hover .cmark__count { border-color: var(--pw-ink); }
+@media (prefers-reduced-motion: reduce) { .cmark__dot { transition: none; } }
+[data-circuits-map] .leaflet-container .leaflet-bar { border: 1px solid var(--pw-edge); border-radius: 12px; overflow: hidden; box-shadow: none; }
+[data-circuits-map] .leaflet-container .leaflet-bar a, [data-circuits-map] .leaflet-container .leaflet-bar a:hover {
+  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; line-height: 1;
+  background: var(--pw-panel); color: var(--pw-ink); border-bottom: 1px solid var(--pw-edge);
+}
+[data-circuits-map] .leaflet-container .leaflet-bar a:last-child { border-bottom: 0; }
+[data-circuits-map] .leaflet-container .leaflet-bar a:hover { background: var(--pw-hover); }
+[data-circuits-map] .leaflet-container .leaflet-bar a.leaflet-disabled { background: var(--pw-panel); color: var(--pw-ink); opacity: .6; cursor: not-allowed; }
+@media (pointer: coarse) { [data-circuits-map] .leaflet-container .leaflet-bar a, [data-circuits-map] .leaflet-container .leaflet-bar a:hover { width: 44px; height: 44px; } }
+[data-circuits-map] .leaflet-container .leaflet-bar a:focus-visible { outline: 2px solid var(--pw-steel); outline-offset: -2px; }
+[data-circuits-map] .leaflet-container:focus-visible { outline: 2px solid var(--pw-steel); outline-offset: -2px; }

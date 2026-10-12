@@ -1,14 +1,11 @@
 /**
- * LivePill — pulsing red dot + label in a rounded pill.
- * Replaces the repeated "live indicator" inline pattern.
- *
- * Props:
- *   children ReactNode
+ * LivePill — dot + text label in a rounded pill. State is always conveyed by
+ * text (default "Live"), never by color alone. Text is --pw-ink on a red tint.
  */
-export default function LivePill({ children }) {
+export default function LivePill({ children = 'Live' }) {
   return (
     <span className="live-pill">
-      <span className="live-pill__dot" />
+      <span className="live-pill__dot" aria-hidden="true" />
       {children}
     </span>
   )

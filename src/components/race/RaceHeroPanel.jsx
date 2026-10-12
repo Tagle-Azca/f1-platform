@@ -1,6 +1,7 @@
 import Panel from '../ui/Panel'
 import CircuitSilhouette from '../circuit/CircuitSilhouette'
 import { fmtDate } from '../../utils/date'
+import CircuitLink from '../circuits/CircuitLink'
 
 export default function RaceHeroPanel({ race }) {
   return (
@@ -32,7 +33,7 @@ export default function RaceHeroPanel({ race }) {
           <h1 className="page__title" style={{ marginBottom: 0 }}>{race.raceName}</h1>
         </div>
         <p className="page__subtitle" style={{ marginBottom: '0.75rem' }}>
-          {race.Circuit?.circuitName} · {race.Circuit?.Location?.locality}, {race.Circuit?.Location?.country} · {fmtDate(race.date)}
+          <CircuitLink circuitId={race.Circuit?.circuitId}>{race.Circuit?.circuitName}</CircuitLink> · {race.Circuit?.Location?.locality}, {race.Circuit?.Location?.country} · {fmtDate(race.date)}
         </p>
       </div>
       {race.Circuit?.trackCoords?.length && (

@@ -1,55 +1,52 @@
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { HOME_LIVE_POLL_INTERVAL } from '../constants'
-import { getPageSegments } from '../utils/widgetRegistry'
 import PageWrapper from '../components/layout/PageWrapper'
+import Rise from '../components/layout/Rise'
 import DriverDrawer from '../components/ui/DriverDrawer'
-import ConstructorDrawer from '../components/ui/ConstructorDrawer'
+// Lazy: the drawer pulls in the constructor detail charts (recharts), which must not weigh on the Dashboard chunk.
+const ConstructorDrawer = lazy(() => import('../components/ui/ConstructorDrawer'))
 import { dashboardApi, telemetryApi } from '../services/api'
-import NextRaceBanner from '../components/home/NextRaceBanner'
-import LiveRacePanel from '../components/home/LiveRacePanel'
-import LastSessionPanel from '../components/home/LastSessionPanel'
-import HomeHero from '../components/home/HomeHero'
-import HomeStandingsPanel from '../components/home/HomeStandingsPanel'
-import HomeDbCardsGrid from '../components/home/HomeDbCardsGrid'
 import HomeFooter from '../components/home/HomeFooter'
+import { getDashboardWidgets } from '../components/dashboard/widgetRegistry'
 import { useBreakpoint } from '../hooks/useBreakpoint'
-import { usePreferences } from '../contexts/PreferencesContext'
-import BackendError from '../components/ui/BackendError'
-import LiveTimingBanner from '../components/home/LiveTimingBanner'
-import LiveConsoleDashboard from '../components/home/LiveConsoleDashboard'
+import { useLiveStatus } from '../contexts/LiveStatusContext'
+import { useNow } from '../hooks/useNow'
+import { normalizeDashboard } from '../utils/normalizeDashboard'
 
 export default function HomePage() {
-  const { isMobile, isTablet } = useBreakpoint()
-  const { prefs } = usePreferences()
-  const layout   = prefs.dashboardLayout ?? {}
-  const segments = getPageSegments(layout)
+  const { width } = useBreakpoint()
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(false)
   const [standingsTab, setStandingsTab] = useState('drivers')
-  const [liveData, setLiveData] = useState(null)
+  const [rawLiveData, setLiveData] = useState(null)
   const [tower,    setTower]    = useState(null)
   const [selectedDriver,      setSelectedDriver]      = useState(null)
   const [selectedConstructor, setSelectedConstructor] = useState(null)
+  const { available: liveAvailable } = useLiveStatus() ?? {}
+  const now = useNow(60000)
+  const liveData = liveAvailable ? rawLiveData : null
 
-  // Derived session state
-  // A completed session older than 3 hours is treated as standby (no banner)
+  // A completed session older than 3 hours is treated as standby
   const isRecentCompleted = tower?.completed && tower.updatedAt
-    ? (Date.now() - new Date(tower.updatedAt).getTime()) < 3 * 60 * 60 * 1000
+    ? (now - new Date(tower.updatedAt).getTime()) < 3 * 60 * 60 * 1000
     : tower?.completed ?? false
   const sessionState = tower && !tower.completed ? 'live' : isRecentCompleted ? 'completed' : 'standby'
   const isLive = sessionState === 'live'
 
-  useEffect(() => {
+  const fetchDashboard = useCallback(() => {
     dashboardApi.get()
-      .then(setData)
+      .then(d => setData(normalizeDashboard(d)))
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])
+  const load = useCallback(() => { setError(false); setLoading(true); fetchDashboard() }, [fetchDashboard])
 
-  // Poll live race data (top-5 panel)
+  useEffect(() => { fetchDashboard() }, [fetchDashboard])
+
+  // Poll live race data (top-5 panel): only while the SSE status says a session is live
   useEffect(() => {
+    if (!liveAvailable) return
     let cancelled = false
     const poll = () => {
       dashboardApi.getLive()
@@ -59,9 +56,9 @@ export default function HomePage() {
     poll()
     const id = setInterval(poll, HOME_LIVE_POLL_INTERVAL)
     return () => { cancelled = true; clearInterval(id) }
-  }, [])
+  }, [liveAvailable])
 
-  // Poll timing tower — drives session state machine
+  // Poll timing tower: drives the live-session state
   useEffect(() => {
     let cancelled = false
     const poll = () => {
@@ -74,66 +71,33 @@ export default function HomePage() {
     return () => { cancelled = true; clearInterval(id) }
   }, [])
 
+  const ctx = {
+    data, loading, error, onRetry: load, liveData, tower,
+    standingsTab, onTabChange: setStandingsTab,
+    onDriverClick: setSelectedDriver, onConstructorClick: setSelectedConstructor,
+  }
+  const widgets = getDashboardWidgets({ width, isLive })
+
   return (
     <>
-    <PageWrapper>
+      <PageWrapper stagger>
+        <h1 className="sr-only">Dashboard</h1>
+        <div className="grid grid-cols-1 gap-x-pw-6 gap-y-pw-7 lg:grid-cols-12 lg:gap-y-pw-8">
+          {widgets.map(({ id, component: Widget, className }, i) => (
+            <Rise key={id} index={i} data-widget={id} className={`min-w-0 ${className ?? ''}`}>
+              <Widget ctx={ctx} />
+            </Rise>
+          ))}
+        </div>
+        <HomeFooter />
+      </PageWrapper>
 
-      <HomeHero race={data?.nextRace ?? null} data={data} />
-
-      {!loading && data?.nextRace && (
-        <NextRaceBanner race={data.nextRace} totalRounds={data.totalRounds} />
+      <DriverDrawer driver={selectedDriver} onClose={() => setSelectedDriver(null)} />
+      {selectedConstructor && (
+        <Suspense fallback={null}>
+          <ConstructorDrawer constructor={selectedConstructor} onClose={() => setSelectedConstructor(null)} />
+        </Suspense>
       )}
-
-      {error && (
-        <BackendError onRetry={() => {
-          setError(false); setLoading(true)
-          dashboardApi.get().then(setData).catch(() => setError(true)).finally(() => setLoading(false))
-        }} />
-      )}
-
-      {/* ── Session state machine ──────────────────────────── */}
-      <AnimatePresence mode="wait">
-        {isLive && (
-          <motion.div
-            key="live-console"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          >
-            <LiveConsoleDashboard tower={tower} isMobile={isMobile} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {!isLive && (
-        <>
-          <LiveTimingBanner tower={tower} />
-          {segments.map((seg, si) => {
-            if (seg.type === 'standings') return (
-              <motion.div key="standings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} style={{ marginBottom: '1rem' }}>
-                <HomeStandingsPanel data={data} loading={loading} standingsTab={standingsTab} onTabChange={setStandingsTab} onDriverClick={setSelectedDriver} onConstructorClick={setSelectedConstructor} />
-              </motion.div>
-            )
-            if (seg.type === 'lastSession') return (
-              <motion.div key="lastSession" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} style={{ marginBottom: '1rem' }}>
-                {liveData ? <LiveRacePanel live={liveData} /> : <LastSessionPanel session={data?.lastSession} loading={loading} onDriverClick={setSelectedDriver} />}
-              </motion.div>
-            )
-            if (seg.type === 'widgets') return (
-              <HomeDbCardsGrid key={`widgets-${si}`} widgetIds={seg.ids} data={data} isMobile={isMobile} isTablet={isTablet} />
-            )
-            return null
-          })}
-        </>
-      )}
-
-      <HomeFooter />
-
-    </PageWrapper>
-
-    <DriverDrawer driver={selectedDriver} onClose={() => setSelectedDriver(null)} />
-    <ConstructorDrawer constructor={selectedConstructor} onClose={() => setSelectedConstructor(null)} />
     </>
   )
 }

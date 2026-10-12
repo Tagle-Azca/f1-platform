@@ -23,7 +23,12 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^([A-Z_]|motion$)', argsIgnorePattern: '^[A-Z_]' }],
     },
+  },
+  // Node-side files: Playwright specs/config and scripts
+  {
+    files: ['tests/**/*.js', 'playwright.config.js', 'vite.config.js', 'scripts/**/*.mjs'],
+    languageOptions: { globals: { ...globals.node } },
   },
 ])

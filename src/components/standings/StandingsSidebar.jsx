@@ -1,160 +1,41 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { statsApi } from '../../services/api'
 import { CTOR_COLORS } from '../../utils/teamColors'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { computePosChanges } from '../../utils/standingsUtils'
+import { useIsXl } from '../../hooks/useMediaQuery'
 import { usePreferences } from '../../contexts/PreferencesContext'
+import { features } from '../../config/features'
+import { safeString } from '../../utils/safeText'
+import { asObjectArray } from '../../utils/safeArray'
+import ShellBoundary from '../layout/ShellBoundary'
+import DataRow from '../ui/DataRow'
+import TabBar from '../ui/TabBar'
 
-const SIDEBAR_W = 192
+const ROWS = 10
 
-function teamColor(constructorId) {
-  return CTOR_COLORS[constructorId] || '#888'
-}
+const teamColor = (constructorId) => CTOR_COLORS[constructorId] || null
 
-function PositionDelta({ delta }) {
-  if (delta === 0) return (
-    <span style={{
-      fontSize: '0.52rem', fontWeight: 700,
-      color: 'rgba(255,255,255,0.2)',
-      flexShrink: 0, width: 18, textAlign: 'center', lineHeight: 1,
-    }}>
-      =
-    </span>
-  )
+function Trend({ delta }) {
+  if (!delta) return <span aria-hidden="true" className="w-8 shrink-0 text-center text-xs text-ink-3">–</span>
   const up = delta > 0
+  const n = Math.abs(delta)
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 1,
-      fontSize: '0.52rem', fontWeight: 800,
-      color: up ? '#22c55e' : '#ef4444',
-      flexShrink: 0, width: 18, justifyContent: 'center', lineHeight: 1,
-    }}>
-      {up ? '▲' : '▼'}{Math.abs(delta)}
+    <span className={`w-8 shrink-0 text-center text-xs font-bold ${up ? 'text-pos' : 'text-neg'}`}>
+      <span aria-hidden="true">{up ? '▲' : '▼'}{n}</span>
+      <span className="sr-only">{up ? 'up' : 'down'} {n} position{n === 1 ? '' : 's'}</span>
     </span>
   )
 }
 
-function DriverRow({ entry, i }) {
-  const color = teamColor(entry.constructorId)
-  const { prefs } = usePreferences()
-  const isFocus = prefs.favoriteDriver && entry.name === prefs.favoriteDriver
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '0.35rem',
-      padding: '0.3rem 0.75rem',
-      borderBottom: '1px solid rgba(255,255,255,0.04)',
-      background: isFocus ? `${color}12` : 'transparent',
-      borderLeft: isFocus ? `2px solid ${color}` : '2px solid transparent',
-      transition: 'background 0.4s, border-color 0.4s',
-    }}>
-      <span style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontSize: '0.75rem', fontWeight: 700,
-        color: i === 0 ? color : 'rgba(255,255,255,0.22)',
-        width: 16, textAlign: 'right', flexShrink: 0,
-      }}>
-        {i + 1}
-      </span>
-      <PositionDelta delta={entry.posChange} />
-      <div style={{ width: 3, height: 20, borderRadius: 2, background: color, flexShrink: 0 }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: '0.76rem', fontWeight: i === 0 ? 700 : 500,
-          color: i === 0 ? '#fff' : 'rgba(255,255,255,0.75)',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          lineHeight: 1.2,
-        }}>
-          {entry.name.split(' ').slice(-1)[0]}
-        </div>
-        <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.28)', lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {entry.team}
-        </div>
-      </div>
-      <span style={{
-        fontSize: '0.76rem', fontWeight: 700,
-        color: i === 0 ? color : 'rgba(255,255,255,0.5)',
-        fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-      }}>
-        {entry.points}
-      </span>
-    </div>
-  )
-}
-
-function CtorRow({ entry, i }) {
-  const color = teamColor(entry.constructorId)
-  const { prefs } = usePreferences()
-  const isFocus = prefs.favoriteTeam && entry.constructorId === prefs.favoriteTeam
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '0.35rem',
-      padding: '0.36rem 0.75rem',
-      borderBottom: '1px solid rgba(255,255,255,0.04)',
-      background: isFocus ? `${color}12` : 'transparent',
-      borderLeft: isFocus ? `2px solid ${color}` : '2px solid transparent',
-      transition: 'background 0.4s, border-color 0.4s',
-    }}>
-      <span style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontSize: '0.75rem', fontWeight: 700,
-        color: i === 0 ? color : 'rgba(255,255,255,0.22)',
-        width: 16, textAlign: 'right', flexShrink: 0,
-      }}>
-        {i + 1}
-      </span>
-      <PositionDelta delta={entry.posChange} />
-      <div style={{ width: 3, height: 20, borderRadius: 2, background: color, flexShrink: 0 }} />
-      <span style={{
-        flex: 1, fontSize: '0.76rem', fontWeight: i === 0 ? 700 : 500,
-        color: i === 0 ? '#fff' : 'rgba(255,255,255,0.75)',
-        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-      }}>
-        {entry.name}
-      </span>
-      <span style={{
-        fontSize: '0.76rem', fontWeight: 700,
-        color: i === 0 ? color : 'rgba(255,255,255,0.5)',
-        fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-      }}>
-        {entry.points}
-      </span>
-    </div>
-  )
-}
-
-/** Compute per-entry position change between the last two rounds. */
-function computePosChanges(entries, getPoints, idKey) {
-  const lastIdx = (entries[0]?.cumulative?.length ?? 0) - 1
-  const prevIdx = lastIdx - 1
-
-  const current = entries
-    .map(e => ({ id: e[idKey], pts: getPoints(e, lastIdx) }))
-    .sort((a, b) => b.pts - a.pts)
-
-  const prevPositions = {}
-  if (prevIdx >= 0) {
-    const prev = [...entries]
-      .map(e => ({ id: e[idKey], pts: getPoints(e, prevIdx) }))
-      .sort((a, b) => b.pts - a.pts)
-    prev.forEach((e, i) => { prevPositions[e.id] = i + 1 })
-  }
-
-  const changes = {}
-  current.forEach((e, i) => {
-    const currPos = i + 1
-    const prevPos = prevPositions[e.id] ?? currPos
-    changes[e.id] = prevIdx >= 0 ? prevPos - currPos : 0
-  })
-  return changes
-}
-
+/** Desktop rail (>= 1280px only). Renders nothing, and fetches nothing, below that. */
 export default function StandingsSidebar() {
-  const location = useLocation()
-  const { isTablet } = useBreakpoint()
-  const [open, setOpen] = useState(() => {
-    try { return localStorage.getItem('standings-sidebar') !== 'closed' } catch { return true }
-  })
+  const isXl = useIsXl()
+  return isXl ? <ShellBoundary><Rail /></ShellBoundary> : null
+}
+
+function Rail() {
+  const { prefs } = usePreferences()
   const [tab,     setTab]     = useState('drivers')
   const [drivers, setDrivers] = useState([])
   const [ctors,   setCtors]   = useState([])
@@ -164,244 +45,98 @@ export default function StandingsSidebar() {
   const year = String(new Date().getFullYear())
 
   useEffect(() => {
+    let cancelled = false
     Promise.all([
       statsApi.getSeasonStandings(year),
       statsApi.getConstructorStandings(year),
     ])
       .then(([ds, cs]) => {
-        // ── Drivers ──────────────────────────────────────────────
+        if (cancelled) return
         if (ds?.drivers && ds.rounds?.length) {
           const lastIdx = ds.rounds.length - 1
-          const getDriverPts = (d, idx) => Math.round((d.cumulative?.[idx] ?? 0) * 10) / 10
-          const changes = computePosChanges(ds.drivers, getDriverPts, 'driverId')
-
-          const sorted = ds.drivers
+          const pts = (d, idx) => Math.round((d.cumulative?.[idx] ?? 0) * 10) / 10
+          const changes = computePosChanges(asObjectArray(ds.drivers), pts, 'driverId')
+          setDrivers(asObjectArray(ds.drivers)
             .map(d => ({
-              driverId:      d.driverId,
-              name:          d.name,
-              team:          d.team   || '',
-              constructorId: d.teamId || '',
-              points:        getDriverPts(d, lastIdx),
-              posChange:     changes[d.driverId] ?? 0,
-              cumulative:    d.cumulative,
+              id: safeString(d.driverId), name: safeString(d.name), team: safeString(d.team), constructorId: safeString(d.teamId),
+              points: pts(d, lastIdx), posChange: changes[d.driverId] ?? 0,
             }))
-            .sort((a, b) => b.points - a.points)
-          setDrivers(sorted)
-          setSeason(ds.season || year)
+            .sort((a, b) => b.points - a.points))
+          setSeason(safeString(ds.season) || year)
         }
-
-        // ── Constructors ─────────────────────────────────────────
         if (cs?.constructors && cs.rounds?.length) {
           const lastIdx = cs.rounds.length - 1
-          const getCtorPts = (c, idx) => Math.round((c.cumulative?.[idx] ?? 0) * 10) / 10
-          const changes = computePosChanges(cs.constructors, getCtorPts, 'constructorId')
-
-          const sorted = cs.constructors
+          const pts = (c, idx) => Math.round((c.cumulative?.[idx] ?? 0) * 10) / 10
+          const changes = computePosChanges(asObjectArray(cs.constructors), pts, 'constructorId')
+          setCtors(asObjectArray(cs.constructors)
             .map(c => ({
-              constructorId: c.constructorId,
-              name:          c.name,
-              points:        getCtorPts(c, lastIdx),
-              posChange:     changes[c.constructorId] ?? 0,
-              cumulative:    c.cumulative,
+              id: safeString(c.constructorId), name: safeString(c.name), constructorId: safeString(c.constructorId),
+              points: pts(c, lastIdx), posChange: changes[c.constructorId] ?? 0,
             }))
-            .sort((a, b) => b.points - a.points)
-          setCtors(sorted)
+            .sort((a, b) => b.points - a.points))
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [year])
 
-  // On mobile/tablet the sidebar lives inside the Navbar drawer — hide here
-  if (isTablet) return null
-
-  function toggle() {
-    setOpen(v => {
-      const next = !v
-      try { localStorage.setItem('standings-sidebar', next ? 'open' : 'closed') } catch {}
-      return next
-    })
-  }
-
-  // Hidden on dashboard — standings are already shown there
-  if (location.pathname === '/') return null
-
-  const list = tab === 'drivers' ? drivers : ctors
+  const isDrivers = tab === 'drivers'
+  const list = (isDrivers ? drivers : ctors).slice(0, ROWS)
 
   return (
-    <>
-      {/* ── Sidebar panel ── */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="sidebar"
-            initial={{ x: -SIDEBAR_W - 8 }}
-            animate={{ x: 0 }}
-            exit={{ x: -SIDEBAR_W - 8 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-            style={{
-              position: 'fixed',
-              left: 0,
-              top: 'var(--navbar-height)',
-              bottom: 0,
-              width: SIDEBAR_W,
-              background: 'rgba(12,12,12,0.97)',
-              borderRight: '1px solid rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(16px)',
-              zIndex: 49,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            {/* Header */}
-            <div style={{
-              padding: '0.65rem 0.75rem 0.5rem',
-              borderBottom: '1px solid rgba(255,255,255,0.07)',
-              flexShrink: 0,
-            }}>
-              <div style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em',
-                textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)',
-                marginBottom: '0.45rem',
-              }}>
-                Championship {season}
-              </div>
-              <div style={{ display: 'flex', gap: '0.3rem' }}>
-                {[['drivers','WDC'],['constructors','WCC']].map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => setTab(key)}
-                    style={{
-                      flex: 1, padding: '0.28rem 0',
-                      borderRadius: 6,
-                      border: `1px solid ${tab === key ? 'rgba(225,6,0,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                      background: tab === key ? 'rgba(225,6,0,0.12)' : 'transparent',
-                      color: tab === key ? '#e10600' : 'rgba(255,255,255,0.38)',
-                      fontFamily: "'Barlow Condensed', sans-serif",
-                      fontSize: '0.72rem', fontWeight: 700,
-                      letterSpacing: '0.06em', textTransform: 'uppercase',
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
+    <div className="hidden xl:block w-80 shrink-0 bg-sidebar border-l border-edge-soft">
+    <aside aria-label="Championship standings" className="sticky top-0 flex h-dvh flex-col">
+      <div className="p-pw-4 pb-pw-3 border-b border-edge-soft">
+        <h2 className="mb-pw-3 font-display text-base font-semibold leading-5 text-ink">{isDrivers ? `Drivers' championship ${season}` : `Constructors' championship ${season}`}</h2>
+        <TabBar
+          className="tab-bar--plain"
+          tabs={[{ id: 'drivers', label: 'Drivers' }, { id: 'constructors', label: 'Constructors' }]}
+          activeTab={tab}
+          onChange={setTab}
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <p className="p-pw-4 text-sm text-ink-3" role="status">Loading standings</p>
+        ) : list.length === 0 ? (
+          <p className="p-pw-4 text-sm text-ink-3">Standings not available yet</p>
+        ) : (
+          <ol className="list-none">
+            {list.map((e, i) => {
+              const focus = isDrivers
+                ? prefs?.favoriteDriver && e.name === prefs.favoriteDriver
+                : prefs?.favoriteTeam && e.constructorId === prefs.favoriteTeam
+              return (
+                <li key={e.id}>
+                  <DataRow
+                    pos={i + 1}
+                    teamColor={teamColor(e.constructorId)}
+                    label={isDrivers ? e.name.split(' ').slice(-1)[0] : e.name}
+                    sub={isDrivers ? e.team : undefined}
+                    value={e.points}
+                    highlight={!!focus}
                   >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* List — scrollable */}
-            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-              {loading ? (
-                <div style={{ padding: '1rem 0.75rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)' }}>
-                  Loading...
-                </div>
-              ) : list.length === 0 ? (
-                <div style={{ padding: '1rem 0.75rem', fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)' }}>
-                  No data
-                </div>
-              ) : (
-                list.map((entry, i) =>
-                  tab === 'drivers'
-                    ? <DriverRow key={entry.driverId}      entry={entry} i={i} />
-                    : <CtorRow   key={entry.constructorId} entry={entry} i={i} />
-                )
-              )}
-            </div>
-
-            {/* Footer */}
-            <div style={{
-              padding: '0.5rem 0.75rem',
-              borderTop: '1px solid rgba(255,255,255,0.07)',
-              flexShrink: 0,
-            }}>
-              <Link
-                to={tab === 'drivers' ? '/standings' : '/constructor-standings'}
-                style={{
-                  display: 'block', textAlign: 'center',
-                  fontSize: '0.65rem', fontWeight: 700,
-                  letterSpacing: '0.07em', textTransform: 'uppercase',
-                  color: 'rgba(225,6,0,0.7)', textDecoration: 'none',
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                }}
-              >
-                Full standings →
-              </Link>
-            </div>
-
-            {/* Collapse button — right edge, outside overflow */}
-            <button
-              onClick={toggle}
-              title="Hide standings"
-              style={{
-                position: 'fixed',
-                left: SIDEBAR_W, top: '50%', transform: 'translateY(-50%)',
-                width: 24, height: 64,
-                background: 'rgba(225,6,0,0.9)',
-                border: '1px solid rgba(225,6,0,0.7)',
-                borderLeft: 'none',
-                borderRadius: '0 10px 10px 0',
-                color: '#fff',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.1rem', fontWeight: 900,
-                transition: 'background 0.15s, width 0.15s',
-                zIndex: 50,
-                boxShadow: '3px 0 12px rgba(225,6,0,0.35)',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#e10600'; e.currentTarget.style.width = '28px' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(225,6,0,0.9)'; e.currentTarget.style.width = '24px' }}
-            >
-              ‹
-            </button>
-          </motion.div>
+                    <Trend delta={e.posChange} />
+                  </DataRow>
+                </li>
+              )
+            })}
+          </ol>
         )}
-      </AnimatePresence>
+      </div>
 
-      {/* ── Tab when hidden ── */}
-      <AnimatePresence>
-        {!open && (
-          <motion.button
-            key="tab"
-            initial={{ x: -60 }}
-            animate={{ x: 0 }}
-            exit={{ x: -60 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-            onClick={toggle}
-            title="Show standings"
-            style={{
-              position: 'fixed',
-              left: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: 49,
-              background: 'rgba(12,12,12,0.97)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderLeft: 'none',
-              borderRadius: '0 10px 10px 0',
-              padding: '0.9rem 0.38rem',
-              cursor: 'pointer',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: '0.45rem',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(28,28,28,0.99)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(12,12,12,0.97)'}
-          >
-            <span style={{ fontSize: '0.72rem' }}>🏆</span>
-            {['S','T','A','N','D','I','N','G','S'].map((c, i) => (
-              <span key={i} style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.05em',
-                color: 'rgba(255,255,255,0.35)',
-                lineHeight: 1,
-              }}>
-                {c}
-              </span>
-            ))}
-            <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.22)', marginTop: '0.1rem' }}>›</span>
-          </motion.button>
-        )}
-      </AnimatePresence>
-    </>
+      <div className="p-pw-4 border-t border-edge-soft flex items-center justify-between gap-pw-2">
+        <Link
+          to={isDrivers ? '/standings' : '/standings?view=constructors'}
+          className="inline-flex items-center min-h-11 text-sm font-semibold text-ink-2 hover:text-ink no-underline"
+        >
+          Full standings
+        </Link>
+        {features.social && <div data-slot="rail-actions" />}
+      </div>
+    </aside>
+    </div>
   )
 }

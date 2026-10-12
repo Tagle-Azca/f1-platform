@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useId } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 import AuthField   from './AuthField'
 import AuthInput   from './AuthInput'
 import AuthError   from './AuthError'
@@ -8,11 +10,13 @@ import AuthDivider from './AuthDivider'
 import { IconEye, IconGoogle, IconClose } from './authIcons'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const ERROR_ID = 'login-error'
 
 export default function LoginModal({ open, onClose }) {
   const { login, loginWithGoogle } = useAuth()
   const navigate     = useNavigate()
   const googleBtnRef = useRef(null)
+  const titleId      = useId()
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
@@ -20,12 +24,19 @@ export default function LoginModal({ open, onClose }) {
   const [error,    setError]    = useState(null)
   const [busy,     setBusy]     = useState(false)
 
+  // Esc + focus trap + focus return to the trigger (Esc is handled by the hook).
+  const stableClose = useCallback(() => onClose(), [onClose])
+  const dialogRef = useFocusTrap(open, stableClose)
+
+  // Never keep credentials or a revealed password around once the dialog is closed.
+  // A login request that settles after the dialog was closed must not write state back into it.
+  const openRef = useRef(open)
+  useEffect(() => { openRef.current = open }, [open])
+
   useEffect(() => {
-    if (!open) return
-    const handler = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [open, onClose])
+    if (open) return
+    setEmail(''); setPassword(''); setShowPw(false); setError(null); setBusy(false)
+  }, [open])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -55,81 +66,69 @@ export default function LoginModal({ open, onClose }) {
     e.preventDefault()
     setBusy(true); setError(null)
     try { await login(email, password); onClose() }
-    catch (e) { setError(e.message) }
-    finally { setBusy(false) }
+    catch (e) { if (openRef.current) setError(e.message) }
+    finally { if (openRef.current) setBusy(false) }
   }
 
   function goTo(path) { onClose(); navigate(path) }
 
-  return (
+  const describedBy = error ? ERROR_ID : undefined
+
+  return createPortal(
     <>
-      <div onClick={onClose} style={{
-        position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh', zIndex: 999,
-        background: 'rgba(0,0,0,0.72)',
-        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-        animation: 'fadeIn 0.18s ease',
-      }} />
+      <div onClick={onClose} aria-hidden="true" className="fixed inset-0 z-[999] bg-black/70 backdrop-blur-sm" />
 
-      <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0,
-        height: '100dvh',
-        zIndex: 1000,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '1rem', pointerEvents: 'none',
-        overflowY: 'auto',
-      }}>
-        <div onClick={e => e.stopPropagation()} style={{
-          pointerEvents: 'all', width: '100%', maxWidth: 400,
-          background: 'rgba(8,8,8,0.98)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderTop: '2px solid var(--f1-red)',
-          borderRadius: 14,
-          backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04)',
-          animation: 'slideDown 0.22s cubic-bezier(0.16,1,0.3,1)',
-          overflow: 'hidden',
-        }}>
-          <ModalHeader onClose={onClose} />
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-pw-4 overflow-y-auto pointer-events-none">
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          data-nested-dialog
+          tabIndex={-1}
+          className="pointer-events-auto w-full max-w-[400px] bg-panel border border-edge border-t-2 border-t-steel rounded-md shadow-float overflow-hidden"
+        >
+          <ModalHeader onClose={onClose} titleId={titleId} />
 
-          <div style={{ padding: '1.25rem 1.5rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="px-pw-6 pt-pw-5 pb-pw-6 flex flex-col gap-pw-3">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-pw-3" aria-busy={busy}>
 
               <AuthField label="Email">
                 <AuthInput type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="driver@pitwall.io" autoComplete="email" required />
+                  placeholder="driver@pitwall.io" autoComplete="email" required
+                  aria-invalid={error ? true : undefined} aria-describedby={describedBy} />
               </AuthField>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <PasswordLabel onForgot={() => goTo('/forgot-password')} />
-                <AuthInput
-                  type={showPw ? 'text' : 'password'}
-                  value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••" autoComplete="current-password" required
-                  rightSlot={
-                    <button type="button" onClick={() => setShowPw(v => !v)} style={{
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text-muted)', padding: 0, display: 'flex',
-                    }}>
-                      <IconEye show={showPw} />
-                    </button>
-                  }
-                />
+              <div className="flex flex-col gap-pw-2">
+                <AuthField label="Password">
+                  <AuthInput
+                    type={showPw ? 'text' : 'password'}
+                    value={password} onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••" autoComplete="current-password" required
+                    aria-invalid={error ? true : undefined} aria-describedby={describedBy}
+                    rightSlot={
+                      <button
+                        type="button"
+                        onClick={() => setShowPw(v => !v)}
+                        aria-pressed={showPw}
+                        aria-label="Show password"
+                        className="inline-flex size-11 items-center justify-center bg-transparent border-0 cursor-pointer text-ink-2 hover:text-ink"
+                      >
+                        <IconEye show={showPw} />
+                      </button>
+                    }
+                  />
+                </AuthField>
+                <button type="button" onClick={() => goTo('/forgot-password')}
+                  className="self-end min-h-11 bg-transparent border-0 cursor-pointer text-sm text-ink-2 hover:text-ink underline underline-offset-2">
+                  Forgot access code?
+                </button>
               </div>
 
-              <AuthError message={error} />
+              <AuthError id={ERROR_ID} message={error} />
 
-              <button type="submit" disabled={busy} style={{
-                marginTop: '0.25rem', padding: '0.75rem',
-                background: busy ? 'rgba(225,6,0,0.4)' : 'var(--f1-red)',
-                border: 'none', borderRadius: 8, cursor: busy ? 'not-allowed' : 'pointer',
-                color: '#fff', fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: '0.88rem', fontWeight: 800, letterSpacing: '0.1em',
-                textTransform: 'uppercase', transition: 'background 0.15s',
-                boxShadow: busy ? 'none' : '0 4px 16px rgba(225,6,0,0.3)',
-              }}
-                onMouseEnter={e => { if (!busy) e.currentTarget.style.background = '#c00500' }}
-                onMouseLeave={e => { if (!busy) e.currentTarget.style.background = 'var(--f1-red)' }}
-              >
+              <button type="submit" disabled={busy} aria-disabled={busy}
+                className="mt-pw-1 min-h-12 rounded-sm border-0 bg-steel text-bg font-condensed text-base font-extrabold tracking-[0.1em] uppercase cursor-pointer hover:bg-steel-hi disabled:opacity-50 disabled:cursor-not-allowed">
                 {busy ? 'Authenticating...' : 'Sign In'}
               </button>
             </form>
@@ -137,99 +136,45 @@ export default function LoginModal({ open, onClose }) {
             <AuthDivider />
 
             {GOOGLE_CLIENT_ID ? (
-              <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center' }} />
+              <div ref={googleBtnRef} className="flex justify-center" />
             ) : (
-              <button disabled style={{
-                width: '100%', padding: '0.7rem 1rem',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8, cursor: 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.65rem',
-                color: 'rgba(255,255,255,0.35)', fontSize: '0.82rem', fontWeight: 600,
-              }}>
+              <button disabled className="w-full min-h-11 px-pw-4 rounded-sm bg-white/5 border border-white/10 cursor-not-allowed flex items-center justify-center gap-pw-3 text-ink-3 text-sm font-semibold">
                 <IconGoogle />
                 Continue with Google
-                <span style={{ fontSize: '0.6rem', marginLeft: '0.25rem' }}>(coming soon)</span>
+                <span className="text-xs ml-1">(coming soon)</span>
               </button>
             )}
 
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>No account? </span>
-              <button onClick={() => goTo('/register')} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: '0.72rem', color: 'var(--f1-red)', fontWeight: 700, padding: 0,
-              }}>
-                Join the Pitwall →
+            <p className="text-center text-sm text-ink-2">
+              No account?{' '}
+              <button type="button" onClick={() => goTo('/register')}
+                className="min-h-11 bg-transparent border-0 cursor-pointer text-steel font-bold hover:text-steel-hi underline underline-offset-2 p-0">
+                Join the Pitwall
               </button>
-            </div>
+            </p>
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeIn    { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-12px) } to { opacity: 1; transform: translateY(0) } }
-      `}</style>
-    </>
+    </>,
+    document.body,
   )
 }
 
-// ── Static sub-components ──────────────────────────────────────────────────
-
-function ModalHeader({ onClose }) {
+function ModalHeader({ onClose, titleId }) {
   return (
-    <div style={{
-      padding: '1.25rem 1.5rem 1rem',
-      borderBottom: '1px solid rgba(255,255,255,0.07)',
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-    }}>
+    <div className="px-pw-6 pt-pw-5 pb-pw-4 border-b border-edge-soft flex items-start justify-between">
       <div>
-        <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.18em',
-          textTransform: 'uppercase', color: 'var(--f1-red)', marginBottom: '0.35rem',
-        }}>
+        <p className="font-condensed text-xs font-bold tracking-[0.18em] uppercase text-steel mb-pw-1">
           PITWALL INTELLIGENCE
-        </div>
-        <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontSize: '1.45rem', fontWeight: 900, letterSpacing: '0.06em',
-          textTransform: 'uppercase', color: 'var(--text-primary)', lineHeight: 1,
-        }}>
+        </p>
+        <h2 id={titleId} className="font-condensed text-2xl font-black tracking-[0.06em] uppercase text-ink leading-none">
           ACCESS CONTROL
-        </div>
-        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
-          Sign in to save your layout and telemetry presets
-        </div>
+        </h2>
+        <p className="text-sm text-ink-2 mt-pw-2">Sign in to save your layout and telemetry presets</p>
       </div>
-      <button onClick={onClose} style={{
-        background: 'none', border: 'none', cursor: 'pointer',
-        color: 'var(--text-muted)', padding: '0.25rem', borderRadius: 6,
-        flexShrink: 0, marginLeft: '0.5rem', transition: 'color 0.15s',
-      }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-      >
+      <button type="button" onClick={onClose} aria-label="Close sign-in"
+        className="inline-flex size-11 shrink-0 items-center justify-center -mr-pw-2 -mt-pw-2 rounded-sm bg-transparent border-0 cursor-pointer text-ink-2 hover:text-ink">
         <IconClose />
-      </button>
-    </div>
-  )
-}
-
-function PasswordLabel({ onForgot }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
-        Password
-      </span>
-      <button type="button" onClick={onForgot} style={{
-        background: 'none', border: 'none', cursor: 'pointer',
-        fontSize: '0.65rem', color: 'var(--text-muted)', padding: 0, transition: 'color 0.15s',
-      }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--f1-red)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-      >
-        Forgot access code?
       </button>
     </div>
   )

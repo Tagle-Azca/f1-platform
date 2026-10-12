@@ -1,16 +1,20 @@
-export default function SectorTooltip({ active, payload, label }) {
+const NAMES = { sector1: 'Sector 1', sector2: 'Sector 2', sector3: 'Sector 3' }
+
+export default function SectorTooltip({ active, payload, label, driverA, driverB }) {
   if (!active || !payload?.length) return null
+  const nameOf = (p) => {
+    const m = /^s(\d)_(a|b)$/.exec(p.dataKey)
+    if (m) return `S${m[1]} ${m[2] === 'a' ? driverA?.acronym ?? '' : driverB?.acronym ?? ''}`
+    return NAMES[p.dataKey] ?? p.name
+  }
   return (
-    <div style={{
-      background: 'rgba(8,8,8,0.98)', border: '1px solid rgba(255,255,255,0.12)',
-      borderRadius: 8, padding: '0.55rem 0.8rem', minWidth: 120,
-    }}>
-      <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', marginBottom: 4 }}>Lap {label}</div>
+    <div className="min-w-36 rounded-md border border-edge bg-raise px-pw-3 py-pw-2 shadow-lg">
+      <p className="mb-pw-1 text-xs font-semibold text-ink">Lap {label}</p>
       {payload.map(p => (
-        <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', marginBottom: 2 }}>
-          <span style={{ fontSize: '0.72rem', color: p.fill, fontWeight: 700 }}>{p.name}</span>
-          <span style={{ fontSize: '0.72rem', color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{p.value > 0 ? `${p.value.toFixed(3)}s` : '—'}</span>
-        </div>
+        <p key={p.dataKey} className="flex justify-between gap-pw-3 text-xs text-ink-2">
+          <span>{nameOf(p)}</span>
+          <span className="num text-ink">{p.value > 0 ? `${p.value.toFixed(3)} s` : '—'}</span>
+        </p>
       ))}
     </div>
   )

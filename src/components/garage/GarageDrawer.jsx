@@ -4,7 +4,6 @@ import { usePreferences } from '../../contexts/PreferencesContext'
 import PaddockPass           from './PaddockPass'
 import ConstructorPicker     from './ConstructorPicker'
 import TelemetryToggles      from './TelemetryToggles'
-import DashboardLayoutPicker from './DashboardLayoutPicker'
 
 function SectionBlock({ title, children }) {
   return (
@@ -131,10 +130,6 @@ export default function GarageDrawer({ open, onClose }) {
 
           <SectionBlock title="Constructor &amp; Driver">
             <ConstructorPicker />
-          </SectionBlock>
-
-          <SectionBlock title="Dashboard Layout">
-            <DashboardLayoutPicker />
           </SectionBlock>
 
           <SectionBlock title="Telemetry Config">

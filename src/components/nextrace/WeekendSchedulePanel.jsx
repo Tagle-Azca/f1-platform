@@ -1,184 +1,55 @@
 import { useState } from 'react'
-import Panel from '../ui/Panel'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
-import { TZ_OPTIONS, getInitialTZ, saveTZ, tzAbbr, formatInTZ } from '../../utils/timezone'
+import SessionTimeline from '../viz/SessionTimeline'
+import VizSkeleton from '../viz/VizSkeleton'
+import { TZ_OPTIONS, getInitialTZ, saveTZ } from '../../utils/timezone'
+import { buildSessionList } from '../../utils/sessionSchedule'
+import { useNow } from '../../hooks/useNow'
 
-const SESSION_ORDER = ['fp1', 'fp2', 'sprintQualifying', 'fp3', 'sprint', 'qualifying', 'race']
-const SESSION_LABELS = {
-  fp1: 'Practice 1', fp2: 'Practice 2', fp3: 'Practice 3',
-  sprintQualifying: 'Sprint Qualifying', sprint: 'Sprint',
-  qualifying: 'Qualifying', race: 'Race',
-}
-const SESSION_COLORS = {
-  fp1: '#22c55e', fp2: '#22c55e', fp3: '#22c55e',
-  sprintQualifying: '#f59e0b', sprint: '#f59e0b',
-  qualifying: '#3b82f6', race: '#e8002d',
-}
+/**
+ * Weekend schedule section: a SessionTimeline plus per-day forecast (Open-Meteo daily data, keyed by date).
+ * `weather` is null while loading or when the request failed; `weatherFailed` shows one quiet line.
+ */
+export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey, weather, weatherFailed = false, loading = false }) {
+  const [tz, setTz] = useState(getInitialTZ)
+  const now = useNow(60000)
 
-function toDate(date, time) {
-  if (!date) return null
-  const t = (time || '00:00:00').replace(/Z$/i, '')
-  return new Date(`${date}T${t}Z`)
-}
-
-function isSessionPast(date, time) {
-  const d = toDate(date, time)
-  return d ? d < Date.now() : false
-}
-
-function weatherIcon(code) {
-  if (code === 0)  return { icon: '☀️', label: 'Clear' }
-  if (code <= 3)   return { icon: '⛅', label: 'Partly cloudy' }
-  if (code <= 48)  return { icon: '🌫️', label: 'Foggy' }
-  if (code <= 57)  return { icon: '🌦️', label: 'Drizzle' }
-  if (code <= 67)  return { icon: '🌧️', label: 'Rain' }
-  if (code <= 77)  return { icon: '❄️', label: 'Snow' }
-  if (code <= 82)  return { icon: '🌦️', label: 'Showers' }
-  return                  { icon: '⛈️', label: 'Storm' }
-}
-
-export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey, weather }) {
-  const { isMobile } = useBreakpoint()
-  const [tz,        setTz]        = useState(getInitialTZ)
-  const [pickerOpen, setPickerOpen] = useState(false)
-
-  function selectTz(value) {
-    setTz(value)
-    setPickerOpen(false)
-    saveTZ(value)
+  function selectTz(e) {
+    setTz(e.target.value)
+    saveTZ(e.target.value)
   }
 
-  const abbr = tzAbbr(tz)
+  // The page knows the live and next keys exactly; trust them over the clock-derived status.
+  const sessions = (schedule ? buildSessionList(schedule, null) : []).map(s => ({
+    ...s,
+    status: s.key === liveKey ? 'live' : s.status === 'done' ? 'done' : s.key === nextSessionKey ? 'next' : 'upcoming',
+  }))
 
   return (
-    <Panel padding="none">
-      <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em', color: 'var(--text-muted)', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-          Weekend Schedule
-        </span>
-
-        {/* Timezone badge — clickable */}
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setPickerOpen(v => !v)}
-            style={{
-              fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.06em',
-              color: pickerOpen ? '#fff' : 'var(--text-muted)',
-              background: pickerOpen ? 'rgba(225,6,0,0.15)' : 'var(--surface-3)',
-              border: `1px solid ${pickerOpen ? 'rgba(225,6,0,0.4)' : 'transparent'}`,
-              padding: '2px 7px', borderRadius: 4, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '0.3rem',
-              transition: 'all 0.15s',
-            }}
+    <section className="section" aria-labelledby="schedule-h">
+      <div className="flex flex-col gap-pw-2 md:flex-row md:items-center md:justify-between">
+        <h2 id="schedule-h" className="text-heading text-ink">Weekend schedule</h2>
+        <label className="flex flex-col gap-1 text-xs text-ink-2 md:flex-row md:items-center md:gap-pw-2">
+          Times in
+          <select
+            value={tz}
+            onChange={selectTz}
+            className="min-h-11 cursor-pointer rounded-md border border-edge bg-panel px-pw-2 text-sm font-medium text-ink md:min-h-9"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 11, height: 11, opacity: 0.5 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-            {abbr}
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 9, height: 9, opacity: 0.5, transform: pickerOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-
-          {pickerOpen && (
-            <div style={{
-              position: 'absolute', top: 'calc(100% + 6px)', right: 0,
-              background: 'rgba(12,12,12,0.98)', backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
-              zIndex: 200, minWidth: 220, maxHeight: 280, overflowY: 'auto',
-            }}>
-              {TZ_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => selectTz(opt.value)}
-                  style={{
-                    width: '100%', textAlign: 'left',
-                    padding: '0.45rem 0.75rem',
-                    background: tz === opt.value ? 'rgba(225,6,0,0.12)' : 'transparent',
-                    border: 'none',
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
-                    color: tz === opt.value ? '#e10600' : 'rgba(255,255,255,0.7)',
-                    fontSize: '0.75rem', fontWeight: tz === opt.value ? 700 : 400,
-                    cursor: 'pointer', transition: 'background 0.1s',
-                  }}
-                  onMouseEnter={e => { if (tz !== opt.value) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-                  onMouseLeave={e => { if (tz !== opt.value) e.currentTarget.style.background = 'transparent' }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            {TZ_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </label>
       </div>
+      {weatherFailed && <p className="mt-pw-2 text-xs text-ink-3">Forecast unavailable</p>}
 
-      <div style={{ padding: '0.5rem 0' }}>
-        {schedule ? SESSION_ORDER.filter(k => schedule[k]).map(key => {
-          const s      = schedule[key]
-          const isLive = key === liveKey
-          const past   = !isLive && isSessionPast(s.date, s.time)
-          const col    = SESSION_COLORS[key]
-          return (
-            <div key={key} style={{
-              display: 'flex', alignItems: 'center', gap: isMobile ? '0.6rem' : '1rem',
-              padding: isMobile ? '0.55rem 1rem' : '0.65rem 1.25rem',
-              opacity: past ? 0.4 : 1,
-              borderBottom: '1px solid var(--border-subtle)',
-              background: (isLive || key === nextSessionKey) && !past ? `${SESSION_COLORS[key]}08` : 'transparent',
-            }}>
-              <div style={{ width: 4, height: isMobile ? 32 : 42, borderRadius: 2, background: col, flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: isMobile ? '0.85rem' : '0.95rem', fontWeight: 700, color: past ? 'var(--text-muted)' : '#fff' }}>
-                    {SESSION_LABELS[key]}
-                  </span>
-                  {past && (
-                    <span style={{ fontSize: '0.6rem', background: 'var(--surface-3)', color: 'var(--text-muted)', borderRadius: 3, padding: '1px 6px', fontWeight: 600 }}>DONE</span>
-                  )}
-                  {isLive && (
-                    <span style={{ fontSize: '0.62rem', background: 'rgba(239,68,68,0.18)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 4, padding: '1px 8px', fontWeight: 700, letterSpacing: '0.06em', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} />
-                      LIVE
-                    </span>
-                  )}
-                  {!isLive && !past && key === nextSessionKey && (
-                    <span style={{ fontSize: '0.62rem', background: `${SESSION_COLORS[key]}33`, color: SESSION_COLORS[key], border: `1px solid ${SESSION_COLORS[key]}66`, borderRadius: 4, padding: '1px 8px', fontWeight: 700, letterSpacing: '0.06em' }}>
-                      NEXT
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: isMobile ? '0.72rem' : '0.82rem', color: past ? 'var(--text-muted)' : 'var(--text-secondary)', textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {formatInTZ(s.date, s.time, tz, isMobile)}
-                </div>
-              </div>
-
-              {/* Weather */}
-              {weather?.[s.date] && !past && (() => {
-                const w = weather[s.date]
-                const { icon } = weatherIcon(w.code)
-                return (
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: '1rem', lineHeight: 1 }}>{icon}</div>
-                    <div style={{ fontSize: '0.68rem', color: '#fff', fontWeight: 600, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
-                      {w.tempMax}° / {w.tempMin}°
-                    </div>
-                    {w.precipProb > 0 && (
-                      <div style={{ fontSize: '0.6rem', color: '#60a5fa', marginTop: 1 }}>
-                        {w.precipProb}% rain
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-            </div>
-          )
-        }) : (
-          <p style={{ padding: '1rem 1.25rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Schedule not available yet.
-          </p>
+      <div className="mt-pw-3">
+        {loading ? (
+          <VizSkeleton variant="timeline" name="schedule" />
+        ) : sessions.length ? (
+          <SessionTimeline sessions={sessions} tz={tz} now={now} weather={weather} caption />
+        ) : (
+          <p className="text-sm text-ink-2">Schedule not available yet.</p>
         )}
       </div>
-    </Panel>
+    </section>
   )
 }

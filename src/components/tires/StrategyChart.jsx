@@ -1,103 +1,148 @@
-import Panel from '../ui/Panel'
-import EmptyState from '../ui/EmptyState'
+import { useRef, useState } from 'react'
+import TeamBar from '../viz/TeamBar'
+import { tyre } from '../../styles/vizPalette'
+import { teamNameToColor } from '../../utils/teamColors'
+import { lapLeft, lapWidth } from './strategyModel'
 
-const COMPOUND_COLOR = {
-  SOFT:         { bg: '#e8002d', label: '#fff' },
-  MEDIUM:       { bg: '#ffd600', label: '#111' },
-  HARD:         { bg: '#e0e0e0', label: '#111' },
-  INTERMEDIATE: { bg: '#39b54a', label: '#fff' },
-  WET:          { bg: '#0067ff', label: '#fff' },
-  UNKNOWN:      { bg: 'repeating-linear-gradient(45deg,#444 0px,#444 4px,#2a2a2a 4px,#2a2a2a 8px)', label: 'rgba(255,255,255,0.55)' },
-}
+const BAND = { SC: 'var(--pw-orange)', VSC: 'var(--pw-yellow)' }
+const UNKNOWN_FILL = 'repeating-linear-gradient(45deg, var(--pw-edge) 0 4px, transparent 4px 8px)'
+// Label column | lane | outcome column. The SC overlay is offset by the same widths + gaps.
+const GRID = 'grid grid-cols-[4.5rem_minmax(0,1fr)_3.75rem] items-center gap-x-pw-2 md:grid-cols-[6rem_minmax(0,1fr)_4.5rem]'
+const OVERLAY = 'pointer-events-none absolute inset-y-0 left-[calc(4.5rem+8px)] right-[calc(3.75rem+8px)] md:left-[calc(6rem+8px)] md:right-[calc(4.5rem+8px)]'
 
-const COMPOUND_ABBR = {
-  SOFT: 'S', MEDIUM: 'M', HARD: 'H', INTERMEDIATE: 'I', WET: 'W', UNKNOWN: '?',
-}
+const nameOf = (c) => tyre(c)?.name ?? 'Unknown'
+const stintText = (r, s) => `${r.acronym}: ${nameOf(s.compound)}, laps ${s.lapStart}–${s.lapEnd} (${s.laps} ${s.laps === 1 ? 'lap' : 'laps'})${s.tyreAge > 0 ? `, fitted ${s.tyreAge} laps old` : ''}`
 
-function compound(raw = '') {
-  const key = raw.toUpperCase()
-  return COMPOUND_COLOR[key] ? key : 'UNKNOWN'
-}
-
-export default function StrategyChart({ strategy, totalLaps, loading, dbOffline }) {
+function LapAxis({ totalLaps, periods, position }) {
+  const ticks = []
+  for (let lap = 10; lap < totalLaps; lap += 10) ticks.push(lap)
   return (
-    <Panel padding="none" className="card" style={{ padding: '1rem 1.25rem', overflowX: 'auto' }}>
-      {loading && <EmptyState type="loading" message="Loading strategy..." height={200} />}
-      {!loading && !strategy.length && !dbOffline && <EmptyState type="empty" message="Select a race to view tire strategy" height={200} />}
+    <div className={GRID} aria-hidden="true">
+      <span className="text-right text-xs text-ink-3">{position === 'top' ? 'Lap' : ''}</span>
+      <div className="relative h-5">
+        {position === 'top' && periods.map((p, i) => (
+          <span
+            key={i}
+            className="absolute top-0 text-xs font-medium text-ink-2"
+            style={{ left: `${lapLeft(p.lapStart, totalLaps)}%` }}
+          >
+            {p.type}
+          </span>
+        ))}
+        {position === 'bottom' && (
+          <>
+            <span className="num absolute left-0 text-ink-3">1</span>
+            {ticks.filter(lap => totalLaps - lap >= totalLaps * 0.12).map(lap => (
+              <span key={lap} className="num absolute -translate-x-1/2 text-ink-3" style={{ left: `${lapLeft(lap + 1, totalLaps)}%` }}>{lap}</span>
+            ))}
+            <span className="num absolute right-0 text-ink-3">{totalLaps}</span>
+          </>
+        )}
+      </div>
+      <span />
+    </div>
+  )
+}
 
-      {!loading && strategy.length > 0 && (
-        <div style={{ minWidth: 600 }}>
-          {/* Lap axis header */}
-          <div style={{ display: 'flex', marginBottom: '0.5rem', paddingLeft: 72 }}>
-            <div style={{ flex: 1, position: 'relative', height: 16 }}>
-              {Array.from({ length: Math.ceil(totalLaps / 10) }, (_, i) => {
-                const lap = (i + 1) * 10
-                if (lap > totalLaps) return null
-                return (
-                  <span key={lap} style={{ position: 'absolute', left: `${(lap / totalLaps) * 100}%`, transform: 'translateX(-50%)', fontSize: '0.62rem', color: 'rgba(255,255,255,0.25)', fontVariantNumeric: 'tabular-nums' }}>
-                    {lap}
-                  </span>
-                )
-              })}
-              <span style={{ position: 'absolute', right: 0, fontSize: '0.62rem', color: 'rgba(255,255,255,0.25)' }}>
-                L{totalLaps}
-              </span>
-            </div>
-          </div>
+/**
+ * One row per driver in finishing order: stints as compound-colored segments on a shared
+ * lap axis, SC/VSC periods as bands behind every row. Hover shows stint details; the same
+ * data is in an sr-only table, so nothing depends on hover or color.
+ */
+export default function StrategyChart({ rows, totalLaps, periods }) {
+  const lanesRef = useRef(null)
+  const [tip, setTip] = useState(null)
 
-          {/* Driver rows */}
-          {strategy.map(driver => {
-            const lastLap = Math.max(...driver.stints.map(s => s.lapEnd))
-            const dnf     = lastLap < totalLaps - 1
-            return (
-              <div key={driver.driverId} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
-                <div style={{ width: 64, flexShrink: 0, textAlign: 'right', fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
-                  {driver.acronym}
-                </div>
-                <div style={{ flex: 1, height: 28, position: 'relative', background: 'rgba(22,22,22,0.9)', borderRadius: 5, overflow: 'hidden', opacity: dnf ? 0.75 : 1 }}>
-                  {dnf && (
-                    <div style={{ position: 'absolute', left: `${(lastLap / totalLaps) * 100}%`, top: 0, bottom: 0, width: 2, background: 'rgba(239,68,68,0.7)', zIndex: 2 }} />
-                  )}
-                  {driver.stints.map(stint => {
-                    const cKey  = compound(stint.compound)
-                    const color = COMPOUND_COLOR[cKey]
-                    const left  = ((stint.lapStart - 1) / totalLaps) * 100
-                    const width = ((stint.lapEnd - stint.lapStart + 1) / totalLaps) * 100
-                    const laps  = stint.lapEnd - stint.lapStart + 1
-                    return (
-                      <div
-                        key={stint.stintNumber}
-                        title={`${cKey} · Laps ${stint.lapStart}–${stint.lapEnd} (${laps} laps)${stint.tyreAge > 0 ? ` · Tyre age: ${stint.tyreAge} laps` : ''}`}
-                        style={{ position: 'absolute', left: `${left}%`, width: `${width}%`, top: 0, bottom: 0, background: color.bg, borderRight: '2px solid rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'default', transition: 'filter 0.1s' }}
-                        onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'}
-                        onMouseLeave={e => e.currentTarget.style.filter = 'brightness(1)'}
-                      >
-                        {width > 5 && (
-                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: color.label, letterSpacing: '0.04em', pointerEvents: 'none', userSelect: 'none' }}>
-                            {COMPOUND_ABBR[cKey]}{laps > 4 ? ` ${laps}` : ''}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-                <div style={{ width: 36, flexShrink: 0, textAlign: 'left' }}>
-                  {dnf ? (
-                    <span title={`Retired on lap ${lastLap}`} style={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.06em', color: '#ef4444', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 3, padding: '1px 4px' }}>DNF</span>
-                  ) : (
-                    <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.2)', fontVariantNumeric: 'tabular-nums' }}>{driver.stints.length}</span>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+  function show(e, text) {
+    const box = lanesRef.current?.getBoundingClientRect()
+    const seg = e.currentTarget.getBoundingClientRect()
+    if (!box) return
+    setTip({ text, x: seg.left + seg.width / 2 - box.left, y: seg.top - box.top })
+  }
 
-          {/* Bottom label */}
-          <div style={{ paddingLeft: 72, paddingTop: '0.5rem', fontSize: '0.62rem', color: 'rgba(255,255,255,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '0.25rem' }}>
-            Lap · {strategy.length} drivers · {totalLaps} total laps
-          </div>
+  return (
+    <div>
+      <LapAxis totalLaps={totalLaps} periods={periods} position="top" />
+
+      <div ref={lanesRef} className="relative" onMouseLeave={() => setTip(null)}>
+        {/* Safety car / VSC bands behind every row */}
+        <div className={OVERLAY} aria-hidden="true">
+          {periods.map((p, i) => (
+            <div
+              key={i}
+              className="absolute inset-y-0 opacity-[0.14]"
+              style={{ left: `${lapLeft(p.lapStart, totalLaps)}%`, width: `${lapWidth(p.lapStart, p.lapEnd, totalLaps)}%`, background: BAND[p.type] }}
+            />
+          ))}
         </div>
-      )}
-    </Panel>
+
+        <ol aria-hidden="true" className="relative flex flex-col gap-pw-1">
+          {rows.map(r => (
+            <li key={r.driverId} className={`${GRID} min-h-8 rounded-[2px] hover:bg-hover`}>
+              <span className="flex min-w-0 items-center justify-end gap-pw-2">
+                <span className="num w-5 text-right text-ink-3">{r.position ?? '–'}</span>
+                <TeamBar color={teamNameToColor(r.teamName) ?? '#888888'} height={16} width={3} />
+                <span className="w-9 text-sm font-semibold text-ink">{r.acronym}</span>
+              </span>
+
+              <div className="relative h-6 rounded-[2px] bg-[var(--viz-track)]">
+                {r.stints.map((s, i) => {
+                  const t = tyre(s.compound)
+                  const w = lapWidth(s.lapStart, s.lapEnd, totalLaps)
+                  return (
+                    <div
+                      key={i}
+                      className="absolute inset-y-0 flex items-center justify-center overflow-hidden border-r-2 border-bg last:border-r-0 hover:brightness-110"
+                      style={{ left: `${lapLeft(s.lapStart, totalLaps)}%`, width: `${w}%`, background: t?.css ?? UNKNOWN_FILL }}
+                      onMouseEnter={e => show(e, stintText(r, s))}
+                    >
+                      {w >= 7 && (
+                        <span className="select-none text-xs font-bold text-[color:var(--viz-tyre-ink)]">
+                          {t?.letter ?? '?'}{w >= 11 ? ` ${s.laps}` : ''}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <span className="text-xs">
+                {r.dns ? <span className="font-medium text-neg">DNS</span>
+                  : r.dnf ? <span className="font-medium text-neg" title={r.status || undefined}>DNF L{r.lastLap}</span>
+                    : <span className="text-ink-2">{r.stops} {r.stops === 1 ? 'stop' : 'stops'}</span>}
+              </span>
+            </li>
+          ))}
+        </ol>
+
+        {tip && (
+          <div
+            role="presentation"
+            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-edge bg-raise px-pw-3 py-pw-1 text-xs text-ink shadow-lg"
+            style={{ left: tip.x, top: tip.y - 6 }}
+          >
+            {tip.text}
+          </div>
+        )}
+      </div>
+
+      <LapAxis totalLaps={totalLaps} periods={periods} position="bottom" />
+
+      {/* Screen-reader version of the chart */}
+      <table className="sr-only">
+        <caption>Tyre stints by driver, in finishing order</caption>
+        <thead><tr><th scope="col">Position</th><th scope="col">Driver</th><th scope="col">Stints</th><th scope="col">Outcome</th></tr></thead>
+        <tbody>
+          {rows.map(r => (
+            <tr key={r.driverId}>
+              <td>{r.position ?? 'Not classified'}</td>
+              <td>{r.fullName || r.acronym}</td>
+              <td>{r.stints.map(s => `${nameOf(s.compound)} laps ${s.lapStart} to ${s.lapEnd}`).join('; ')}</td>
+              <td>{r.dns ? 'Did not start' : r.dnf ? `Retired on lap ${r.lastLap}${r.status ? ` (${r.status})` : ''}` : `${r.stops} stops`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

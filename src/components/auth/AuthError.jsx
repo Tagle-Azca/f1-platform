@@ -1,11 +1,8 @@
-export default function AuthError({ message }) {
+/** Inline form error. `id` is referenced by the inputs through aria-describedby. */
+export default function AuthError({ message, id = 'auth-error' }) {
   if (!message) return null
   return (
-    <div style={{
-      background: 'rgba(225,6,0,0.07)', border: '1px solid rgba(225,6,0,0.22)',
-      borderRadius: 7, padding: '0.6rem 0.85rem',
-      fontSize: '0.75rem', color: '#ff6b6b',
-    }}>
+    <div id={id} role="alert" className="rounded-sm border border-live bg-live-soft px-pw-3 py-pw-2 text-sm text-ink">
       {message}
     </div>
   )

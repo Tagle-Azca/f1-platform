@@ -6,7 +6,7 @@ const COUNTRY_CODES = {
   'Netherlands': 'nl', 'Singapore': 'sg', 'Mexico': 'mx', 'Brazil': 'br',
   'Las Vegas': 'us', 'Qatar': 'qa', 'UAE': 'ae', 'Abu Dhabi': 'ae',
   'Azerbaijan': 'az', 'France': 'fr', 'Germany': 'de', 'Portugal': 'pt',
-  'Turkey': 'tr', 'Russia': 'ru', 'Miami': 'us',
+  'Turkey': 'tr', 'Malaysia': 'my', 'Russia': 'ru', 'Miami': 'us',
 }
 
 export default function Flag({ country }) {

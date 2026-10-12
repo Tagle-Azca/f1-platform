@@ -11,6 +11,8 @@ export default {
       fontFamily: {
         sans:      ['Barlow', ...fontFamily.sans],
         condensed: ['Barlow Condensed', ...fontFamily.sans],
+        display:   ['var(--pw-display)'],
+        mono:      ['var(--pw-mono)'],
       },
       colors: {
         // Team accent — updates live via CSS variable when user selects a team/driver.
@@ -32,13 +34,29 @@ export default {
         },
         border:    'var(--border-color)',
         background:'var(--bg-base)',
+
+        // ── Pitwall tokens (canonical --pw-*) ──
+        bg:        'var(--pw-bg)',
+        panel:     'var(--pw-panel)',
+        raise:     'var(--pw-raise)',
+        hover:     'var(--pw-hover)',
+        sidebar:   'var(--pw-sidebar)',
+        edge:      { DEFAULT: 'var(--pw-edge)', soft: 'var(--pw-edge-soft)' },
+        ink:       { DEFAULT: 'var(--pw-ink)', 2: 'var(--pw-ink-2)', 3: 'var(--pw-ink-3)' },
+        steel:     { DEFAULT: 'var(--pw-steel)', hi: 'var(--pw-steel-hi)', soft: 'var(--pw-steel-soft)' },
+        pos:       'var(--pw-pos)',
+        neg:       'var(--pw-neg)',
+        live:      { DEFAULT: 'var(--pw-red)', soft: 'var(--pw-red-soft)' },
+        violet:    'var(--pw-violet)',
+        signal:    { yellow: 'var(--pw-yellow)', orange: 'var(--pw-orange)' },
       },
       fontSize: {
         '2xs':  ['var(--text-2xs)', { lineHeight: '1rem' }],
         'xs':   ['var(--text-xs)',  { lineHeight: '1rem' }],
         'sm':   ['var(--text-sm)',  { lineHeight: '1.25rem' }],
         'base': ['var(--text-base)',{ lineHeight: '1.5rem' }],
-        'lg':   ['var(--text-lg)', { lineHeight: '1.5rem' }],
+        'lg':   ['var(--text-lg)', { lineHeight: '1.625rem' }],
+        'display': ['var(--text-display)', { lineHeight: '1' }],
       },
       spacing: {
         '1': 'var(--space-1)',
@@ -49,6 +67,12 @@ export default {
         '6': 'var(--space-6)',
         '7': 'var(--space-7)',
         '8': 'var(--space-8)',
+        // 4px grid for touched files (legacy 1..8 keys untouched, see UIUX 2.3)
+        'pw-1': '4px', 'pw-2': '8px', 'pw-3': '12px', 'pw-4': '16px',
+        'pw-5': '20px', 'pw-6': '24px', 'pw-7': '32px', 'pw-8': '48px',
+        'tabbar': 'var(--tabbar-height)',
+        'header': 'var(--header-height)',
+        'sidebar': 'var(--sidebar-width)',
       },
       borderRadius: {
         lg:   'var(--radius-lg)',

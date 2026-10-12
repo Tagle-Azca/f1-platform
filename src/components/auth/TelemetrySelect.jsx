@@ -1,35 +1,27 @@
-import { useState } from 'react'
-
-export default function TelemetrySelect({ value, onChange, options, placeholder }) {
-  const [focused, setFocused] = useState(false)
+export default function TelemetrySelect({ value, onChange, options, placeholder, label }) {
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       <select
         value={value} onChange={onChange} required
-        style={{
-          width: '100%', background: 'rgba(255,255,255,0.04)',
-          border: `1px solid ${focused ? 'rgba(225,6,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
-          borderRadius: 6, padding: '0.5rem 1.75rem 0.5rem 0.65rem',
-          color: value ? 'var(--text-primary)' : 'rgba(255,255,255,0.3)',
-          fontSize: '0.8rem', fontFamily: "'Barlow Condensed', monospace",
-          fontWeight: 700, letterSpacing: '0.06em',
-          outline: 'none', cursor: 'pointer', appearance: 'none',
-          transition: 'border-color 0.2s',
-        }}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        aria-label={label ?? placeholder}
+        className={[
+          'w-full min-h-11 appearance-none cursor-pointer rounded-sm bg-white/5 border border-white/20',
+          'py-pw-2 pl-pw-3 pr-7 font-condensed text-sm font-bold tracking-[0.06em]',
+          'focus-visible:outline-2 focus-visible:outline-steel focus-visible:outline-offset-2',
+          value ? 'text-ink' : 'text-ink-3',
+        ].join(' ')}
       >
         <option value="" disabled>{placeholder}</option>
         {options.map(opt => (
-          <option key={opt.value ?? opt} value={opt.value ?? opt}
-            style={{ background: '#111', color: '#f0f0f0' }}>
+          <option key={opt.value ?? opt} value={opt.value ?? opt} className="bg-panel text-ink">
             {opt.label ?? opt}
           </option>
         ))}
       </select>
       <svg
-        style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
-        width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.4)" strokeWidth={2.5}
+        aria-hidden="true"
+        className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-ink-3"
+        width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
       </svg>

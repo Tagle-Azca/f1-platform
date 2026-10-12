@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 import { usePreferences } from '../contexts/PreferencesContext'
 import { useCassandraRaces } from '../hooks/useCassandraRaces'
@@ -6,11 +7,10 @@ import { useDriverTelemetry } from '../hooks/useDriverTelemetry'
 import { useDriverComparison } from '../hooks/useDriverComparison'
 import { useHistoricalTelemetry } from '../hooks/useHistoricalTelemetry'
 import PageWrapper from '../components/layout/PageWrapper'
-import PageHeader from '../components/layout/PageHeader'
-import PageHint from '../components/ui/PageHint'
+import Rise from '../components/layout/Rise'
 import DbOfflineBanner from '../components/ui/DbOfflineBanner'
 import BackendError from '../components/ui/BackendError'
-import EmptyState from '../components/ui/EmptyState'
+import VizSkeleton from '../components/viz/VizSkeleton'
 import CassandraLapChart from '../components/telemetry/CassandraLapChart'
 import TyreAnalysisPanel from '../components/telemetry/TyreAnalysisPanel'
 import SectorChart from '../components/telemetry/SectorChart'
@@ -19,11 +19,16 @@ import HistoricalSeasonView from '../components/telemetry/HistoricalSeasonView'
 import TelemetryModeBadge from '../components/telemetry/TelemetryModeBadge'
 import TelemetryControls from '../components/telemetry/TelemetryControls'
 import DriverComparisonBanner from '../components/telemetry/DriverComparisonBanner'
-import { TELEMETRY_CUTOFF, HISTORICAL_YEARS, COLORS, COLOR_B } from '../components/telemetry/telemetryConstants'
+import { TELEMETRY_CUTOFF, HISTORICAL_YEARS } from '../components/telemetry/telemetryConstants'
 import { buildStints, stintSlope } from '../components/telemetry/telemetryUtils'
 import { telemetryApi } from '../services/api'
 import { F1_TEAMS } from '../data/f1Teams'
 import { teamNameToColor } from '../utils/teamColors'
+import { teamMark, BASE } from '../styles/vizPalette'
+
+// Series fallbacks when a team color is unknown: steel (A) and ink-2 (B), matching --viz-series-1/-2
+const SERIES_A = '#8fb4d8'
+const SERIES_B = '#a2abb4'
 
 /** Only show races whose start date is in the past (or no date known). */
 function isPastRace(r) {
@@ -43,6 +48,9 @@ function findTeammateIn(favoriteDriverName, list, nameKey) {
 export default function TelemetryPage() {
   const { isMobile } = useBreakpoint()
   const { prefs } = usePreferences()
+  // ?race=<year>_<key> (the Circuits "Compare laps" link): read once, only honoured when that race exists in the list
+  const [searchParams] = useSearchParams()
+  const deepLink = searchParams.get('race')
   // ── Shared state ───────────────────────────────────
   const [year,     setYear]     = useState('')
   const [driverId, setDriverId] = useState('')
@@ -62,8 +70,13 @@ export default function TelemetryPage() {
   const isHistorical = year !== '' && parseInt(year) < TELEMETRY_CUTOFF
 
   // ── Hooks ──────────────────────────────────────────
-  const { cassRaces, dbOffline } = useCassandraRaces((years, firstRaceId) => {
+  const { cassRaces, dbOffline } = useCassandraRaces((years, firstRaceId, sortedRaces = []) => {
     if (years.length) {
+      if (deepLink && /^\d{4}_\d+$/.test(deepLink) && sortedRaces.some(r => r.raceId === deepLink)) {
+        setYear(deepLink.split('_')[0])
+        setRaceId(deepLink)
+        return
+      }
       setYear(years[0])
       if (firstRaceId) setRaceId(firstRaceId)
     } else {
@@ -82,7 +95,7 @@ export default function TelemetryPage() {
     useDriverComparison(raceId, driverIdB, isHistorical)
 
   const {
-    histDrivers, histData, loadingHist,
+    histDrivers, histData, loadingHist, noSeasonData,
     load: loadHistoricalData,
   } = useHistoricalTelemetry(year, driverId, isHistorical)
 
@@ -206,9 +219,11 @@ export default function TelemetryPage() {
   const selectedCassDriverB = cassDrivers.find(d => d.driverId === driverIdB)
   const selectedHistDriver  = histDrivers.find(d => d.driverId === driverId)
 
-  // Team colors: use team color when available, fall back to legacy defaults
-  const colorA = teamNameToColor(selectedCassDriver?.teamName) ?? COLORS.lap
-  const colorB = teamNameToColor(selectedCassDriverB?.teamName) ?? COLOR_B
+  // Team colors, lifted to >= 3:1 on the page background (teamMark); B is also dashed so teammates stay distinct
+  const colorA = teamMark(teamNameToColor(selectedCassDriver?.teamName) ?? SERIES_A, BASE.bg)
+  const colorB = teamMark(teamNameToColor(selectedCassDriverB?.teamName) ?? SERIES_B, BASE.bg)
+  const selectedRace = cassRaces.find(r => r.raceId === raceId)
+  const animationId  = `${raceId}-${driverId}-${driverIdB}`
 
   const validLaps    = laps.filter(l => l.lap_time > 0)
 
@@ -245,137 +260,134 @@ export default function TelemetryPage() {
   const bestS3       = validLaps.length ? Math.min(...validLaps.filter(l => l.sector3 > 0).map(l => l.sector3)) : null
 
   return (
-    <PageWrapper>
-      <PageHint
-        id="telemetry"
-        title="Performance Hub"
-        text="Select a race and a driver to view lap times and pit stop data. Historical data is available from 1950 onwards."
-        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 16, height: 16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>}
-      />
-      <PageHeader
-        title="Performance Hub"
-        subtitle={isHistorical
-          ? `Historical analysis · ${year}`
-          : 'Lap times & telemetry'}
-      />
-
-      <TelemetryModeBadge isHistorical={isHistorical} />
+    <PageWrapper stagger>
+      <header className="mb-pw-5">
+        <div className="flex flex-col gap-pw-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-title text-ink">Telemetry</h1>
+            <p className="mt-pw-1 text-sm text-ink-2">
+              {isHistorical ? `Season results for one driver, ${year}.` : 'Lap times, tyres, sectors and pit stops for one or two drivers.'}
+            </p>
+          </div>
+          <TelemetryModeBadge isHistorical={isHistorical} />
+        </div>
+      </header>
 
       {dbOffline && !isHistorical && (
-        <div style={{ marginBottom: '1rem' }}>
-          <DbOfflineBanner
-            message={<>Cassandra not running. Start it and run <code style={{ color: 'var(--cassandra-color)' }}>npm run seed -- --cassandra</code></>}
-          />
+        <div className="mb-pw-4">
+          <DbOfflineBanner message={<>Cassandra is not running. Start it and run <code>npm run seed -- --cassandra</code>.</>} />
         </div>
       )}
 
-      {/* ── Controls ───────────────────────────────────── */}
-      <TelemetryControls
-        year={year}            onYearChange={handleYearChange}  allYears={allYears}
-        isHistorical={isHistorical}
-        raceId={raceId}        onRaceChange={setRaceId}          racesOfYear={racesOfYear}
-        driverId={driverId}    onDriverChange={setDriverId}
-        histDrivers={histDrivers}   cassDrivers={cassDrivers}
-        loadingDrivers={loadingDrivers}  loadingHist={loadingHist}
-        driverIdB={driverIdB}  onDriverBChange={setDriverIdB}    laps={laps}  loadingB={loadingB}
-        loading={loading}      onLoad={isHistorical ? loadHistoricalData : loadCassandraTelemetry}
-        favoriteDriverId={favoriteDriverId}
-      />
+      <Rise index={0}>
+        <TelemetryControls
+          year={year}            onYearChange={handleYearChange}  allYears={allYears}
+          isHistorical={isHistorical}
+          raceId={raceId}        onRaceChange={setRaceId}          racesOfYear={racesOfYear}
+          driverId={driverId}    onDriverChange={setDriverId}
+          histDrivers={histDrivers}   cassDrivers={cassDrivers}
+          loadingDrivers={loadingDrivers}  loadingHist={loadingHist}
+          driverIdB={driverIdB}  onDriverBChange={setDriverIdB}    laps={laps}  loadingB={loadingB}
+          loading={loading}      onLoad={isHistorical ? loadHistoricalData : loadCassandraTelemetry}
+          favoriteDriverId={favoriteDriverId}
+        />
+      </Rise>
 
-      {error && (
-        <BackendError />
-      )}
+      <div className="mt-pw-6">
+        {error && <BackendError />}
 
-      {/* ════════════════════════════════════════════════
-          CASSANDRA MODE
-      ════════════════════════════════════════════════ */}
-      {!isHistorical && (
-        <>
-          {telemetryLoaded && selectedCassDriver && (
-            <DriverComparisonBanner
-              isMobile={isMobile}
-              driverA={selectedCassDriver}   validLaps={validLaps}   bestLap={bestLap}   avgLap={avgLap}   pitStops={pitStops}   statusA={driverStatus}
-              driverB={selectedCassDriverB}  validLapsB={validLapsB} bestLapB={bestLapB} avgLapB={avgLapB} pitStopsB={pitStopsB} statusB={driverStatusB}
-              lapsBLoaded={lapsBLoaded}
-              colorA={colorA} colorB={colorB}
-            />
-          )}
+        {!isHistorical && (
+          loading ? (
+            <div className="flex flex-col gap-pw-6">
+              <VizSkeleton variant="hero" name="driver summary" />
+              <VizSkeleton variant="rows" name="lap times" count={6} />
+            </div>
+          ) : telemetryLoaded && selectedCassDriver ? (
+            <div className="flex flex-col gap-pw-7">
+              <Rise index={1}>
+                <DriverComparisonBanner
+                  raceName={selectedRace?.raceName} season={year} circuitCoords={circuitCoords}
+                  driverA={selectedCassDriver}   validLaps={validLaps}   bestLap={bestLap}   avgLap={avgLap}   pitStops={pitStops}   statusA={driverStatus}
+                  driverB={selectedCassDriverB}  validLapsB={validLapsB} bestLapB={bestLapB} avgLapB={avgLapB} pitStopsB={pitStopsB} statusB={driverStatusB}
+                  lapsBLoaded={lapsBLoaded}
+                  colorA={colorA} colorB={colorB}
+                />
+              </Rise>
 
-          {laps.length > 0 && (
-            <>
-              <CassandraLapChart
-                mergedLaps={mergedLaps}
-                scPeriods={scPeriods}
-                pitStops={pitStops}
-                pitStopsB={pitStopsB}
-                avgLap={avgLap}
-                isComparing={isComparing}
-                driverIdB={driverIdB}
-                driverA={selectedCassDriver}
-                driverB={selectedCassDriverB}
-                stintAnalysis={stintAnalysis}
-                isMobile={isMobile}
-                colorA={colorA} colorB={colorB}
-              />
-
-              {!isComparing && stintAnalysis.length > 0 && (
-                <TyreAnalysisPanel stintAnalysis={stintAnalysis} />
+              {laps.length > 0 && (
+                <Rise index={2}>
+                  <CassandraLapChart
+                    mergedLaps={mergedLaps} scPeriods={scPeriods}
+                    pitStops={pitStops} pitStopsB={pitStopsB} avgLap={avgLap}
+                    isComparing={isComparing} driverIdB={driverIdB}
+                    driverA={selectedCassDriver} driverB={selectedCassDriverB}
+                    stintAnalysis={stintAnalysis} isMobile={isMobile}
+                    colorA={colorA} colorB={colorB} animationId={animationId}
+                  />
+                </Rise>
               )}
 
-              <SectorChart
-                validLaps={validLaps}
-                validLapsB={validLapsB}
-                bestS1={bestS1}
-                bestS2={bestS2}
-                bestS3={bestS3}
-                activeSector={activeSector}
-                onSectorEnter={setActiveSector}
-                onSectorLeave={() => setActiveSector(null)}
-                circuitCoords={circuitCoords}
-                isMobile={isMobile}
-                isComparing={isComparing}
-                driverA={selectedCassDriver}
-                driverB={selectedCassDriverB}
-                colorA={colorA} colorB={colorB}
+              {laps.length > 0 && ((!isComparing && stintAnalysis.length > 0) || pitStops.length > 0 || pitStopsB.length > 0) && (
+                <Rise index={3} className="grid grid-cols-1 items-start gap-x-pw-6 gap-y-pw-7 lg:grid-cols-12">
+                  {!isComparing && stintAnalysis.length > 0 && (
+                    <div className="min-w-0 lg:col-span-7">
+                      <TyreAnalysisPanel stintAnalysis={stintAnalysis} totalLaps={totalLaps} />
+                    </div>
+                  )}
+                  {(pitStops.length > 0 || pitStopsB.length > 0) && (
+                    <div className={`min-w-0 ${!isComparing && stintAnalysis.length > 0 ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
+                      <PitStopsPanel
+                        pitStops={pitStops} pitStopsB={pitStopsB} isComparing={isComparing}
+                        driverA={selectedCassDriver} driverB={selectedCassDriverB}
+                        colorA={colorA} colorB={colorB}
+                      />
+                    </div>
+                  )}
+                </Rise>
+              )}
+
+              {laps.length > 0 && (
+                <Rise index={4}>
+                  <SectorChart
+                    validLaps={validLaps} validLapsB={validLapsB}
+                    bestS1={bestS1} bestS2={bestS2} bestS3={bestS3}
+                    activeSector={activeSector}
+                    onSectorEnter={setActiveSector} onSectorLeave={() => setActiveSector(null)}
+                    circuitCoords={circuitCoords} isMobile={isMobile} isComparing={isComparing}
+                    driverA={selectedCassDriver} driverB={selectedCassDriverB}
+                    colorA={colorA} colorB={colorB} animationId={animationId}
+                  />
+                </Rise>
+              )}
+
+              {laps.length === 0 && !error && (
+                <p className="text-sm text-ink-2">No lap data for this driver in this race.</p>
+              )}
+            </div>
+          ) : !dbOffline && !error && (
+            <p className="rounded-md border border-edge px-pw-4 py-pw-4 text-sm text-ink-2">
+              {raceId ? 'Pick a driver and load the telemetry.' : 'Loading the race list.'}
+            </p>
+          )
+        )}
+
+        {isHistorical && noSeasonData && (
+          <p className="rounded-md border border-edge px-pw-4 py-pw-4 text-sm text-ink-2">
+            No race results are stored for {year}. Try another season; older seasons need the archive seed.
+          </p>
+        )}
+
+        {isHistorical && !noSeasonData && (
+          loadingHist
+            ? <VizSkeleton variant="hero" name={`${year} season`} />
+            : (
+              <HistoricalSeasonView
+                histData={histData} selectedDriver={selectedHistDriver}
+                year={year} loadingHist={loadingHist}
               />
-            </>
-          )}
-
-          {(pitStops.length > 0 || pitStopsB.length > 0) && (
-            <PitStopsPanel
-              pitStops={pitStops}
-              pitStopsB={pitStopsB}
-              isComparing={isComparing}
-              driverA={selectedCassDriver}
-              driverB={selectedCassDriverB}
-              colorA={colorA} colorB={colorB}
-            />
-          )}
-
-          {!dbOffline && !loading && laps.length === 0 && !error && !raceId && (
-            <EmptyState type="loading" message="Loading available races…" height={120} />
-          )}
-        </>
-      )}
-
-      {/* ════════════════════════════════════════════════
-          HISTORICAL MODE
-      ════════════════════════════════════════════════ */}
-      {isHistorical && (
-        <>
-          {loadingHist && (
-            <EmptyState type="loading" message={`Loading ${year} season data…`} height={120} />
-          )}
-
-          <HistoricalSeasonView
-            histData={histData}
-            selectedDriver={selectedHistDriver}
-            year={year}
-            isMobile={isMobile}
-            loadingHist={loadingHist}
-          />
-        </>
-      )}
+            )
+        )}
+      </div>
     </PageWrapper>
   )
 }

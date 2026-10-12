@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { getCircuitSpecs } from './circuitSpecs'
+import { getCircuitSpecs, canonicalCircuitId, CIRCUIT_SPECS } from './circuitSpecs'
 
 describe('getCircuitSpecs', () => {
+  it('returns null for prototype keys and non-string ids', () => {
+    for (const id of ['__proto__', 'constructor', 'toString', 'hasOwnProperty', {}, 5, null, undefined]) {
+      expect(getCircuitSpecs(id)).toBeNull()
+    }
+  })
+
   it('returns an object with length, laps, and turns for monaco', () => {
     const specs = getCircuitSpecs('monaco')
     expect(specs).not.toBeNull()
@@ -35,5 +41,18 @@ describe('getCircuitSpecs', () => {
     expect(specs.gearChanges).toBeGreaterThan(0)
     expect(specs.braking).toBeGreaterThan(0)
     expect(specs.tireStress).toBeGreaterThan(0)
+  })
+
+  it('resolves the API id vegas to the Las Vegas specs', () => {
+    expect(getCircuitSpecs('vegas')).toBe(CIRCUIT_SPECS.las_vegas)
+    expect(getCircuitSpecs('las_vegas')).toBe(CIRCUIT_SPECS.las_vegas)
+  })
+
+  it('canonicalCircuitId aliases vegas, passes other ids through and rejects non-strings', () => {
+    expect(canonicalCircuitId('vegas')).toBe('las_vegas')
+    expect(canonicalCircuitId('monza')).toBe('monza')
+    expect(canonicalCircuitId('__proto__')).toBe('__proto__')
+    expect(canonicalCircuitId(7)).toBe('')
+    expect(canonicalCircuitId(null)).toBe('')
   })
 })

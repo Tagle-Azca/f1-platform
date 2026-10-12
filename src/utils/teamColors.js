@@ -42,28 +42,43 @@ export function driverColor(teamId, idx) {
   return CTOR_COLORS[teamId] || `hsl(${(idx * 53 + 20) % 360}, 65%, 58%)`
 }
 
-export const LEGENDARY = new Set([
-  '1976','1984','1986','1988','1989','1994','2007','2008',
-  '2010','2012','2016','2019','2021',
-])
-
-export const SEASON_STORIES = {
-  '1976': 'Lauda vs Hunt. Niki survives a devastating crash at Nürburgring and returns 6 weeks later. Hunt wins the title by 1 point in the rain-soaked final race.',
-  '1984': 'Prost wins his first title by half a point after the Monaco rain race, where Senna was leading before the red flag.',
-  '1988': 'Senna and Prost at McLaren dominate: win 15 of 16 races. Senna champion.',
-  '1989': 'Senna and Prost collide intentionally in Japan. Prost champion in his final McLaren year.',
-  '1994': 'Schumacher vs Hill. Senna dies at Imola. Penultimate race in Adelaide: collision between the two. Schumacher champion by 1 point.',
-  '2007': 'Hamilton debuts and leads all season. Loses the title at the final race by 1 point to Räikkönen.',
-  '2008': 'Hamilton champion on the final lap of the final race, overtaking Glock to take the 5th place he needed. 1 point margin.',
-  '2010': 'Four drivers arrive at Abu Dhabi with a chance. Vettel champion for the first time.',
-  '2012': 'Vettel recovers from last place in Brazil to win the title by 3 points over Alonso.',
-  '2016': 'Rosberg wins his only world title. Hamilton wins more races but not the championship.',
-  '2019': 'Hamilton wins with an 87-point margin, dominating with Mercedes.',
-  '2021': 'Verstappen vs Hamilton. 20 races of razor-thin margins. Controversy in Abu Dhabi. Verstappen champion on the final lap.',
-}
-
 export function ctorColor(constructorId) {
   return CTOR_COLORS[constructorId] || '#888'
+}
+
+// Curated 3-letter codes for the current grid — team names commonly end in
+// "F1 Team"/"Racing", so a last-word-of-name fallback collapses several of
+// them onto the same code (e.g. "RB F1 Team" and "Haas F1 Team" -> "TEA").
+const CTOR_CODES = {
+  red_bull: 'RBR', mercedes: 'MER', ferrari: 'FER', mclaren: 'MCL',
+  alpine: 'ALP', aston_martin: 'AMR', williams: 'WIL', rb: 'RB',
+  sauber: 'SAU', haas: 'HAA', audi: 'AUD', cadillac: 'CAD',
+}
+
+export function ctorCode(constructorId) {
+  return CTOR_CODES[constructorId] ?? null
+}
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#', ''), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+/** Team hex at a given alpha, as an rgba() string — for tinted chip/row backgrounds. */
+export function tint(hex, alpha) {
+  const [r, g, b] = hexToRgb(hex)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
+/**
+ * Lifts a team hex 52% toward white so it stays legible as small text on its
+ * own tinted chip background — the raw hex fails contrast for darker teams
+ * (Red Bull ~3:1, Ferrari ~3.35:1); lifting brings every team to 6:1+.
+ */
+export function lift(hex) {
+  const [r, g, b] = hexToRgb(hex)
+  const m = c => Math.round(c + (255 - c) * 0.52)
+  return `rgb(${m(r)},${m(g)},${m(b)})`
 }
 
 /**

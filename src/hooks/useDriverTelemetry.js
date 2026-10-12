@@ -31,7 +31,8 @@ export function useDriverTelemetry(raceId, driverId, cassRaces, isHistorical) {
   useEffect(() => {
     if (!raceId || isHistorical) return
     const race      = cassRaces.find(r => r.raceId === raceId)
-    const circuitId = raceToCircuitId(race?.raceName)
+    // Prefer the API's circuitId: names like "Bahrain Grand Prix in Malaysia" mislead the name lookup
+    const circuitId = race?.circuitId || raceToCircuitId(race?.raceName)
     if (!circuitId) { setCircuitCoords(null); return }
     circuitsApi.getById(circuitId)
       .then(c => setCircuitCoords(c?.trackCoords ?? null))
@@ -46,13 +47,16 @@ export function useDriverTelemetry(raceId, driverId, cassRaces, isHistorical) {
     setLaps([])
     setPitStops([])
     setScPeriods([])
-    const [season, round] = [raceId.split('_')[0], parseInt(raceId.split('_')[1])]
+    // raceId is `${year}_${openf1SessionKey}`; the championship round comes from the race list (absent for sprints)
+    const race   = cassRaces.find(r => r.raceId === raceId)
+    const season = raceId.split('_')[0]
+    const round  = race?.round
     Promise.all([
       telemetryApi.getLapTimes(raceId, driverId),
       telemetryApi.getPitStops(raceId, driverId),
       telemetryApi.getSafetyCar(raceId).catch(() => []),
       telemetryApi.getRaceInfo(raceId).catch(() => ({ totalLaps: null })),
-      racesApi.getByRound(season, round).catch(() => null),
+      round ? racesApi.getByRound(season, round).catch(() => null) : Promise.resolve(null),
     ])
       .then(([lapData, pitData, scData, infoData, raceData]) => {
         setLaps(lapData)

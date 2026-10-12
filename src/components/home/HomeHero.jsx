@@ -1,160 +1,151 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useCountdown } from '../../hooks/useCountdown'
-import CountdownDisplay from '../ui/CountdownDisplay'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
+import { useNow } from '../../hooks/useNow'
+import { useMediaQuery } from '../../hooks/useMediaQuery'
+import { getFeaturedSession, buildSessionList } from '../../utils/sessionSchedule'
+import { getInitialTZ } from '../../utils/timezone'
+import { formatSessionWhen } from '../../utils/sessionWhen'
 import { countryFlag } from '../../utils/flags'
+import { circuitsApi } from '../../services/api'
+import CircuitLink from '../circuits/CircuitLink'
+import { useLiveStatus } from '../../contexts/LiveStatusContext'
+import Panel from '../ui/Panel'
+import LivePill from '../ui/LivePill'
+import CountdownDisplay from '../ui/CountdownDisplay'
+import VizSkeleton from '../viz/VizSkeleton'
+import SessionTimeline from '../viz/SessionTimeline'
+import TrackTrace from '../viz/TrackTrace'
+import { cleanCoords } from '../viz/trackCoords'
+import { buttonVariants } from '../ui/button-variants'
+import { cn } from '@/lib/utils'
+import { safeString } from '../../utils/safeText'
+import { heroChildProps, useReducedMotion, DUR } from '../../styles/motion'
 
-function buildHeadline(data) {
-  if (!data) return null
-  const { standings, lastRace, totalRounds, roundsDone } = data
-  const leader    = standings?.[0]
-  const p2        = standings?.[1]
-  const winner    = lastRace?.winner?.name
-  const raceName  = lastRace?.raceName?.replace(' Grand Prix', '')
-  const gap       = leader && p2 ? leader.points - p2.points : null
-  const remaining = totalRounds && roundsDone != null ? totalRounds - roundsDone : null
-
-  if (!leader) return null
-
-  const tension = gap === null     ? ''
-    : gap <= 15  ? ' · TITLE FIGHT ON'
-    : gap <= 40  ? ' · Gap is closing'
-    : gap <= 80  ? ' · Championship battle'
-    : ' · Dominant lead'
-
-  if (winner && raceName && gap !== null && remaining !== null)
-    return ` ${leader.name} leads by ${gap}pts · ${remaining} rounds left${tension}`
-
-  if (gap !== null && remaining !== null)
-    return `${leader.name} leads by ${gap}pts · ${remaining} rounds remaining${tension}`
-
-  return `${leader.name} leads the ${new Date().getFullYear()} championship`
+/**
+ * Circuit outline for the hero: ONE getById per mount, at lg+ only (where the trace renders), no retry, no polling.
+ * Silent on failure. Fewer than 8 finite points renders nothing.
+ */
+function useHeroTrace(circuitId, enabled) {
+  const [coords, setCoords] = useState(null)
+  const askedFor = useRef(null)
+  useEffect(() => {
+    // Never reset: crossing the lg breakpoint back and forth must not refetch (one request per mount and circuit).
+    if (!enabled || typeof circuitId !== 'string' || !circuitId || askedFor.current === circuitId) return
+    askedFor.current = circuitId
+    circuitsApi.getById(circuitId)
+      .then((c) => { const clean = cleanCoords(c?.trackCoords ?? null); setCoords(clean.length >= 8 ? clean : null) })
+      .catch(() => {})
+  }, [circuitId, enabled])
+  return coords
 }
 
-export default function HomeHero({ race, data }) {
-  const { isMobile } = useBreakpoint()
-  const isLive    = !!race?.currentSession
-  const countdown = useCountdown(!isLive ? race?.raceDateTime : null)
-  const raceName  = race?.raceName?.replace(' Grand Prix', ' GP') ?? ''
-  const flagUrl   = race?.country ? countryFlag(race.country) : null
-  const headline  = buildHeadline(data)
+export default function HomeHero({ race, loading, error, onRetry }) {
+  const { available: liveAvailable, sessionName } = useLiveStatus() ?? {}
+  const reduced = useReducedMotion()
+  const tz = getInitialTZ()
+  const now = useNow(60000)
+  const isLg = useMediaQuery('(min-width: 1024px)')
+  const featured = race ? getFeaturedSession(race.schedule, race.currentSession) : null
+  const ladder   = race ? buildSessionList(race.schedule, race.currentSession) : []
+  const countdown = useCountdown(featured?.dateTime ?? null)
+  const coords = useHeroTrace(race?.circuitId, isLg && !loading)
+
+  if (loading) {
+    return (
+      <Panel as="section" aria-label="Next session">
+        <VizSkeleton variant="hero" name="next session" />
+      </Panel>
+    )
+  }
+  if (error && !race) {
+    return (
+      <Panel as="section" aria-labelledby="hero-title" role="alert">
+        <h2 id="hero-title" className="text-heading mb-pw-2 text-ink">Next session</h2>
+        <p className="text-sm text-ink-2 mb-pw-3">Session data unavailable.</p>
+        <button type="button" className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11')} onClick={onRetry}>Try again</button>
+      </Panel>
+    )
+  }
+  if (!race) {
+    return (
+      <Panel as="section" aria-labelledby="hero-title">
+        <h2 id="hero-title" className="text-heading mb-pw-2 text-ink">Next session</h2>
+        <p className="text-base text-ink-2 mb-pw-3">No upcoming session.</p>
+        <Link to="/races" className="inline-flex min-h-11 items-center text-steel font-semibold hover:text-steel-hi">Browse races</Link>
+      </Panel>
+    )
+  }
+
+  const flagUrl = countryFlag(race.country)
+  const locationLabel = [safeString(race.locality), safeString(race.country)].filter(Boolean).join(', ')
+  const headline = liveAvailable ? (sessionName || featured?.label || safeString(race.raceName)) : (featured?.label ?? safeString(race.raceName))
+  const child = (i) => heroChildProps(i, reduced)
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        gap: '0.65rem',
-        paddingTop: '0.2rem',
-        marginBottom: '1rem',
-      }}
-    >
-      {/* ── Wordmark — demoted to whisper ── */}
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        style={{
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: '1.6rem',
-          fontWeight: 700,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.28)',
-        }}
-      >
-        PITWALL INTELLIGENCE
-      </motion.span>
+    <Panel as="section" aria-labelledby="hero-title" className="grid grid-cols-1 gap-pw-6 lg:grid-cols-12">
+      <div className="flex min-w-0 flex-col gap-pw-4 lg:col-span-7">
+        <motion.div className="flex flex-wrap items-center gap-pw-2" {...child(0)}>
+          {liveAvailable
+            ? <LivePill>Live now</LivePill>
+            : <span className="inline-flex min-h-6 items-center rounded-pill bg-steel-soft px-pw-3 text-xs font-semibold text-steel">Next session</span>}
+          {!liveAvailable && featured && <span className="text-sm text-ink-2">{formatSessionWhen(featured.dateTime, tz)}</span>}
+        </motion.div>
 
-      {/* ── Headline — dominant element ── */}
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.45 }}
-        style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontSize: headline
-            ? `clamp(1rem, ${isMobile ? '3.8vw' : '2.4vw'}, ${isMobile ? '1.3rem' : '1.85rem'})`
-            : 'clamp(2.4rem, 6vw, 4rem)',
-          fontWeight: 900,
-          letterSpacing: headline ? '0.02em' : '0.14em',
-          textTransform: 'uppercase',
-          lineHeight: 1.2,
-          margin: 0,
-          // Dynamic headline: plain white. Fallback title: gradient.
-          color: headline ? 'var(--text-primary)' : undefined,
-          background: headline ? undefined : 'linear-gradient(to bottom, #fff 40%, var(--accent-color))',
-          WebkitBackgroundClip: headline ? undefined : 'text',
-          WebkitTextFillColor: headline ? undefined : 'transparent',
-          maxWidth: '92%',
-        }}
-      >
-        {headline ?? 'PITWALL INTELLIGENCE'}
-      </motion.h1>
+        <motion.h2 id="hero-title" className="text-hero text-ink [overflow-wrap:anywhere]" {...child(1)}>
+          {headline}
+        </motion.h2>
 
-      {/* ── GP Countdown ── */}
-      {race && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.4 }}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '0.5rem',
-            paddingTop: '1rem',
-            borderTop: '1px solid rgba(255,255,255,0.07)',
-            width: '100%',
-            maxWidth: 480,
-          }}
-        >
-          {isLive ? (
+        {(flagUrl || locationLabel) && (
+          <motion.p className="flex items-center gap-pw-2 text-sm text-ink-2" {...child(2)}>
+            {flagUrl && <img src={flagUrl} alt="" width="22" height="16" className="h-4 w-[22px] shrink-0 rounded-[2px] object-cover" />}
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              {safeString(race.raceName)}{locationLabel ? ', ' : ''}
+              {locationLabel && (
+                <CircuitLink circuitId={race.circuitId}>{locationLabel}</CircuitLink>
+              )}
+            </span>
+          </motion.p>
+        )}
+
+        {!liveAvailable && countdown && (
+          <motion.div {...child(3)}>
+            <CountdownDisplay parts={countdown} size="lg" label={`${featured?.label ?? 'Session'} starts in`} />
+          </motion.div>
+        )}
+
+        <motion.div className="flex flex-col gap-pw-2 sm:flex-row" {...child(4)}>
+          {liveAvailable ? (
             <>
-              <div style={{
-                fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.15em',
-                textTransform: 'uppercase', color: 'var(--accent-color)',
-              }}>
-                {race.currentSession.label} · LIVE NOW
-              </div>
-              <div style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: '1.3rem', fontWeight: 700,
-                color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase',
-              }}>
-                {raceName}
-              </div>
+              <Link to="/live" className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto no-underline')}>Open live timing</Link>
+              <Link to="/next-race" className={cn(buttonVariants({ variant: 'secondary', size: 'lg' }), 'w-full sm:w-auto no-underline text-ink')}>Weekend schedule</Link>
             </>
           ) : (
-            <>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                fontSize: isMobile ? '0.65rem' : '0.88rem',
-                fontWeight: 700,
-                letterSpacing: isMobile ? '0.08em' : '0.15em',
-                textTransform: 'uppercase',
-                color: 'rgba(255, 255, 255, 0.51)',
-              }}>
-                {flagUrl && (
-                  <img
-                    src={flagUrl}
-                    alt={race.country}
-                    style={{ width: isMobile ? 18 : 22, height: 'auto', borderRadius: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', flexShrink: 0 }}
-                  />
-                )}
-                {raceName} · RACE STARTS IN
-              </div>
-              <CountdownDisplay parts={countdown} size="lg" />
-            </>
+            <Link to="/next-race" className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto no-underline')}>Weekend schedule</Link>
           )}
         </motion.div>
+      </div>
+
+      {/* Reserved at lg+ so the trace arriving later shifts nothing; below lg there is no trace and no request. */}
+      <div className="hidden items-center justify-center lg:col-span-5 lg:flex" aria-hidden="true">
+        {coords && (
+          <motion.div
+            className="w-full"
+            initial={reduced ? false : { opacity: 0 }}
+            animate={{ opacity: 0.35 }}
+            transition={{ duration: DUR.routeIn }}
+          >
+            <TrackTrace coords={coords} className="h-auto w-full" />
+          </motion.div>
+        )}
+      </div>
+
+      {ladder.length > 0 && (
+        <div className="min-w-0 lg:col-span-12">
+          <SessionTimeline sessions={ladder} tz={tz} now={now} />
+        </div>
       )}
-    </motion.div>
+    </Panel>
   )
 }

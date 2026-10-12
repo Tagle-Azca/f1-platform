@@ -9,8 +9,13 @@ const COUNTRY_ISO = {
   'United Arab Emirates': 'ae',
 }
 
+/** ISO-2 code (lower case) for a known country name; own-property lookup only. */
+export function countryCode(country) {
+  return typeof country === 'string' && Object.hasOwn(COUNTRY_ISO, country) ? COUNTRY_ISO[country] : null
+}
+
 export function countryFlag(country) {
-  const code = COUNTRY_ISO[country]
+  const code = countryCode(country)
   if (!code) return null
   return `https://flagcdn.com/w40/${code}.png`
 }

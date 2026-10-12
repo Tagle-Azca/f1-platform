@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext'
 import { F1_TEAMS, getTeam } from '../data/f1Teams'
 
 const PreferencesContext = createContext(null)
+// eslint-disable-next-line react-refresh/only-export-components -- hook shares the context defined in this file
 export const usePreferences = () => useContext(PreferencesContext)
 
 const NEUTRAL_ACCENT = '#94a3b8'
@@ -24,18 +25,10 @@ function effectiveAccent(favoriteTeam, favoriteDriver) {
   return NEUTRAL_ACCENT
 }
 
-const DEFAULT_LAYOUT = {
-  order:     ['cassandra', 'mongo', 'dgraph'],
-  enabled:   ['cassandra', 'mongo', 'dgraph'],
-  featured:  'cassandra',
-  pageOrder: ['standings', 'lastSession', 'cassandra', 'mongo', 'dgraph'],
-}
-
 const DEFAULT = {
   favoriteTeam:    null,
   favoriteDriver:  null,
   units:           { speed: 'kmh', temp: 'celsius' },
-  dashboardLayout: DEFAULT_LAYOUT,
 }
 
 const LS_KEY = 'pw_prefs_ext'
@@ -45,7 +38,7 @@ function loadExtended() {
 }
 
 function saveExtended(data) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(data)) } catch {}
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)) } catch { /* storage unavailable */ }
 }
 
 function applyAccentVars(color) {
@@ -74,9 +67,10 @@ export function PreferencesProvider({ children }) {
       // DB is source of truth when logged in; localStorage is fallback for non-logged-in or network failures
       favoriteTeam:   user?.preferences?.favoriteTeam   || ext.favoriteTeam   || null,
       favoriteDriver: user?.preferences?.favoriteDriver || ext.favoriteDriver || null,
-      units:           ext.units           ?? DEFAULT.units,
-      dashboardLayout: ext.dashboardLayout ?? DEFAULT_LAYOUT,
+      units:           ext.units ?? DEFAULT.units,
     }
+    // Re-hydrate preferences when the signed-in user changes (guarded by userIdRef above).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPrefs(loaded)
     setDraftRaw(loaded)
   }, [user])
@@ -105,22 +99,13 @@ export function PreferencesProvider({ children }) {
     saveExtended({ units: DEFAULT.units, favoriteTeam: null, favoriteDriver: null })
   }, [])
 
-  // Layout changes apply immediately (no Apply button needed)
-  const setLayout = useCallback((layout) => {
-    const ext = loadExtended()
-    saveExtended({ ...ext, dashboardLayout: layout })
-    setPrefs(p  => ({ ...p,  dashboardLayout: layout }))
-    setDraftRaw(p => ({ ...p, dashboardLayout: layout }))
-  }, [])
-
   const applyChanges = useCallback(async () => {
     // Optimistic update — apply immediately so UI doesn't reset
     setPrefs(draft)
     saveExtended({
-      units:           draft.units,
-      favoriteTeam:    draft.favoriteTeam    || null,
-      favoriteDriver:  draft.favoriteDriver  || null,
-      dashboardLayout: draft.dashboardLayout ?? DEFAULT_LAYOUT,
+      units:          draft.units,
+      favoriteTeam:   draft.favoriteTeam   || null,
+      favoriteDriver: draft.favoriteDriver || null,
     })
 
     if (!user) return
@@ -139,7 +124,7 @@ export function PreferencesProvider({ children }) {
   return (
     <PreferencesContext.Provider value={{
       prefs, draft,
-      setDraft, setLayout, applyChanges, resetDraft, resetAll,
+      setDraft, applyChanges, resetDraft, resetAll,
       previewAccent, accentColor,
     }}>
       {children}

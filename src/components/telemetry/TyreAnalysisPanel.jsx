@@ -1,58 +1,49 @@
-import Panel from '../ui/Panel'
-import { COMPOUND_COLORS, COMPOUND_LABEL } from './telemetryConstants'
+import TyreBadge from '../ui/TyreBadge'
+import TelemetrySection from './TelemetrySection'
+import { degradTone, DEGRAD_LIMIT_MS } from './telemetryUtils'
+import { tyre } from '../../styles/vizPalette'
 
-export default function TyreAnalysisPanel({ stintAnalysis }) {
+/**
+ * One row per stint: compound, lap range drawn on a shared race-length track, and the
+ * degradation trend as a number plus a word (never color alone).
+ */
+export default function TyreAnalysisPanel({ stintAnalysis, totalLaps }) {
+  const lastLap = totalLaps || Math.max(...stintAnalysis.map(s => s.lapEnd), 1)
+
   return (
-    <Panel accent="cassandra" className="card" style={{ marginBottom: '0.85rem', borderTop: '2px solid rgba(168,85,247,0.35)' }}>
-      <div style={{ marginBottom: '0.85rem' }}>
-        <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tyre Analysis</h2>
-        <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>
-          Degradation = linear lap-time trend per lap · outliers excluded
-        </p>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+    <TelemetrySection
+      id="stints-h"
+      title="Tyre stints"
+      caption="Degradation is the lap-time trend within a stint; safety car and pit laps are left out."
+    >
+      <ol className="flex flex-col">
         {stintAnalysis.map(s => {
-          const color  = COMPOUND_COLORS[s.compound] || '#6b7280'
-          const label  = COMPOUND_LABEL[s.compound]  || '?'
-          const dms    = s.degradMs
-          const maxDeg = 200 // ms — scale bar against this ceiling
-          const pct    = dms != null ? Math.min(100, Math.abs(dms) / maxDeg * 100) : 0
-          const degradColor = dms == null ? '#6b7280' : dms > 80 ? '#ef4444' : dms > 40 ? '#f59e0b' : '#22c55e'
+          const t    = tyre(s.compound)
+          const tone = degradTone(s.degradMs)
+          const left  = ((s.lapStart - 1) / lastLap) * 100
+          const width = Math.max(1, (s.lapCount / lastLap) * 100)
           return (
-            <div key={s.index} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {/* Compound badge */}
-              <div style={{
-                width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                background: color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <span style={{ fontSize: '0.6rem', fontWeight: 900, color: s.compound === 'HARD' ? '#111' : '#fff' }}>{label}</span>
-              </div>
-
-              {/* Stint info */}
-              <div style={{ minWidth: 130 }}>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Stint {s.index} · Laps {s.lapStart}–{s.lapEnd}
-                </div>
-                <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)' }}>{s.lapCount} laps · {s.compound}</div>
-              </div>
-
-              {/* Degradation bar + value */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden', marginBottom: 3 }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: degradColor, borderRadius: 2, transition: 'width 0.5s' }} />
-                </div>
-                <div style={{ fontSize: '0.62rem', color: degradColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                  {dms == null
-                    ? 'insufficient data'
-                    : dms > 0
-                      ? `+${dms}ms/lap`
-                      : `${dms}ms/lap (improving)`}
+            <li key={s.index} className="grid grid-cols-[auto_1fr_auto] items-center gap-x-pw-3 gap-y-pw-2 border-b border-edge-soft py-pw-3 last:border-b-0">
+              <TyreBadge compound={s.compound} size={22} />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink">
+                  {t ? t.name : 'Unknown'} <span className="font-normal text-ink-3">· laps {s.lapStart}–{s.lapEnd}</span>
+                </p>
+                <div className="relative mt-pw-2 h-1.5 rounded-[2px] bg-[var(--viz-track)]" aria-hidden="true">
+                  <div
+                    className="absolute inset-y-0 rounded-[2px]"
+                    style={{ left: `${left}%`, width: `${width}%`, background: t?.css ?? 'var(--pw-ink-3)' }}
+                  />
                 </div>
               </div>
-            </div>
+              <div className="text-right">
+                <p className="num text-ink">{s.degradMs == null || Math.abs(s.degradMs) > DEGRAD_LIMIT_MS ? '—' : `${s.degradMs > 0 ? '+' : ''}${s.degradMs} ms/lap`}</p>
+                <p className={`text-xs ${tone.cls}`}>{tone.word}</p>
+              </div>
+            </li>
           )
         })}
-      </div>
-    </Panel>
+      </ol>
+    </TelemetrySection>
   )
 }

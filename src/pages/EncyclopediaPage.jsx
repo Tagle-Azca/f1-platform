@@ -1,115 +1,177 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useBreakpoint } from '../hooks/useBreakpoint'
-import { motion, AnimatePresence } from 'framer-motion'
-import PageWrapper           from '../components/layout/PageWrapper'
-import SearchBox             from '../components/encyclopedia/SearchBox'
-import DriverProfile         from '../components/encyclopedia/DriverProfile'
-import DriverGraph           from '../components/encyclopedia/DriverGraph'
-import CircuitDetail         from '../components/encyclopedia/CircuitDetail'
-import ConstructorDetail     from '../components/encyclopedia/ConstructorDetail'
-import ConstructorGraph      from '../components/encyclopedia/ConstructorGraph'
-import EncyclopediaEmptyState from '../components/encyclopedia/EncyclopediaEmptyState'
-import PageHint              from '../components/ui/PageHint'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import PageWrapper from '../components/layout/PageWrapper'
+import Rise from '../components/layout/Rise'
+import EmptyState from '../components/ui/EmptyState'
+import { buttonVariants } from '../components/ui/button-variants'
+import EncyclopediaToolbar from '../components/encyclopedia/EncyclopediaToolbar'
+import HubGrid from '../components/encyclopedia/HubGrid'
+import HubSkeleton from '../components/encyclopedia/HubSkeleton'
+import {
+  parseHubParams, cleanHubParams, buildDriverCards, buildConstructorCards, matchFavorites, resultLine,
+} from '../components/encyclopedia/encyclopediaModel'
+import { seasonStatus } from '../components/standings/standingsModel'
+import { rangeLabel } from '../components/profiles/driver/driverProfileModel'
+import { useStandingsData } from '../hooks/useStandingsData'
+import { useSeasonCircuits } from '../hooks/useSeasonCircuits'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import { usePreferences } from '../contexts/PreferencesContext'
+import { useReducedMotion } from '../styles/motion'
+import { cn } from '@/lib/utils'
 
-const CY    = new Date().getFullYear()
-const YEARS = Array.from({ length: CY - 1949 }, (_, i) => String(CY - i))
+const NOUN = { drivers: 'drivers', constructors: 'constructors', circuits: 'circuits' }
 
 export default function EncyclopediaPage() {
-  const { isMobile } = useBreakpoint()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [selected,     setSelected]     = useState(null)
-  const [bannerSeason, setBannerSeason] = useState(String(CY))
+  const currentYear = new Date().getFullYear()
+  const reduced = useReducedMotion()
+  const wide = useMediaQuery('(min-width: 640px)')
+  const prefs = usePreferences()?.prefs
+  const [params, setParams] = useSearchParams()
+  const parsed = useMemo(() => parseHubParams(params, { currentYear }), [params, currentYear])
+  const { view } = parsed
 
+  const data = useStandingsData({ requested: parsed.season, currentYear })
+  const { season, seasons, missing } = data
+  const isCurrent = season === currentYear
+  const circuits = useSeasonCircuits(season, { enabled: view === 'circuits' && season != null, isCurrent })
+
+  useEffect(() => { document.title = 'Encyclopedia · Pitwall' }, [])
+
+  // Invalid ?view= / ?season= values and a season without data are dropped with replace: no extra history entry.
   useEffect(() => {
-    if (location.state?.reset) {
-      setSelected(null)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }, [location.state?.reset])
+    if (!parsed.dirty) return
+    setParams(cleanHubParams(params, parsed), { replace: true })
+  }, [parsed.dirty]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (missing == null) return
+    const next = new URLSearchParams(params)
+    next.delete('season')
+    setParams(next, { replace: true })
+  }, [missing]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function goBack() {
-    setSelected(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  const push = useCallback((patch) => {
+    const next = new URLSearchParams(params)
+    for (const [k, v] of Object.entries(patch)) (v == null ? next.delete(k) : next.set(k, v))
+    setParams(next) // a user choice is a history entry, so Back restores the previous tab and season
+  }, [params, setParams])
+  const onView = useCallback((v) => push({ view: v, season: season != null ? String(season) : params.get('season') }), [push, season, params])
+  const onSeason = useCallback((v) => push({ season: v, view }), [push, view])
 
-  function handleSelect(item) {
-    if (item.type === 'race') {
-      navigate(`/races/${item.season}/${item.round}`)
-    } else {
-      setSelected(item)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
+  const dStatus = data.status
+  const status = view === 'circuits'
+    ? (season == null ? dStatus : circuits.status === 'idle' ? 'loading' : circuits.status)
+    : view === 'constructors' ? (dStatus !== 'ready' ? dStatus : data.ctorStatus) : dStatus
+  const retry = view === 'circuits' && season != null && dStatus === 'ready' ? circuits.retry : data.retry
+
+  const driverCards = useMemo(() => buildDriverCards(data.drivers, data.photos), [data.drivers, data.photos])
+  const ctorCards = useMemo(() => buildConstructorCards(data.constructors), [data.constructors])
+  const cards = view === 'drivers' ? driverCards : ctorCards
+  const fav = useMemo(() => (view === 'circuits' ? { pinned: [], rest: [] } : matchFavorites(cards, prefs, view)), [cards, prefs, view])
+  const info = useMemo(() => (data.drivers ? seasonStatus(data.drivers, { current: isCurrent }) : null), [data.drivers, isCurrent])
+
+  const count = view === 'circuits' ? circuits.circuits.length : cards.length
+  const ready = status === 'ready' && season != null
+  const empty = ready && count === 0
+  const showGrid = ready && count > 0
+  const line = ready ? resultLine(view, { count, season, roundsDone: info?.roundsDone ?? 0, current: isCurrent }) : null
+
+  const seasonList = seasons.length ? seasons : season != null ? [season] : parsed.season != null ? [parsed.season] : []
+  const shownSeason = season ?? parsed.season
+  const range = seasons.length ? rangeLabel(Math.min(...seasons), Math.max(...seasons)) : ''
+  const latest = seasons[0] ?? null
+
+  // Screen reader announcement once a tab or season has settled; never per keystroke
+  const [message, setMessage] = useState('')
+  const lastKey = useRef(null)
+  const key = showGrid ? `${view}|${season}|${count}` : null
+  useEffect(() => {
+    if (!key || key === lastKey.current) return undefined
+    const first = lastKey.current === null
+    lastKey.current = key
+    if (first) return undefined
+    const t = setTimeout(() => setMessage(`Showing ${count} ${NOUN[view]} for ${season}.`), 300)
+    return () => clearTimeout(t)
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const linkState = useMemo(() => ({ from: `/encyclopedia?view=${view}${shownSeason != null ? `&season=${shownSeason}` : ''}` }), [view, shownSeason])
+  const [entrance, setEntrance] = useState(true)
+  useEffect(() => {
+    if (!showGrid) return undefined
+    const t = setTimeout(() => setEntrance(false), 1500)
+    return () => clearTimeout(t)
+  }, [showGrid])
+
+  let panel
+  if (status === 'loading') {
+    panel = <HubSkeleton wide={wide} name={NOUN[view]} />
+  } else if (status === 'error' || status === 'empty' || (status === 'ready' && season == null)) {
+    const text = season == null ? "We couldn't load the seasons" : `We couldn't load the ${season} ${NOUN[view]}`
+    panel = status === 'empty'
+      ? <EmptyState type="empty" height={200} message="No seasons with data yet" action={<p className="text-sm text-ink-2">Pitwall data covers 2022–2026.</p>} />
+      : (
+        <EmptyState
+          type="error" height={200} message={text}
+          action={<button type="button" onClick={retry} className={cn(buttonVariants({ size: 'lg' }))}>Try again</button>}
+        />
+      )
+  } else if (empty) {
+    const title = view === 'circuits' ? `No calendar for ${season}` : `No ${NOUN[view]} in the ${season} standings yet`
+    panel = (
+      <EmptyState
+        type="empty" height={200} message={title}
+        action={(
+          <>
+            <p className="text-sm text-ink-2">Pick another season.</p>
+            {latest != null && latest !== season && (
+              <button type="button" onClick={() => onSeason(String(latest))} className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>Show {latest} season</button>
+            )}
+          </>
+        )}
+      />
+    )
+  } else {
+    panel = (
+      <motion.div
+        key={`${view}-${season}`}
+        {...(reduced ? { initial: false } : { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.15 } })}
+      >
+        <HubGrid
+          view={view} season={season} layout={wide ? 'portrait' : 'row'} entrance={entrance && !reduced} linkState={linkState}
+          pinned={fav.pinned} rest={fav.rest} circuits={circuits.circuits} nextId={circuits.nextId}
+        />
+      </motion.div>
+    )
   }
 
   return (
-    <PageWrapper>
-      <PageHint
-        id="encyclopedia"
-        title="Race Encyclopedia"
-        text="Search for a driver or circuit in the top bar. Select a year to view their full season, teams and race statistics."
-        icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 16, height: 16 }}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>}
-      />
+    <PageWrapper stagger>
+      <Rise index={0} as="header" className="mb-pw-5">
+        <h1 className="text-title text-ink">Encyclopedia</h1>
+        <p className="mt-pw-1 min-h-5 text-sm text-ink-2">Drivers, teams and circuits{range && <> · <span className="num">{range}</span></>}</p>
+      </Rise>
 
-      <h1 className="page__title">Race Encyclopedia</h1>
-      <p className="page__subtitle">The full history of F1 since 1950</p>
+      <Rise index={1}>
+        <EncyclopediaToolbar
+          view={view} onView={onView} season={shownSeason} seasons={seasonList} onSeason={onSeason}
+          seasonDisabled={status === 'loading' && season == null}
+        />
+      </Rise>
 
-      {selected && (
-        <button
-          onClick={goBack}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-muted)', padding: '0 0 0.75rem 0',
-            fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.04em',
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: 15, height: 15 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-          </svg>
-          Back to Encyclopedia
-        </button>
-      )}
-
-      <SearchBox onSelect={handleSelect} exclude={['race']} showConstructor externalValue={selected?.label} />
-
-      <AnimatePresence mode="wait">
-        {!selected && (
-          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <EncyclopediaEmptyState
-              bannerSeason={bannerSeason}
-              onSeasonChange={setBannerSeason}
-              years={YEARS}
-              isMobile={isMobile}
-              onSelect={handleSelect}
-            />
-          </motion.div>
+      <div className="mt-pw-4 min-h-10">
+        {line && (
+          <>
+            <p className="text-sm text-ink-2"><span className="num">{line.head.split(' ')[0]}</span> {line.head.split(' ').slice(1).join(' ')}</p>
+            {line.note && <p className="text-xs text-ink-3">{line.note}</p>}
+          </>
         )}
+      </div>
 
-        {selected?.type === 'driver' && (
-          <motion.div key={selected.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <DriverProfile driverId={selected.id} />
-            <DriverGraph driverId={selected.id} driverName={selected.label} onSelect={setSelected} />
-          </motion.div>
-        )}
+      <div id="encyclopedia-panel" role="tabpanel" aria-labelledby={`enc-tab-${view}`} tabIndex={-1} aria-busy={status === 'loading' || undefined} className="mt-pw-4 outline-none">
+        {panel}
+      </div>
 
-        {selected?.type === 'circuit' && (
-          <motion.div key={selected.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <CircuitDetail circuitId={selected.id} />
-          </motion.div>
-        )}
-
-        {selected?.type === 'constructor' && (
-          <motion.div key={selected.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ConstructorDetail constructorId={selected.id} />
-            <ConstructorGraph constructorId={selected.id} constructorName={selected.label} onSelect={setSelected} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div role="status" aria-live="polite" className="sr-only">{message}</div>
     </PageWrapper>
   )
 }

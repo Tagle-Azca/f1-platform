@@ -6,17 +6,21 @@ export function useHistoricalTelemetry(year, driverId, isHistorical) {
   const [histData,    setHistData]    = useState(null)
   const [loadingHist, setLoadingHist] = useState(false)
   const [error,       setError]       = useState(null)
+  // Year whose driver list has finished loading (empty list = no results stored for that season)
+  const [driversYear, setDriversYear] = useState(null)
 
   // Load drivers when year changes
   useEffect(() => {
     if (!isHistorical || !year) return
     setHistDrivers([])
     setHistData(null)
+    setDriversYear(null)
     statsApi.seasonDrivers(year)
       .then(list => {
         setHistDrivers(list)
       })
       .catch(() => {})
+      .finally(() => setDriversYear(year))
   }, [year, isHistorical])
 
   // Auto-load when driver ready
@@ -36,5 +40,6 @@ export function useHistoricalTelemetry(year, driverId, isHistorical) {
       .finally(() => setLoadingHist(false))
   }
 
-  return { histDrivers, histData, loadingHist, error, load }
+  const noSeasonData = isHistorical && driversYear === year && histDrivers.length === 0
+  return { histDrivers, histData, loadingHist, error, load, noSeasonData }
 }

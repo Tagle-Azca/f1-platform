@@ -4,7 +4,9 @@ async function request(path, options) {
   const res = await fetch(`${BASE_URL}${path}`, options)
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || 'Request failed')
+    const error = new Error(err.message || 'Request failed')
+    error.status = res.status
+    throw error
   }
   return res.json()
 }

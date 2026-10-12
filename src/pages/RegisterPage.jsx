@@ -18,9 +18,10 @@ const YEARS_OPTS  = Array.from({ length: 100 }, (_, i) => String(CY - 13 - i)).m
 
 function EyeToggle({ show, onToggle }) {
   return (
-    <button type="button" onClick={onToggle} style={{
+    <button type="button" onClick={onToggle} aria-pressed={show} aria-label="Show password" style={{
       background: 'none', border: 'none', cursor: 'pointer',
-      color: 'var(--text-muted)', padding: 0, display: 'flex',
+      color: 'var(--pw-ink-2)', padding: 0, display: 'flex',
+      minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center',
     }}>
       <IconEye show={show} />
     </button>
@@ -92,7 +93,7 @@ export default function RegisterPage() {
         <div style={{
           background: 'rgba(10,10,10,0.92)',
           border: '1px solid rgba(255,255,255,0.09)',
-          borderTop: '2px solid var(--f1-red)',
+          borderTop: '2px solid var(--pw-steel)',
           borderRadius: 16,
           backdropFilter: 'blur(28px)',
           WebkitBackdropFilter: 'blur(28px)',
@@ -106,16 +107,19 @@ export default function RegisterPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
               <AuthField label="First Name">
                 <AuthInput variant="underline" value={form.firstName} onChange={set('firstName')}
+                  aria-describedby={error ? 'register-error' : undefined} aria-invalid={error ? true : undefined}
                   placeholder="Max" autoComplete="given-name" required />
               </AuthField>
               <AuthField label="Last Name">
                 <AuthInput variant="underline" value={form.lastName} onChange={set('lastName')}
+                  aria-describedby={error ? 'register-error' : undefined} aria-invalid={error ? true : undefined}
                   placeholder="Verstappen" autoComplete="family-name" required />
               </AuthField>
             </div>
 
             <AuthField label="Email">
               <AuthInput variant="underline" type="email" value={form.email} onChange={set('email')}
+                  aria-describedby={error ? 'register-error' : undefined} aria-invalid={error ? true : undefined}
                 placeholder="driver@pitwall.io" autoComplete="email" required />
             </AuthField>
 
@@ -124,6 +128,7 @@ export default function RegisterPage() {
                 variant="underline"
                 type={showPw ? 'text' : 'password'}
                 value={form.password} onChange={set('password')}
+                  aria-describedby={error ? 'register-error' : undefined} aria-invalid={error ? true : undefined}
                 placeholder="Min. 8 characters" autoComplete="new-password" required
                 rightSlot={<EyeToggle show={showPw} onToggle={() => setShowPw(v => !v)} />}
               />
@@ -132,13 +137,13 @@ export default function RegisterPage() {
 
             <AuthField label="Date of Birth — Technical Readout">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1.3fr', gap: '0.6rem' }}>
-                <TelemetrySelect value={dob.day}   onChange={setD('day')}   options={DAYS}        placeholder="DD"   />
-                <TelemetrySelect value={dob.month} onChange={setD('month')} options={MONTHS_OPTS} placeholder="MON" />
-                <TelemetrySelect value={dob.year}  onChange={setD('year')}  options={YEARS_OPTS}  placeholder="YYYY"/>
+                <TelemetrySelect value={dob.day}   onChange={setD('day')}   options={DAYS}        placeholder="DD"   label="Day of birth" />
+                <TelemetrySelect value={dob.month} onChange={setD('month')} options={MONTHS_OPTS} placeholder="MON"  label="Month of birth" />
+                <TelemetrySelect value={dob.year}  onChange={setD('year')}  options={YEARS_OPTS}  placeholder="YYYY" label="Year of birth" />
               </div>
             </AuthField>
 
-            <AuthError message={error} />
+            <AuthError id="register-error" message={error} />
 
             <SubmitButton busy={busy} />
 
@@ -149,9 +154,9 @@ export default function RegisterPage() {
               <SocialButton icon={<IconApple />}  label="Apple"  />
             </div>
 
-            <p style={{ textAlign: 'center', margin: 0, fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>
+            <p style={{ textAlign: 'center', margin: 0, fontSize: '0.72rem', color: 'var(--pw-ink-2)' }}>
               Already have access?{' '}
-              <Link to="/" style={{ color: 'var(--f1-red)', fontWeight: 700, textDecoration: 'none' }}>
+              <Link to="/" style={{ color: 'var(--pw-steel)', fontWeight: 700, textDecoration: 'none' }}>
                 Sign in
               </Link>
             </p>
@@ -160,7 +165,6 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      <style>{`input::placeholder{color:rgba(255,255,255,0.2)}select option{background:#0f0f0f}`}</style>
     </div>
   )
 }
@@ -188,7 +192,7 @@ function BackLink() {
   return (
     <Link to="/" style={{
       display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-      color: 'var(--text-muted)', fontSize: '0.72rem', textDecoration: 'none',
+      color: 'var(--pw-ink-2)', fontSize: '0.8rem', textDecoration: 'none',
       marginBottom: '1.5rem', letterSpacing: '0.06em', transition: 'color 0.15s',
     }}
       onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
@@ -211,7 +215,7 @@ function CardHeader() {
     }}>
       <div style={{
         fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.2em',
-        textTransform: 'uppercase', color: 'var(--f1-red)', marginBottom: '0.6rem',
+        textTransform: 'uppercase', color: 'var(--pw-steel)', marginBottom: '0.6rem',
       }}>
         PITWALL INTELLIGENCE · PADDOCK ACCESS
       </div>
@@ -232,17 +236,11 @@ function CardHeader() {
 
 function SubmitButton({ busy }) {
   return (
-    <button type="submit" disabled={busy} style={{
-      padding: '0.85rem',
-      background: busy ? 'rgba(34,197,94,0.35)' : '#22c55e',
-      border: 'none', borderRadius: 9, cursor: busy ? 'not-allowed' : 'pointer',
-      color: '#000', fontFamily: "'Barlow Condensed', sans-serif",
-      fontSize: '0.95rem', fontWeight: 900, letterSpacing: '0.12em',
-      textTransform: 'uppercase', transition: 'background 0.15s, box-shadow 0.15s',
-      boxShadow: busy ? 'none' : '0 0 28px rgba(34,197,94,0.3), 0 4px 16px rgba(0,0,0,0.4)',
-    }}
-      onMouseEnter={e => { if (!busy) { e.currentTarget.style.background = '#16a34a'; e.currentTarget.style.boxShadow = '0 0 36px rgba(34,197,94,0.4),0 4px 20px rgba(0,0,0,0.5)' } }}
-      onMouseLeave={e => { if (!busy) { e.currentTarget.style.background = '#22c55e'; e.currentTarget.style.boxShadow = '0 0 28px rgba(34,197,94,0.3),0 4px 16px rgba(0,0,0,0.4)' } }}
+    <button
+      type="submit"
+      disabled={busy}
+      aria-disabled={busy}
+      className="min-h-12 rounded-md border-0 bg-steel text-bg font-condensed text-base font-black tracking-[0.12em] uppercase cursor-pointer hover:bg-steel-hi disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {busy ? 'Registering...' : 'Join the Paddock'}
     </button>

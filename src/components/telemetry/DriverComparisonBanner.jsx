@@ -1,54 +1,53 @@
-import AccentBanner from '../ui/AccentBanner'
+import { motion } from 'framer-motion'
+import Panel from '../ui/Panel'
+import TrackTrace from '../viz/TrackTrace'
 import DriverBannerCard from './DriverBannerCard'
-import { COLORS, COLOR_B } from './telemetryConstants'
+import { safeString } from '../../utils/safeText'
+import { heroChildProps, useReducedMotion } from '../../styles/motion'
 
+/** Page hero: the race, the circuit outline, and one or two drivers' summaries. The only card on the page. */
 export default function DriverComparisonBanner({
-  isMobile,
+  raceName, season, circuitCoords,
   driverA, validLaps, bestLap, avgLap, pitStops, statusA,
   driverB, validLapsB, bestLapB, avgLapB, pitStopsB, statusB,
   lapsBLoaded,
-  colorA = COLORS.lap,
-  colorB = COLOR_B,
+  colorA, colorB,
 }) {
+  const reduced = useReducedMotion()
+  const child = (i) => heroChildProps(i, reduced)
+  const comparing = lapsBLoaded && driverB
+  const hasTrack  = Array.isArray(circuitCoords) && circuitCoords.length >= 8
+
   return (
-    <AccentBanner
-      color="var(--cassandra-color)"
-      padding="sm"
-      radius={10}
-      style={{ marginBottom: '1rem', borderTop: '2px solid rgba(168,85,247,0.45)' }}
-    >
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '1rem' : '1.5rem' }}>
+    <Panel as="section" aria-label="Driver summary" className="grid grid-cols-1 gap-pw-5 md:grid-cols-12">
+      <div className={`flex min-w-0 flex-col gap-pw-5 ${hasTrack ? 'md:col-span-9' : 'md:col-span-12'}`}>
+        <motion.p className="text-sm text-ink-2" {...child(0)}>
+          {safeString(raceName) || 'Race'}{season ? `, ${season}` : ''}
+        </motion.p>
 
-        <DriverBannerCard
-          driver={driverA}
-          validLaps={validLaps}
-          bestLap={bestLap}
-          avgLap={avgLap}
-          pitStops={pitStops}
-          color={colorA}
-          isMobile={isMobile}
-          status={statusA}
-        />
-
-        {lapsBLoaded && driverB && (
-          <>
-            <div style={isMobile
-              ? { height: 1, background: 'rgba(255,255,255,0.07)' }
-              : { width: 1, background: 'rgba(255,255,255,0.07)', flexShrink: 0 }}
-            />
+        <motion.div className={comparing ? 'grid grid-cols-1 gap-pw-6 lg:grid-cols-2 lg:gap-0 lg:divide-x lg:divide-edge-soft' : ''} {...child(1)}>
+          <div className={comparing ? 'lg:pr-pw-6' : ''}>
             <DriverBannerCard
-              driver={driverB}
-              validLaps={validLapsB}
-              bestLap={bestLapB}
-              avgLap={avgLapB}
-              pitStops={pitStopsB}
-              color={colorB}
-              isMobile={isMobile}
-              status={statusB}
+              driver={driverA} validLaps={validLaps} bestLap={bestLap} avgLap={avgLap}
+              pitStops={pitStops} color={colorA} status={statusA} compact={comparing}
             />
-          </>
-        )}
+          </div>
+          {comparing && (
+            <div className="border-t border-edge-soft pt-pw-6 lg:border-t-0 lg:pl-pw-6 lg:pt-0">
+              <DriverBannerCard
+                driver={driverB} validLaps={validLapsB} bestLap={bestLapB} avgLap={avgLapB}
+                pitStops={pitStopsB} color={colorB} status={statusB} compact
+              />
+            </div>
+          )}
+        </motion.div>
       </div>
-    </AccentBanner>
+
+      {hasTrack && (
+        <div className="hidden items-center justify-center md:col-span-3 md:flex" aria-hidden="true">
+          <TrackTrace coords={circuitCoords} className="h-auto w-full max-w-48 opacity-[0.35]" />
+        </div>
+      )}
+    </Panel>
   )
 }

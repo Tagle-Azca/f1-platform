@@ -1,3 +1,5 @@
+import { canonicalCircuitId } from '../../utils/circuitSpecs'
+
 export const CONTINENT = {
   'Australia': 'Oceania', 'New Zealand': 'Oceania',
   'USA': 'Americas', 'United States': 'Americas', 'Mexico': 'Americas',
@@ -17,13 +19,17 @@ export const CONTINENT = {
   'South Africa': 'Africa', 'Morocco': 'Africa',
 }
 
-export function continent(country) { return CONTINENT[country] || 'Other' }
+/** Display order of the regions in the filter. */
+export const REGION_ORDER = ['Europe', 'Americas', 'Asia', 'Middle East', 'Oceania', 'Africa', 'Other']
 
-export const CONTINENT_FILTERS = ['All', 'Europe', 'Americas', 'Asia', 'Middle East', 'Oceania', 'Africa']
+/** Region of a country; own-property lookup, so feed strings like "__proto__" fall to 'Other'. */
+export function regionOf(country) {
+  return typeof country === 'string' && Object.hasOwn(CONTINENT, country) ? CONTINENT[country] : 'Other'
+}
 
 export const CIRCUIT_TYPES = {
   monaco: 'street', baku: 'street', marina_bay: 'street', jeddah: 'street', las_vegas: 'street',
-  albert_park: 'hybrid', miami: 'hybrid', villeneuve: 'hybrid', sochi: 'hybrid',
+  albert_park: 'hybrid', miami: 'hybrid', villeneuve: 'hybrid', sochi: 'hybrid', madring: 'hybrid',
   silverstone: 'permanent', monza: 'permanent', spa: 'permanent', suzuka: 'permanent',
   interlagos: 'permanent', hungaroring: 'permanent', catalunya: 'permanent',
   red_bull_ring: 'permanent', zandvoort: 'permanent', bahrain: 'permanent',
@@ -35,10 +41,11 @@ export const CIRCUIT_TYPES = {
   jacarepagua: 'permanent',
 }
 
+/** Circuit class ('permanent' | 'street' | 'hybrid'); unknown ids default to permanent. */
 export function circuitType(circuitId) {
-  return CIRCUIT_TYPES[circuitId] || 'permanent'
+  const id = canonicalCircuitId(circuitId)
+  return Object.hasOwn(CIRCUIT_TYPES, id) ? CIRCUIT_TYPES[id] : 'permanent'
 }
 
-export const TYPE_FILTERS = ['All', 'Street', 'Permanent', 'Hybrid']
+export const TYPE_LABELS = { permanent: 'Permanent', street: 'Street', hybrid: 'Hybrid' }
 
-export const TYPE_COLORS = { street: '#f59e0b', hybrid: '#6366f1', permanent: '#22c55e' }

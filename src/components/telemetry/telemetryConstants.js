@@ -1,16 +1,8 @@
-export const COLORS = { lap: '#e10600', s1: '#a855f7', s2: '#22c55e', s3: '#3b82f6' }
-export const COLOR_B = '#3b82f6'
 export const TELEMETRY_CUTOFF = 2023
 
-export const COMPOUND_COLORS = {
-  SOFT:         '#ef4444',
-  MEDIUM:       '#eab308',
-  HARD:         '#e5e7eb',
-  INTERMEDIATE: '#22c55e',
-  WET:          '#3b82f6',
-  UNKNOWN:      '#6b7280',
-}
-export const COMPOUND_LABEL = { SOFT: 'S', MEDIUM: 'M', HARD: 'H', INTERMEDIATE: 'I', WET: 'W', UNKNOWN: '?' }
+// Grid vs result bars (historical view); tyre and team colors come from styles/vizPalette.js
+export const GRID_FILL = 'var(--viz-axis)'
+export const RESULT_FILL = { gained: 'var(--pw-pos)', lost: 'var(--pw-neg)', same: 'var(--pw-steel)' }
 
 // All F1 seasons for historical mode
 export const HISTORICAL_YEARS = Array.from(

@@ -1,23 +1,15 @@
-const COMPOUND_COLOR = {
-  SOFT:         { bg: '#e8002d', label: '#fff' },
-  MEDIUM:       { bg: '#ffd600', label: '#111' },
-  HARD:         { bg: '#e0e0e0', label: '#111' },
-  INTERMEDIATE: { bg: '#39b54a', label: '#fff' },
-  WET:          { bg: '#0067ff', label: '#fff' },
-  UNKNOWN:      { bg: 'repeating-linear-gradient(45deg,#444 0px,#444 4px,#2a2a2a 4px,#2a2a2a 8px)', label: 'rgba(255,255,255,0.55)' },
-}
+import TyreBadge from '../ui/TyreBadge'
+import { Legend, BlockSwatch } from '../telemetry/TelemetrySection'
+import { tyre } from '../../styles/vizPalette'
 
-export default function CompoundLegend() {
-  return (
-    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-      {Object.entries(COMPOUND_COLOR).map(([key, { bg }]) => (
-        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <div style={{ width: 22, height: 14, borderRadius: 3, background: bg, border: '1px solid rgba(255,255,255,0.12)' }} />
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-            {key === 'UNKNOWN' ? '? Not recorded' : key.charAt(0) + key.slice(1).toLowerCase()}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
+/** Compounds that appear in this race, plus the SC/VSC band keys when there were any. */
+export default function CompoundLegend({ compounds, periods }) {
+  const items = compounds.map(c => ({
+    key: c,
+    swatch: <TyreBadge compound={c} />,
+    label: tyre(c)?.name ?? 'Not recorded',
+  }))
+  if (periods.some(p => p.type === 'SC')) items.push({ key: 'sc', swatch: <BlockSwatch color="var(--pw-orange)" />, label: 'Safety car' })
+  if (periods.some(p => p.type === 'VSC')) items.push({ key: 'vsc', swatch: <BlockSwatch color="var(--pw-yellow)" />, label: 'Virtual safety car' })
+  return <Legend items={items} />
 }

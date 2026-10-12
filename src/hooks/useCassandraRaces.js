@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { telemetryApi } from '../services/api'
 import { TELEMETRY_CUTOFF } from '../components/telemetry/telemetryConstants'
 
+/**
+ * `onInit(years, defaultRaceId, sortedRaces)`: the third argument is the sorted race list (call sites that only
+ * need the first two ignore it).
+ */
 export function useCassandraRaces(onInit) {
   const [cassRaces, setCassRaces] = useState([])
   const [dbOffline, setDbOffline] = useState(false)
@@ -9,12 +13,14 @@ export function useCassandraRaces(onInit) {
   useEffect(() => {
     telemetryApi.getAvailableRaces()
       .then(data => {
-        // Sort by year DESC, then round ASC within each year
+        // Year DESC, then chronological within the year. Session keys are not chronological
+        // (a rescheduled race got a later key), so they only break ties when a date is missing.
+        const when = r => Date.parse(r.date) || Number.MAX_SAFE_INTEGER
         const sorted = [...data].sort((a, b) => {
           const [ya, ra] = a.raceId.split('_')
           const [yb, rb] = b.raceId.split('_')
           if (ya !== yb) return parseInt(yb) - parseInt(ya)
-          return parseInt(ra) - parseInt(rb)
+          return when(a) - when(b) || parseInt(ra) - parseInt(rb)
         })
         setCassRaces(sorted)
         const years = [...new Set(sorted.map(r => r.raceId.split('_')[0]))].sort((a, b) => b - a)
@@ -24,7 +30,7 @@ export function useCassandraRaces(onInit) {
           const isPast = r => r.isLive || !r.date || new Date(r.date) <= now
           const racesOfLatest = sorted.filter(r => r.raceId.startsWith(years[0] + '_') && isPast(r))
           const last = racesOfLatest[racesOfLatest.length - 1]
-          onInit(years, last?.raceId ?? '')
+          onInit(years, last?.raceId ?? '', sorted)
         }
       })
       .catch(e => {

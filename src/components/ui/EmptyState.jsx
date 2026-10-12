@@ -4,11 +4,12 @@ import CircuitLoader from './CircuitLoader'
  * EmptyState — centered loading / empty / error message.
  *
  * Props:
- *   message?  string
- *   height?   number   pixel height, default 80
+ *   message?  string       (never pass raw error text from exceptions)
+ *   height?   number       pixel height, default 80 (dynamic value, stays inline)
  *   type?     'loading' | 'empty' | 'error'   default 'loading'
+ *   action?   ReactNode    e.g. a retry Button
  */
-export default function EmptyState({ message, height = 80, type = 'loading', page = false }) {
+export default function EmptyState({ message, height = 80, type = 'loading', page = false, action }) {
   if (type === 'loading') {
     return (
       <CircuitLoader
@@ -21,13 +22,15 @@ export default function EmptyState({ message, height = 80, type = 'loading', pag
   }
 
   const defaultMsg = type === 'error' ? 'Something went wrong' : 'No data available'
-  const color      = type === 'error' ? 'var(--f1-red)' : 'var(--text-muted)'
 
   return (
-    <div className="empty-state" style={{ height, color }}>
-      <span style={{ fontSize: 'var(--text-base)' }}>
-        {message ?? defaultMsg}
-      </span>
+    <div
+      className={`empty-state flex-col gap-pw-3 text-center px-pw-4 ${type === 'error' ? 'text-neg' : 'text-ink-3'}`}
+      style={{ height }}
+      role={type === 'error' ? 'alert' : undefined}
+    >
+      <span className="text-base">{message ?? defaultMsg}</span>
+      {action}
     </div>
   )
 }

@@ -1,36 +1,23 @@
+/** Generic backend-unavailable panel. Copy is static: never echoes raw errors. */
 export default function BackendError({ onRetry }) {
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', gap: '0.75rem', padding: '3rem 1rem',
-      textAlign: 'center',
-    }}>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" style={{ width: 48, height: 48, opacity: 0.85 }}>
-        <rect x="10" y="8" width="4" height="48" rx="2" fill="var(--text-muted)" />
-        <rect x="14" y="8" width="36" height="22" rx="2" fill="#e10600" />
-        <rect x="14" y="8"  width="12" height="11" fill="#c00" />
-        <rect x="26" y="19" width="12" height="11" fill="#c00" />
-        <rect x="38" y="8"  width="12" height="11" fill="#c00" />
+    <div role="alert" className="flex flex-col items-center justify-center gap-pw-3 px-pw-4 py-pw-8 text-center">
+      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="w-12 h-12 opacity-90">
+        <rect x="10" y="8" width="4" height="48" rx="2" fill="currentColor" className="text-ink-3" />
+        <rect x="14" y="8" width="36" height="22" rx="2" fill="currentColor" className="text-live" />
+        <rect x="14" y="8"  width="12" height="11" fill="rgba(0,0,0,.25)" />
+        <rect x="26" y="19" width="12" height="11" fill="rgba(0,0,0,.25)" />
+        <rect x="38" y="8"  width="12" height="11" fill="rgba(0,0,0,.25)" />
       </svg>
-
       <div>
-        <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1.5rem',
-          fontWeight: 900, letterSpacing: '0.08em', color: '#e10600',
-          textTransform: 'uppercase', lineHeight: 1,
-        }}>
+        <p className="font-condensed text-2xl font-black tracking-[0.08em] uppercase leading-none text-ink">
           Safety Car Deployed
-        </div>
-        <div style={{
-          fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '0.35rem',
-        }}>
-          The pit wall is unreachable. Check back shortly.
-        </div>
+        </p>
+        <p className="text-sm text-ink-3 mt-pw-2">The pit wall is unreachable. Check back shortly.</p>
       </div>
-
       {onRetry && (
-        <button className="btn btn--ghost" style={{ fontSize: '0.78rem', marginTop: '0.25rem' }} onClick={onRetry}>
-          Back to the pits
+        <button type="button" className="btn btn--ghost" onClick={onRetry}>
+          Try again
         </button>
       )}
     </div>

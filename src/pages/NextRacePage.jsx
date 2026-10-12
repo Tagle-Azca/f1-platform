@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useBreakpoint } from '../hooks/useBreakpoint'
 import PageWrapper from '../components/layout/PageWrapper'
+import Rise from '../components/layout/Rise'
 import { dashboardApi, circuitsApi, statsApi } from '../services/api'
 import { getCircuitSpecs } from '../utils/circuitSpecs'
 import { countryFlag } from '../utils/flags'
@@ -14,21 +13,28 @@ import PoleRecordPanel from '../components/nextrace/PoleRecordPanel'
 import CircuitMapPanel from '../components/nextrace/CircuitMapPanel'
 import LastGPPanel from '../components/nextrace/LastGPPanel'
 import CircuitDNAPanel from '../components/circuits/CircuitDNAPanel'
+import SectionDisclosure from '../components/nextrace/SectionDisclosure'
+import CircuitSpecStrip from '../components/nextrace/CircuitSpecStrip'
+import VizSkeleton from '../components/viz/VizSkeleton'
+import Panel from '../components/ui/Panel'
+import EmptyState from '../components/ui/EmptyState'
+import { Link } from 'react-router-dom'
+import { normalizeNextRace } from '../utils/normalizeDashboard'
 
 
 export default function NextRacePage() {
-  const { isMobile } = useBreakpoint()
-  const navigate  = useNavigate()
   const [race,    setRace]    = useState(null)
   const [circuit, setCircuit] = useState(null)
   const [history, setHistory] = useState(null)
   const [weather, setWeather] = useState(null)
+  const [weatherFailed, setWeatherFailed] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(false)
 
   useEffect(() => {
     dashboardApi.get()
       .then(async data => {
-        const nr = data?.nextRace
+        const nr = normalizeNextRace(data?.nextRace)
         if (!nr) { setLoading(false); return }
         setRace(nr)
         if (nr.circuitId) {
@@ -41,14 +47,14 @@ export default function NextRacePage() {
         }
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => { setError(true); setLoading(false) })
   }, [])
 
   useEffect(() => {
     const clat = circuit?.Location?.lat
     const clng = circuit?.Location?.long
     if (!clat || !clng || !race?.schedule) return
-    const dates = Object.values(race.schedule).map(s => s.date).filter(Boolean)
+    const dates = Object.values(race.schedule).map(s => s.date).filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))
     if (!dates.length) return
     const start = dates.reduce((a, b) => a < b ? a : b)
     const end   = dates.reduce((a, b) => a > b ? a : b)
@@ -62,7 +68,7 @@ export default function NextRacePage() {
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${clat}&longitude=${clng}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode&timezone=auto&start_date=${start}&end_date=${end}`)
       .then(r => { if (!r.ok) return null; return r.json() })
       .then(data => {
-        if (!data?.daily) return
+        if (!data?.daily) { setWeatherFailed(true); return }
         const map = {}
         data.daily.time.forEach((date, i) => {
           map[date] = {
@@ -74,7 +80,7 @@ export default function NextRacePage() {
         })
         setWeather(map)
       })
-      .catch(() => {})
+      .catch(() => { setWeatherFailed(true) })
   }, [circuit, race?.schedule])
 
   const live      = race?.currentSession?.isLive ? race.currentSession : null
@@ -85,96 +91,93 @@ export default function NextRacePage() {
   const trackSpecs = race?.circuitId ? getCircuitSpecs(race.circuitId) : null
 
   if (loading) return (
-    <PageWrapper>
-      <p style={{ color: 'var(--text-muted)' }}>Loading next race...</p>
+    <PageWrapper stagger>
+      <h1 className="sr-only">Next race</h1>
+      <div className="flex flex-col gap-pw-7">
+        <Panel as="section" aria-label="Next race"><VizSkeleton variant="hero" name="next race" /></Panel>
+        <section className="section"><h2 className="text-heading mb-pw-3 text-ink">Weekend schedule</h2><VizSkeleton variant="timeline" name="schedule" /></section>
+      </div>
+    </PageWrapper>
+  )
+
+  if (error && !race) return (
+    <PageWrapper stagger>
+      <h1 className="text-title mb-pw-3 text-ink">Next race</h1>
+      <EmptyState type="error" message="Race data is unavailable right now." height={160}
+        action={<button type="button" className="btn btn--ghost btn--sentence" onClick={() => window.location.reload()}>Try again</button>} />
     </PageWrapper>
   )
 
   if (!race) return (
-    <PageWrapper>
-      <p style={{ color: 'var(--text-muted)' }}>No upcoming races found.</p>
+    <PageWrapper stagger>
+      <h1 className="text-title mb-pw-3 text-ink">Next race</h1>
+      <div className="panel panel--md text-center">
+        <p className="text-base text-ink-2">Season complete. See the archive.</p>
+        <Link to="/races" className="btn btn--primary btn--sentence mt-pw-3 no-underline">Browse races</Link>
+      </div>
     </PageWrapper>
   )
 
   return (
-    <PageWrapper>
-      <button
-        className="btn btn--ghost"
-        style={{ fontSize: isMobile ? '0.85rem' : '0.75rem', marginBottom: '1rem', padding: isMobile ? '0.6rem 1rem' : '0.3rem 0.75rem' }}
-        onClick={() => navigate(-1)}
-      >
-        ← Back
-      </button>
+    <PageWrapper stagger>
+      <div className="flex flex-col gap-pw-7 lg:gap-pw-8">
+        <Rise index={0}>
+          <NextRaceHero race={race} circuit={circuit} live={live} countdown={countdown} flagUrl={flagUrl} />
+        </Rise>
 
-      <div style={{ marginBottom: '1.5rem' }}>
-        <NextRaceHero
-          race={race}
-          circuit={circuit}
-          live={live}
-          countdown={countdown}
-          isMobile={isMobile}
-          flagUrl={flagUrl}
-        />
-      </div>
-
-      {isMobile ? (
-        /* ── Mobile: single column, logical reading order ── */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <Rise index={1}>
           <WeekendSchedulePanel
             schedule={race.schedule}
             liveKey={live?.key}
             nextSessionKey={race?.nextSession?.key}
             weather={weather}
+            weatherFailed={weatherFailed && !weather}
           />
-          {history && <LastGPPanel history={history} />}
-          <CircuitMapPanel lat={lat} lng={lng} />
-          <RaceExpectationsPanel specs={trackSpecs} />
-          <StrategyOutlookPanel specs={trackSpecs} />
-          <PoleRecordPanel specs={trackSpecs} />
-          {race.circuitId && <CircuitDNAPanel circuit={{ circuitId: race.circuitId }} compact />}
-        </div>
-      ) : (
-        /* ── Desktop: 3-column command centre — logistics · dynamics · technical ── */
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 2fr 1fr',
-          gap: '1rem',
-          alignItems: 'stretch',
-        }}>
+        </Rise>
 
-          {/* ── Col 1: Schedule + Last Time Here ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <WeekendSchedulePanel
-              schedule={race.schedule}
-              liveKey={live?.key}
-              nextSessionKey={race?.nextSession?.key}
-              weather={weather}
-            />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              {history && <LastGPPanel history={history} />}
-            </div>
-          </div>
+        {(trackSpecs || history) && (
+          <Rise index={2} className="grid grid-cols-1 items-start gap-x-pw-6 gap-y-pw-7 lg:grid-cols-12">
+            {trackSpecs && (
+              <section className="section min-w-0 lg:col-span-7" aria-labelledby="circuit-h">
+                <h2 id="circuit-h" className="text-heading mb-pw-4 text-ink">The circuit</h2>
+                <CircuitSpecStrip specs={trackSpecs} />
+                <PoleRecordPanel specs={trackSpecs} hideFeatured />
+                <div className="mt-pw-6 grid grid-cols-1 gap-x-pw-6 gap-y-pw-6 md:grid-cols-2">
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-ink">What to expect</h3>
+                    <RaceExpectationsPanel specs={trackSpecs} />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-ink">Strategy</h3>
+                    <StrategyOutlookPanel specs={trackSpecs} />
+                  </div>
+                </div>
+              </section>
+            )}
+            {history && (
+              <section className="section min-w-0 lg:col-span-5" aria-labelledby="last-gp-h">
+                <h2 id="last-gp-h" className="text-heading mb-pw-4 text-ink">Last time here</h2>
+                <LastGPPanel history={history} />
+              </section>
+            )}
+          </Rise>
+        )}
 
-          {/* ── Col 2: Map · Race Expectations · Strategy Outlook ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Map: explicit height on the iframe — no flex-1 trickery needed */}
-            <CircuitMapPanel lat={lat} lng={lng} />
-            <RaceExpectationsPanel specs={trackSpecs} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <StrategyOutlookPanel specs={trackSpecs} />
-            </div>
-          </div>
-
-          {/* ── Col 3: Track Specs (2-col internal grid) · Circuit DNA (radar + 5 stats) ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <PoleRecordPanel specs={trackSpecs} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              {race.circuitId && <CircuitDNAPanel circuit={{ circuitId: race.circuitId }} compact />}
-            </div>
-          </div>
-
-        </div>
-      )}
+        {(lat && lng) || race.circuitId ? (
+          <Rise index={3} className="grid grid-cols-1 items-start gap-x-pw-6 gap-y-pw-7 lg:grid-cols-12">
+            {lat && lng && (
+              <div className="min-w-0 lg:col-span-6"><CircuitMapPanel lat={lat} lng={lng} coords={circuit?.trackCoords} /></div>
+            )}
+            {race.circuitId && (
+              <div className="min-w-0 lg:col-span-6">
+                <SectionDisclosure title="Circuit DNA">
+                  <CircuitDNAPanel circuit={{ circuitId: race.circuitId }} compact theme="viz" bare />
+                </SectionDisclosure>
+              </div>
+            )}
+          </Rise>
+        ) : null}
+      </div>
     </PageWrapper>
   )
 }

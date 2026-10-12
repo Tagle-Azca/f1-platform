@@ -1,101 +1,91 @@
-import AccentBanner from '../ui/AccentBanner'
 import Panel from '../ui/Panel'
-import StatCard from '../ui/StatCard'
 import EmptyState from '../ui/EmptyState'
+import Rise from '../layout/Rise'
 import ReliabilityBar from './ReliabilityBar'
 import GridVsResultChart from './GridVsResultChart'
+import { GRID_FILL, RESULT_FILL } from './telemetryConstants'
+import TelemetrySection, { Legend, BlockSwatch } from './TelemetrySection'
+import { safeString } from '../../utils/safeText'
 
-export default function HistoricalSeasonView({ histData, selectedDriver, year, isMobile, loadingHist }) {
+function StatStrip({ items }) {
   return (
-    <>
-      {histData && selectedDriver && (
-        <>
-          {/* Driver + season summary banner */}
-          <AccentBanner
-            color="var(--mongo-color)"
-            padding="sm"
-            radius={10}
-            style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}
-          >
-            <div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '0.62rem', color: 'var(--mongo-color)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Driver · {year}</div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-                {selectedDriver.name}
-              </div>
-            </div>
-            <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.08)' }} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '0.5rem' }}>
-              <StatCard label="Races"   value={histData.stats.races} />
-              <StatCard label="Wins"    value={histData.stats.wins} />
-              <StatCard label="Podiums" value={histData.stats.podiums} />
-              <StatCard label="Points"  value={histData.stats.points} />
-            </div>
-            <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.08)' }} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '0.5rem' }}>
-              <StatCard label="Poles"       value={histData.stats.poles} />
-              <StatCard label="Fastest"     value={histData.stats.fastestLaps} />
-              <StatCard label="Finishes"    value={histData.stats.finishes} />
-              <StatCard label="Reliability" value={`${histData.stats.reliability}%`} />
-            </div>
-          </AccentBanner>
+    <dl className="grid grid-cols-2 gap-y-pw-4 sm:grid-cols-4 sm:divide-x sm:divide-edge-soft">
+      {items.map(([label, value], i) => (
+        <div key={label} className={`min-w-0 ${i % 4 === 0 ? 'sm:pr-pw-3' : 'sm:px-pw-3'}`}>
+          <dd className="text-stat text-ink">{value ?? '—'}</dd>
+          <dt className="mt-pw-1 text-xs text-ink-3">{label}</dt>
+        </div>
+      ))}
+    </dl>
+  )
+}
 
-          {/* Grid vs Result chart */}
-          <Panel accent="mongo" className="card" style={{ marginBottom: '0.85rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <div>
-                <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Grid vs Result
-                </h2>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                  Green = gained positions · Red = lost positions · Purple = same
-                </p>
-              </div>
-            </div>
-            <GridVsResultChart races={histData.races} />
-          </Panel>
+function Meter({ label, value, max }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : null
+  return (
+    <div className="border-b border-edge-soft py-pw-3 last:border-b-0">
+      <p className="flex justify-between gap-pw-3 text-sm text-ink-2">
+        {label}
+        <span className="num text-ink">{value}{max != null ? ` / ${max}` : ''}</span>
+      </p>
+      {pct != null && (
+        <span className="mt-pw-2 block h-1.5 rounded-[2px] bg-[var(--viz-track)]" aria-hidden="true">
+          <span className="block h-full rounded-[2px] bg-steel" style={{ width: `${pct}%` }} />
+        </span>
+      )}
+    </div>
+  )
+}
 
-          {/* Season stats + reliability */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '0.85rem' }}>
-            <Panel accent="mongo" className="card">
-              <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                Season Stats
-              </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                {[
-                  { label: 'Points scored',   value: histData.stats.points,      max: histData.stats.maxPoints, color: '#22c55e' },
-                  { label: 'Podium rate',      value: histData.stats.podiums,      max: histData.stats.races,     color: '#f59e0b' },
-                  { label: 'Points per race',  value: histData.stats.races ? (histData.stats.points / histData.stats.races).toFixed(1) : 0, max: null, color: '#a855f7' },
-                ].map(item => (
-                  <div key={item.label}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{item.label}</span>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: item.color }}>
-                        {item.value}{item.max != null ? ` / ${item.max}` : ''}
-                      </span>
-                    </div>
-                    {item.max != null && item.max > 0 && (
-                      <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
-                        <div style={{ width: `${Math.min(100, (item.value / item.max) * 100)}%`, height: '100%', background: item.color, borderRadius: 2, transition: 'width 0.6s' }} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Panel>
+export default function HistoricalSeasonView({ histData, selectedDriver, year, loadingHist }) {
+  if (!loadingHist && histData && histData.races.length === 0) {
+    return <EmptyState type="empty" message={`No race data for this driver in ${year}.`} height={120} />
+  }
+  if (!histData || !selectedDriver) return null
+  const s = histData.stats
+  const ppr = s.races ? (s.points / s.races).toFixed(1) : '0'
 
-            <Panel accent="mongo" className="card">
-              <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                Reliability
-              </h2>
-              <ReliabilityBar reliability={histData.reliability} total={histData.stats.races} />
-            </Panel>
+  return (
+    <div className="flex flex-col gap-pw-7">
+      <Rise index={1}>
+        <Panel as="section" aria-labelledby="hist-driver" className="flex flex-col gap-pw-5">
+          <div>
+            <p className="text-sm text-ink-2">{year} season</p>
+            <h2 id="hist-driver" className="text-title mt-pw-1 text-ink [overflow-wrap:anywhere]">{safeString(selectedDriver.name)}</h2>
           </div>
-        </>
-      )}
+          <StatStrip items={[['Races', s.races], ['Wins', s.wins], ['Podiums', s.podiums], ['Points', s.points]]} />
+          <StatStrip items={[['Poles', s.poles], ['Fastest laps', s.fastestLaps], ['Finishes', s.finishes], ['Reliability', `${s.reliability}%`]]} />
+        </Panel>
+      </Rise>
 
-      {!loadingHist && histData && histData.races.length === 0 && (
-        <EmptyState type="empty" message={`No race data found for this driver in ${year}`} height={120} />
-      )}
-    </>
+      <Rise index={2}>
+        <TelemetrySection
+          id="grid-h"
+          title="Grid vs result"
+          caption="Where the driver started and finished each race. Bars hang from P1, so a shorter bar is a better position."
+          aside={(
+            <Legend items={[
+              { key: 'g', swatch: <BlockSwatch color={GRID_FILL} />, label: 'Started' },
+              { key: 'up', swatch: <BlockSwatch color={RESULT_FILL.gained} />, label: 'Finished, gained' },
+              { key: 'dn', swatch: <BlockSwatch color={RESULT_FILL.lost} />, label: 'Finished, lost' },
+              { key: 'eq', swatch: <BlockSwatch color={RESULT_FILL.same} />, label: 'Finished, same' },
+            ]} />
+          )}
+        >
+          <GridVsResultChart races={histData.races} animationId={`${year}-${selectedDriver.driverId}`} />
+        </TelemetrySection>
+      </Rise>
+
+      <Rise index={3} className="grid grid-cols-1 items-start gap-x-pw-6 gap-y-pw-7 lg:grid-cols-2">
+        <TelemetrySection id="season-h" title="Season">
+          <Meter label="Points scored" value={s.points} max={s.maxPoints} />
+          <Meter label="Podiums" value={s.podiums} max={s.races} />
+          <Meter label="Points per race" value={ppr} max={null} />
+        </TelemetrySection>
+        <TelemetrySection id="reliability-h" title="How races ended">
+          <ReliabilityBar reliability={histData.reliability} total={s.races} />
+        </TelemetrySection>
+      </Rise>
+    </div>
   )
 }

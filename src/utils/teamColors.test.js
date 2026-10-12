@@ -26,3 +26,14 @@ describe('driverColor', () => {
     expect(color.startsWith('hsl(')).toBe(true)
   })
 })
+
+describe('lift() contrast guard (DoD-15)', () => {
+  it('reaches 4.5:1 on --pw-panel for every CTOR_COLORS entry', async () => {
+    const { contrastRatio, BASE } = await import('../styles/vizPalette')
+    const { CTOR_COLORS, lift } = await import('./teamColors')
+    const toHex = (rgb) => `#${rgb.match(/\d+/g).map((n) => Number(n).toString(16).padStart(2, '0')).join('')}`
+    for (const [id, hex] of Object.entries(CTOR_COLORS)) {
+      expect(contrastRatio(toHex(lift(hex)), BASE.panel), id).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+})

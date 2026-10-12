@@ -40,6 +40,16 @@ export const CIRCUIT_SPECS = {
   zandvoort:     { length: 4.259, laps: 72, turns: 14, drs: 2, throttle: 65, topSpeed: 305, gforce: 4.7, gearChanges: 46, braking: 7,  tireStress: 8,  pitLoss: 20.5 },
 }
 
+/** API circuit ids that differ from the spec / type tables (Jolpica `vegas` is keyed `las_vegas`). */
+const CIRCUIT_ID_ALIASES = { vegas: 'las_vegas' }
+
+/** Maps an API circuit id onto the key used by CIRCUIT_SPECS and CIRCUIT_TYPES. */
+export function canonicalCircuitId(circuitId) {
+  if (typeof circuitId !== 'string') return ''
+  return Object.hasOwn(CIRCUIT_ID_ALIASES, circuitId) ? CIRCUIT_ID_ALIASES[circuitId] : circuitId
+}
+
 export function getCircuitSpecs(circuitId) {
-  return CIRCUIT_SPECS[circuitId] ?? null
+  const id = canonicalCircuitId(circuitId)
+  return Object.hasOwn(CIRCUIT_SPECS, id) ? CIRCUIT_SPECS[id] : null
 }

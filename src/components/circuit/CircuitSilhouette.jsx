@@ -2,7 +2,8 @@ import { useEffect, useRef, useId, useState } from 'react'
 
 const SECTOR_COLORS = { S1: '#a855f7', S2: '#22c55e', S3: '#3b82f6' }
 
-function projectCoords(coords, width, height, padding = 12) {
+/* eslint-disable react-refresh/only-export-components */
+export function projectCoords(coords, width, height, padding = 12) {
   const lons = coords.map(c => c[0])
   const lats = coords.map(c => c[1])
   const minLon = Math.min(...lons), maxLon = Math.max(...lons)
@@ -23,7 +24,7 @@ function projectCoords(coords, width, height, padding = 12) {
   ])
 }
 
-function toPath(pts) {
+export function toPath(pts) {
   if (!pts.length) return ''
   return pts
     .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)},${p[1].toFixed(2)}`)

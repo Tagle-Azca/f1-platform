@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { telemetryApi } from '../../services/api'
+import { safeColor } from '../../utils/safeUrl'
+import { readVizColors } from '../../styles/chartTheme'
 
 const TRAIL_LEN  = 100   // positions to keep per driver
 const MIN_BOUNDS = 500   // minimum circuit dimension in metres
@@ -8,24 +10,29 @@ const POLL_MS    = 1000
 // Build color map from driver list
 function buildColorMap(drivers) {
   const map = {}
-  for (const d of drivers) {
-    if (d.teamColor) map[d.driverNum] = d.teamColor
+  for (const d of (Array.isArray(drivers) ? drivers : [])) {
+    if (!d || typeof d !== 'object') continue
+    if (safeColor(d.teamColor)) map[d.driverNum] = d.teamColor
   }
   return map
 }
 
+/**
+ * Track radar. Draws on demand (new positions, selection, resize, tab becoming visible) through a single
+ * requestAnimationFrame, and never while the tab is hidden: there is no perpetual render loop.
+ * Colors are read from the --pw-* / --viz-* CSS vars once at mount. No halo, no glow.
+ */
 export default function CircuitRadarCanvas({ drivers, selectedDriverNum }) {
   const canvasRef      = useRef(null)
   const latestRef      = useRef({})    // { driverNum: {x,y} }
   const historyRef     = useRef({})    // { driverNum: [{x,y},...] }
   const selectedRef    = useRef(selectedDriverNum)
   const colorMapRef    = useRef({})
-  const rafRef         = useRef(null)
-  const startTsRef     = useRef(null)
+  const drawRef        = useRef(null)  // schedules a frame (set by the render effect)
 
-  // Keep refs in sync with props (avoids RAF re-binding on prop changes)
-  useEffect(() => { selectedRef.current = selectedDriverNum }, [selectedDriverNum])
-  useEffect(() => { colorMapRef.current = buildColorMap(drivers) }, [drivers])
+  // Keep refs in sync with props, and redraw when the selection or colors change
+  useEffect(() => { selectedRef.current = selectedDriverNum; drawRef.current?.() }, [selectedDriverNum])
+  useEffect(() => { colorMapRef.current = buildColorMap(drivers); drawRef.current?.() }, [drivers])
 
   // Poll car positions every second
   useEffect(() => {
@@ -33,14 +40,19 @@ export default function CircuitRadarCanvas({ drivers, selectedDriverNum }) {
     const poll = async () => {
       try {
         const data = await telemetryApi.getCarPositions()
-        if (cancelled || !data?.positions) return
-        latestRef.current = data.positions
+        if (cancelled || !data?.positions || typeof data.positions !== 'object' || Array.isArray(data.positions)) return
+        const clean = {}
         for (const [num, pos] of Object.entries(data.positions)) {
+          if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) clean[num] = pos
+        }
+        latestRef.current = clean
+        for (const [num, pos] of Object.entries(clean)) {
           const trail = historyRef.current[num] ?? []
           trail.push(pos)
           if (trail.length > TRAIL_LEN) trail.shift()
           historyRef.current[num] = trail
         }
+        drawRef.current?.()
       } catch { /* best-effort */ }
     }
     poll()
@@ -48,25 +60,24 @@ export default function CircuitRadarCanvas({ drivers, selectedDriverNum }) {
     return () => { cancelled = true; clearInterval(id) }
   }, [])
 
-  // Render loop — runs until component unmounts (autoDispose equivalent)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    const palette = readVizColors()
+    let raf = null
 
-    const draw = (ts) => {
-      if (!startTsRef.current) startTsRef.current = ts
-      const halo = (Math.sin((ts - startTsRef.current) / 600) + 1) / 2  // 0→1 smooth
-
+    const draw = () => {
       const dpr = window.devicePixelRatio || 1
       const W   = canvas.offsetWidth  || 200
       const H   = canvas.offsetHeight || 200
-      canvas.width  = W * dpr
-      canvas.height = H * dpr
+      if (canvas.width !== W * dpr || canvas.height !== H * dpr) {
+        canvas.width  = W * dpr
+        canvas.height = H * dpr
+      }
       const ctx = canvas.getContext('2d')
-      ctx.scale(dpr, dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-      // Background
-      ctx.fillStyle = '#050505'
+      ctx.fillStyle = palette.bg
       ctx.fillRect(0, 0, W, H)
 
       const latest  = latestRef.current
@@ -75,12 +86,11 @@ export default function CircuitRadarCanvas({ drivers, selectedDriverNum }) {
       const selNum  = selectedRef.current
 
       if (!Object.keys(latest).length) {
-        _drawWaiting(ctx, W, H)
-        rafRef.current = requestAnimationFrame(draw)
+        drawWaiting(ctx, W, H, palette)
         return
       }
 
-      // ── Bounds from history ──────────────────────────────
+      // Bounds from history
       let minX = Infinity, maxX = -Infinity
       let minY = Infinity, maxY = -Infinity
       for (const trail of Object.values(history)) {
@@ -101,11 +111,11 @@ export default function CircuitRadarCanvas({ drivers, selectedDriverNum }) {
       const oy = pad + ((H - pad * 2) - (maxY - minY) * scale) / 2
       const tc = (x, y) => [ox + (x - minX) * scale, oy + (y - minY) * scale]
 
-      // ── Circuit trail ────────────────────────────────────
+      // Circuit trail
       ctx.lineWidth   = 5
       ctx.lineCap     = 'round'
       ctx.lineJoin    = 'round'
-      ctx.strokeStyle = 'rgba(255,255,255,0.07)'
+      ctx.strokeStyle = palette.track
       for (const trail of Object.values(history)) {
         if (trail.length < 2) continue
         ctx.beginPath()
@@ -118,82 +128,71 @@ export default function CircuitRadarCanvas({ drivers, selectedDriverNum }) {
         ctx.stroke()
       }
 
-      // ── Driver dots (non-selected first, selected on top) ─
+      // Driver dots (non-selected first, selected on top). The selection is a static ring, not a pulse.
       const sorted = Object.entries(latest)
         .sort(([a], [b]) => (a === selNum ? 1 : 0) - (b === selNum ? 1 : 0))
 
       for (const [num, pos] of sorted) {
         const [px, py] = tc(pos.x, pos.y)
-        const color    = colors[num] || '#777777'
+        const color    = colors[num] || palette.ink3
         const isSel    = num === selNum
-        const r        = isSel ? 5.5 : 3.5
 
-        // Pulsing halo for selected driver
         if (isSel) {
-          const hR = 10 + halo * 9
           ctx.beginPath()
-          ctx.arc(px, py, hR, 0, Math.PI * 2)
-          ctx.fillStyle = _rgba(color, 0.12 + halo * 0.18)
-          ctx.fill()
-          ctx.beginPath()
-          ctx.arc(px, py, hR, 0, Math.PI * 2)
-          ctx.strokeStyle = _rgba(color, 0.55 + halo * 0.35)
+          ctx.arc(px, py, 10, 0, Math.PI * 2)
+          ctx.strokeStyle = palette.ink
           ctx.lineWidth   = 1.5
           ctx.stroke()
         }
-
-        // Glow
-        ctx.shadowColor = color
-        ctx.shadowBlur  = isSel ? 10 : 5
         ctx.beginPath()
-        ctx.arc(px, py, r, 0, Math.PI * 2)
+        ctx.arc(px, py, isSel ? 5.5 : 3.5, 0, Math.PI * 2)
         ctx.fillStyle = color
         ctx.fill()
-        ctx.shadowBlur = 0
-
-        // White centre
         ctx.beginPath()
         ctx.arc(px, py, isSel ? 1.8 : 1.1, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(255,255,255,0.9)'
+        ctx.fillStyle = palette.bg
         ctx.fill()
       }
-
-      rafRef.current = requestAnimationFrame(draw)
     }
 
-    rafRef.current = requestAnimationFrame(draw)
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current) }
-  }, [])  // empty deps — runs once, uses refs for all dynamic data
+    // One frame at a time, and none while the tab is hidden.
+    const request = () => {
+      if (raf !== null || document.visibilityState !== 'visible') return
+      raf = requestAnimationFrame(() => { raf = null; draw() })
+    }
+    drawRef.current = request
+    const onVisible = () => request()
+    document.addEventListener('visibilitychange', onVisible)
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(request) : null
+    ro?.observe(canvas)
+    request()
+    return () => {
+      drawRef.current = null
+      document.removeEventListener('visibilitychange', onVisible)
+      ro?.disconnect()
+      if (raf !== null) cancelAnimationFrame(raf)
+    }
+  }, [])
 
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: '100%', height: '100%', display: 'block' }}
+      role="img"
+      aria-label="Track radar: live car positions. The timing table lists the same drivers."
+      className="block w-full h-full"
     />
   )
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function _drawWaiting(ctx, W, H) {
+function drawWaiting(ctx, W, H, palette) {
   ctx.beginPath()
   ctx.arc(W / 2, H / 2, 32, 0, Math.PI * 2)
-  ctx.strokeStyle = 'rgba(168,85,247,0.12)'
+  ctx.strokeStyle = palette.baseline
   ctx.lineWidth   = 1
   ctx.stroke()
-  ctx.fillStyle   = 'rgba(255,255,255,0.18)'
-  ctx.font        = '700 9px "Barlow Condensed", sans-serif'
+  ctx.fillStyle   = palette.ink2
+  ctx.font        = '500 12px Barlow, sans-serif'
   ctx.textAlign   = 'center'
-  ctx.letterSpacing = '1px'
-  ctx.fillText('WAITING', W / 2, H / 2 - 2)
-  ctx.fillText('POSITION DATA', W / 2, H / 2 + 11)
-}
-
-/** Convert hex color + alpha to rgba string */
-function _rgba(hex, alpha) {
-  const h = hex.replace('#', '')
-  const r = parseInt(h.slice(0, 2), 16)
-  const g = parseInt(h.slice(2, 4), 16)
-  const b = parseInt(h.slice(4, 6), 16)
-  return `rgba(${r},${g},${b},${alpha.toFixed(3)})`
+  ctx.fillText('Waiting for', W / 2, H / 2 - 2)
+  ctx.fillText('position data', W / 2, H / 2 + 13)
 }

@@ -1,115 +1,73 @@
-import { LEGENDARY, SEASON_STORIES, PODIUM_COLORS } from '../../utils/teamColors'
-import Panel from '../ui/Panel'
-import ResultRow from '../ui/ResultRow'
-import { useBreakpoint } from '../../hooks/useBreakpoint'
-import { usePreferences } from '../../contexts/PreferencesContext'
+import { useMemo } from 'react'
+import TelemetrySection from '../telemetry/TelemetrySection'
+import StandingsRow from './StandingsRow'
+import { rowDetail } from './standingsModel'
 
-export default function StandingsTable({ currentStandings, currentRound, season, loading, onDriverClick }) {
-  const { isMobile } = useBreakpoint()
-  const { prefs } = usePreferences()
-  const twoCol = !isMobile && currentStandings.length > 12
-  const half   = Math.ceil(currentStandings.length / 2)
-  const col1   = currentStandings.slice(0, half)
-  const col2   = currentStandings.slice(half)
-
-  function makeRow(d, globalIdx) {
-    const prev      = currentStandings[globalIdx - 1]
-    const gapToPrev = prev ? prev.pts - d.pts : null
-    const isFocus   = prefs.favoriteDriver && d.name === prefs.favoriteDriver
-    return (
-      <ResultRow
-        key={d.driverId}
-        position={globalIdx + 1}
-        name={
-          <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
-            {!twoCol && d.number && (
-              <span style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: '0.68rem', fontWeight: 700,
-                color: d.color, opacity: 0.8, flexShrink: 0,
-              }}>
-                #{d.number}
-              </span>
-            )}
-            {d.name.split(' ').pop()}
-          </span>
-        }
-        sub={d.team}
-        stat={
-          <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-            <span style={{ display: 'block' }}>{d.pts}</span>
-            {gapToPrev !== null && gapToPrev > 0 && (
-              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                -{gapToPrev}
-              </span>
-            )}
-          </span>
-        }
-        color={d.color}
-        podiumColor={PODIUM_COLORS[globalIdx] ?? null}
-        isLeader={false}
-        compact
-        showChevron={!!onDriverClick}
-        onClick={onDriverClick ? () => onDriverClick({ driverId: d.driverId, name: d.name }) : undefined}
-        style={{
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: isFocus ? 6 : 0,
-          paddingLeft: isFocus ? '0.25rem' : 0,
-          paddingRight: twoCol && !onDriverClick ? '0.25rem' : undefined,
-          background: isFocus ? `${d.color}10` : 'transparent',
-          borderLeft: isFocus ? `2px solid ${d.color}` : '2px solid transparent',
-          transition: 'background 0.4s, border-color 0.4s',
-        }}
-      />
-    )
-  }
+/**
+ * The full standings list (every entry, no truncation). Each row is a disclosure; one is open at a time.
+ * The open row persists across replay ticks and its detail follows the round.
+ */
+export default function StandingsTable({
+  series, rows, view, round, rounds, hero, isWide, open, onOpenChange, hoverId, onHover, source, reduced, entrance, onOpenProfile, captionExtra,
+}) {
+  const isDrivers = view !== 'constructors'
+  const leaderPts = rows[0]?.pts ?? 0
+  const tick = hero.marksOut && leaderPts > 0 ? Math.min(1, Math.max(0, (leaderPts - hero.inPlay) / leaderPts)) : null
+  const detail = useMemo(() => (open ? rowDetail(series, open, round) : null), [series, open, round])
+  const flip = !reduced && source === 'play'
 
   return (
-    <div style={{ width: isMobile ? '100%' : (twoCol ? 420 : 220), flexShrink: 0 }}>
-      <Panel padding="none" className="card">
-        <div style={{ padding: '0.85rem 1rem' }}>
-          <div style={{ marginBottom: '0.6rem' }}>
-            <div className="table-header">
-              STANDINGS{currentRound ? ` · ${currentRound.raceName}` : ''}
-            </div>
-            {onDriverClick && (
-              <div style={{ fontSize: '0.65rem', color: 'var(--mongo-color)', opacity: 0.7, marginTop: '0.2rem' }}>
-                Click a row for detailed profile
-              </div>
-            )}
-          </div>
-
-          {twoCol ? (
-            /* ── Two-column layout ─────────────────────── */
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 0.25rem' }}>
-              <div>
-                {col1.map((d, i) => makeRow(d, i))}
-              </div>
-              <div style={{ borderLeft: '1px solid rgba(255,255,255,0.06)', paddingLeft: '0.25rem' }}>
-                {col2.map((d, i) => makeRow(d, half + i))}
-              </div>
-            </div>
-          ) : (
-            /* ── Single-column layout ──────────────────── */
-            currentStandings.map((d, i) => makeRow(d, i))
-          )}
-
-          {!currentStandings.length && !loading && (
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>No data</p>
-          )}
+    <TelemetrySection
+      id="rows-h"
+      title="Standings"
+      caption={`After round ${round}. Select a row for details.`}
+    >
+      <div className="mb-pw-3 flex flex-col gap-pw-1 text-xs text-ink-3">
+        {hero.marksOut
+          ? <p>Bar: share of the leader&rsquo;s points. Tick: the lowest total that can still catch the leader.</p>
+          : <p>Bar: share of the leader&rsquo;s points.</p>}
+        {isDrivers && <p>Dashed stripe: second teammate.</p>}
+        {captionExtra}
+      </div>
+      {isWide && (
+        <div
+          aria-hidden="true"
+          className={`grid items-center gap-x-pw-3 px-pw-3 pb-pw-2 text-xs font-medium text-ink-3 ${isDrivers
+            ? 'grid-cols-[1.5rem_2.5rem_4px_minmax(0,1.4fr)_minmax(0,1fr)_3rem_8rem_4.5rem_1.25rem]'
+            : 'grid-cols-[1.5rem_2.5rem_4px_minmax(0,1.4fr)_3rem_8rem_4.5rem_1.25rem]'}`}
+        >
+          <span className="text-right">Pos</span><span /><span />
+          <span>{isDrivers ? 'Driver' : 'Team'}</span>
+          {isDrivers && <span>Team</span>}
+          <span className="text-right">Wins</span><span>Gap to leader</span><span className="text-right">Points</span><span />
         </div>
-      </Panel>
-
-      {LEGENDARY.has(season) && (
-        <Panel padding="sm" className="card" style={{ marginTop: '0.75rem' }}>
-          <div className="table-header" style={{ marginBottom: '0.4rem' }}>
-            LEGENDARY SEASON
-          </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            {SEASON_STORIES[season] || 'One of the most epic seasons in F1 history.'}
-          </p>
-        </Panel>
       )}
-    </div>
+      <ul aria-label={`${isDrivers ? 'Driver' : 'Constructor'} standings after round ${round}`} className="m-0 list-none border-y border-edge-soft p-0">
+        {rows.map((row, i) => (
+          <StandingsRow
+            key={row.id}
+            row={row}
+            index={i}
+            isWide={isWide}
+            isLeader={row.pos === 1}
+            leaderPts={leaderPts}
+            showDelta={round > 1}
+            round={round}
+            open={open === row.id}
+            hovered={hoverId === row.id}
+            marksOut={hero.marksOut}
+            isOut={!hero.contenders.has(row.id)}
+            tick={tick}
+            detail={open === row.id ? detail : null}
+            rounds={rounds}
+            onToggle={onOpenChange}
+            onHover={onHover}
+            onOpenProfile={onOpenProfile}
+            flip={flip}
+            entrance={entrance}
+          />
+        ))}
+      </ul>
+    </TelemetrySection>
   )
 }

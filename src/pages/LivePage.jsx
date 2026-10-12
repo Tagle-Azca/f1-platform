@@ -1,296 +1,137 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import PageWrapper from '../components/layout/PageWrapper'
+import LivePill from '../components/ui/LivePill'
+import EmptyState from '../components/ui/EmptyState'
+import VizSkeleton from '../components/viz/VizSkeleton'
+import LapProgress from '../components/viz/LapProgress'
+import TimingTower from '../components/live/TimingTower'
+import TrackStatusBanner from '../components/live/TrackStatusBanner'
+import { isStatusActive } from '../components/live/trackStatus'
 import { dashboardApi } from '../services/api'
+import { useLiveStatus } from '../contexts/LiveStatusContext'
+import { useRace } from '../contexts/raceContextStore'
+import { useMediaQuery } from '../hooks/useMediaQuery'
+import { useStatusAnnouncer } from '../hooks/useStatusAnnouncer'
+import { useNow } from '../hooks/useNow'
+import { getFeaturedSession } from '../utils/sessionSchedule'
+import { formatEta } from '../utils/eta'
+import { asObjectArray } from '../utils/safeArray'
+import { safeString, safeText } from '../utils/safeText'
+import ShellBoundary from '../components/layout/ShellBoundary'
 
-const SECTOR_COLORS = {
-  purple: { fg: '#c084fc', bg: 'rgba(192,132,252,0.15)', border: 'rgba(192,132,252,0.35)' },
-  green:  { fg: '#22c55e', bg: 'rgba(34,197,94,0.12)',   border: 'rgba(34,197,94,0.3)'    },
-  yellow: { fg: '#f5c518', bg: 'rgba(245,197,24,0.08)',  border: 'rgba(245,197,24,0.25)'  },
+const POLL_MS = 2000
+const fmtTime = (iso) => {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-const TRACK_STATUS_CONFIG = {
-  SafetyCar:  { label: 'SAFETY CAR',          color: '#f5c518', bg: 'rgba(245,197,24,0.12)', border: 'rgba(245,197,24,0.4)' },
-  VSC:        { label: 'VIRTUAL SAFETY CAR',   color: '#f5c518', bg: 'rgba(245,197,24,0.12)', border: 'rgba(245,197,24,0.4)' },
-  SCEnding:   { label: 'SC ENDING',            color: '#f5c518', bg: 'rgba(245,197,24,0.08)', border: 'rgba(245,197,24,0.3)' },
-  Yellow:     { label: 'YELLOW FLAG',          color: '#f5c518', bg: 'rgba(245,197,24,0.08)', border: 'rgba(245,197,24,0.25)' },
-  Red:        { label: 'RED FLAG',             color: '#ef4444', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.4)'  },
-  Chequered:  { label: 'CHEQUERED FLAG',       color: '#fff',    bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.2)' },
-}
-
-function TrackStatusBanner({ status }) {
-  const cfg = TRACK_STATUS_CONFIG[status]
-  if (!cfg) return null
+function NoLiveSession() {
+  const { nextRace } = useRace()
+  const now = useNow(60000)
+  const featured = nextRace ? getFeaturedSession(nextRace.schedule, nextRace.currentSession) : null
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
-      padding: '0.5rem 1rem', borderRadius: 8, marginBottom: '0.75rem',
-      background: cfg.bg, border: `1px solid ${cfg.border}`,
-    }}>
-      <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color, display: 'inline-block', animation: 'pulse-dot 1.5s ease-in-out infinite' }} />
-      <span style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontSize: '0.82rem', fontWeight: 900, letterSpacing: '0.14em',
-        color: cfg.color, textTransform: 'uppercase',
-      }}>
-        {cfg.label}
-      </span>
-    </div>
-  )
-}
-
-function DriverRow({ driver, isRaceType, idx }) {
-  const isLeader  = driver.stat === 'LEADER' || driver.statLabel === 'fastest'
-  const barColor  = driver.teamColor || '#555'
-  const isTop3    = driver.position <= 3
-  const posColor  = driver.position === 1 ? '#f5c518' : driver.position === 2 ? '#c0c0c0' : driver.position === 3 ? '#cd7f32' : 'var(--text-muted)'
-
-  return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '32px 4px 1fr auto auto',
-      alignItems: 'start',
-      gap: '0.6rem',
-      padding: isTop3 ? '0.55rem 0.75rem' : '0.38rem 0.75rem',
-      borderRadius: 7,
-      background: isTop3 ? 'var(--surface-2)' : idx % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'transparent',
-      opacity: driver.retired ? 0.4 : 1,
-      transition: 'background 0.15s',
-    }}>
-      {/* Position */}
-      <span style={{
-        fontFamily: "'Barlow Condensed', sans-serif",
-        fontSize: isTop3 ? '1.2rem' : '0.95rem',
-        fontWeight: 900, color: posColor,
-        textAlign: 'center', lineHeight: 1,
-      }}>
-        {driver.retired ? 'OUT' : driver.position}
-      </span>
-
-      {/* Team color bar */}
-      <div style={{ width: 3, height: isTop3 ? 38 : 30, borderRadius: 2, background: barColor, flexShrink: 0, alignSelf: 'center' }} />
-
-      {/* Driver info + sectors */}
-      <div style={{ minWidth: 0 }}>
-        <div style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontSize: isTop3 ? '1rem' : '0.88rem',
-          fontWeight: 800, color: '#fff',
-          letterSpacing: '0.03em',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>
-          {driver.fullName || driver.acronym}
-        </div>
-        {/* Sector times row */}
-        {driver.sectors?.some(s => s.value) ? (
-          <div style={{ display: 'flex', gap: '0.2rem', marginTop: '0.18rem', flexWrap: 'nowrap' }}>
-            {driver.sectors.map((s, i) => {
-              const cfg = s.status ? SECTOR_COLORS[s.status] : null
-              return (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: '0.15rem',
-                  padding: '1px 5px', borderRadius: 3,
-                  background: cfg ? cfg.bg : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${cfg ? cfg.border : 'rgba(255,255,255,0.06)'}`,
-                }}>
-                  <span style={{ fontSize: '0.52rem', color: cfg ? cfg.fg : 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.06em' }}>
-                    S{i + 1}
-                  </span>
-                  <span style={{ fontSize: '0.62rem', fontFamily: 'monospace', color: cfg ? cfg.fg : 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                    {s.value}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        ) : (
-          <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {driver.teamName}
-          </div>
-        )}
-      </div>
-
-      {/* Last lap */}
-      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 72 }}>
-        {driver.lastLap && (
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>
-            {driver.lastLap}
-          </div>
-        )}
-        {isRaceType && driver.inPit && (
-          <div style={{ fontSize: '0.58rem', color: '#f97316', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            IN PIT
-          </div>
-        )}
-      </div>
-
-      {/* Gap / time */}
-      <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 80 }}>
-        {isLeader ? (
-          <span style={{
-            fontSize: '0.65rem', fontWeight: 700, color: '#f5c518',
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-            fontFamily: "'Barlow Condensed', sans-serif",
-          }}>
-            {isRaceType ? 'LEADER' : 'FASTEST'}
-          </span>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-            {driver.stat && (
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>
-                {driver.stat}
-              </span>
-            )}
-            {driver.statLabel && driver.statLabel !== 'gap' && driver.statLabel !== 'fastest' && (
-              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                {driver.statLabel}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+    <div className="panel panel--md text-center">
+      <p className="text-lg font-semibold text-ink">No live session</p>
+      {featured && (
+        <p className="mt-pw-2 text-base text-ink-2">
+          Next: {featured.label} <span className="text-ink">{formatEta(featured.dateTime, now)}</span>
+        </p>
+      )}
+      <Link to="/next-race" className="btn btn--primary mt-pw-4 no-underline">See the weekend schedule</Link>
     </div>
   )
 }
 
 export default function LivePage() {
-  const navigate  = useNavigate()
-  const [data, setData] = useState(null)
-  const [error, setError] = useState(null)
+  const [rawData, setData]   = useState(null)
+  const [rawStale, setStale] = useState(false)
+  const [lastOk, setLastOk] = useState(null)
+  const [connecting, setConnecting] = useState(true)
+  const { available: liveAvailable } = useLiveStatus() ?? {}
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  // Without a live session nothing from a previous session may linger.
+  const data = liveAvailable ? rawData : null
+  const stale = liveAvailable && rawStale
+  const announcement = useStatusAnnouncer(data)
 
+  // Only poll the classification endpoint while the SSE status says a session is live.
+  // Endpoint and 2s cadence are unchanged from before the redesign.
   useEffect(() => {
+    if (!liveAvailable) return
     let cancelled = false
     const poll = () => {
       dashboardApi.getLive()
-        .then(d => { if (!cancelled) setData(d?.isLive ? d : null) })
-        .catch(() => { if (!cancelled) setError(true) })
+        .then(d => { if (!cancelled) { setData(d?.isLive ? d : null); setStale(false); setLastOk(Date.now()); setConnecting(false) } })
+        .catch(() => { if (!cancelled) { setStale(true); setConnecting(false) } })
     }
     poll()
-    const id = setInterval(poll, 2000)
+    const id = setInterval(poll, POLL_MS)
     return () => { cancelled = true; clearInterval(id) }
-  }, [])
+  }, [liveAvailable])
 
-  if (data === null && !error) {
-    return (
-      <PageWrapper>
-        <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.2 }}>📡</div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No session currently live</p>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              marginTop: '1.5rem', padding: '0.5rem 1.25rem', borderRadius: 7,
-              background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-              color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.82rem',
-            }}
-          >
-            ← Back to Dashboard
-          </button>
-        </div>
-      </PageWrapper>
-    )
-  }
-
-  if (!data) return null
-
-  const sc = data.trackStatus
-  const isSCActive = sc === 'SafetyCar' || sc === 'VSC' || sc === 'SCEnding' || sc === 'Yellow' || sc === 'Red'
+  const sc = data?.trackStatus
+  const classification = asObjectArray(data?.classification)
 
   return (
-    <PageWrapper>
-      {/* Header */}
-      <div style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: '50%', background: '#ef4444',
-            display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite',
-          }} />
-          <span style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.12em',
-            color: '#ef4444', textTransform: 'uppercase',
-          }}>
-            LIVE · {data.sessionName}
-          </span>
-          {data.currentLap && (
-            <span style={{
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontSize: '0.8rem', fontWeight: 700,
-              color: 'var(--text-secondary)', letterSpacing: '0.06em',
-            }}>
-              Lap {data.currentLap}{data.totalLaps ? `/${data.totalLaps}` : ''}
-            </span>
-          )}
-        </div>
-        <h1 style={{
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontSize: 'clamp(1.6rem, 4vw, 2.4rem)',
-          fontWeight: 900, letterSpacing: '0.04em',
-          textTransform: 'uppercase', lineHeight: 1, color: '#fff',
-          margin: 0,
-        }}>
-          {data.raceName}
-        </h1>
-        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-          Updated {new Date(data.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-        </div>
-      </div>
+    <PageWrapper stagger>
+      {/* One polite live region: status changes only, at most one announcement per 5s */}
+      <div className="sr-only-live" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
-      {/* Track status banner */}
-      {isSCActive && <TrackStatusBanner status={sc} />}
+      {stale && (
+        <p role="status" className="mb-pw-3 rounded-md border border-edge bg-panel px-pw-4 py-pw-3 text-sm text-ink">
+          Live feed interrupted, retrying{lastOk ? `. Last update ${fmtTime(lastOk)}` : ''}.
+        </p>
+      )}
 
-      {/* Classification table */}
-      <div style={{
-        background: 'var(--surface-1)',
-        border: '1px solid var(--border-color)',
-        borderRadius: 10, overflow: 'hidden',
-      }}>
-        {/* Column headers */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '32px 4px 1fr auto auto',
-          gap: '0.6rem',
-          padding: '0.4rem 0.75rem',
-          borderBottom: '1px solid var(--border-color)',
-          background: 'var(--surface-2)',
-        }}>
-          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>POS</span>
-          <span />
-          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>DRIVER</span>
-          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'right' }}>LAST LAP</span>
-          <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'right' }}>
-            {data.isRaceType ? 'GAP' : 'BEST LAP'}
-          </span>
-        </div>
-
-        {/* Rows */}
-        <div style={{ padding: '0.35rem' }}>
-          {(data.classification || []).map((driver, idx) => (
-            <DriverRow key={driver.driverNum} driver={driver} isRaceType={data.isRaceType} idx={idx} />
-          ))}
-          {(!data.classification || data.classification.length === 0) && (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Waiting for data...
+      {!data ? (
+        liveAvailable && connecting ? (
+          <div>
+            <h1 className="text-title mb-pw-1 text-ink">Live timing</h1>
+            <p className="mb-pw-3 text-sm text-ink-2">Connecting</p>
+            <VizSkeleton variant="tower" name="live timing" count={20} />
+          </div>
+        ) : (
+          <>
+            <h1 className="text-title mb-pw-3 text-ink">Live timing</h1>
+            <NoLiveSession />
+          </>
+        )
+      ) : (
+        <div>
+          <header className="mb-pw-4">
+            <div className="mb-pw-2 flex flex-wrap items-center gap-pw-2">
+              <LivePill>Live</LivePill>
+              <span className="inline-flex min-h-6 items-center rounded-pill border border-edge px-pw-3 text-xs font-medium text-ink-2">{safeString(data.sessionName)}</span>
             </div>
-          )}
-        </div>
-      </div>
+            <div className="flex flex-col gap-pw-2 lg:flex-row lg:items-end lg:justify-between lg:gap-pw-6">
+              <h1 className="text-title min-w-0 text-ink [overflow-wrap:anywhere]">{safeString(data.raceName)}</h1>
+              <div className="flex flex-col gap-pw-2 lg:w-72 lg:shrink-0">
+                <p className="num flex items-center justify-between gap-pw-3 text-ink-2">
+                  {safeText(data.currentLap) ? <span>Lap {safeText(data.currentLap)}{safeText(data.totalLaps) ? `/${safeText(data.totalLaps)}` : ''}</span> : <span />}
+                  <span className="text-ink-3">Updated {fmtTime(data.updatedAt)}</span>
+                </p>
+                <LapProgress lap={data.currentLap} total={data.totalLaps} />
+              </div>
+            </div>
+          </header>
 
-      {/* Footer */}
-      <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>
-          Live · F1 SignalR · Auto-refresh 2s
-        </span>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.06em',
-          }}
-        >
-          ← Dashboard
-        </button>
-      </div>
+          {isStatusActive(sc) && <TrackStatusBanner status={sc} className="mb-pw-3" />}
+
+          {classification.length ? (
+            <ShellBoundary
+              resetKey={safeString(data.updatedAt)}
+              fallback={<EmptyState type="empty" message="Timing data is being refreshed" height={120} />}
+            >
+              <TimingTower classification={classification} isRaceType={data.isRaceType === true} expandable={!isDesktop} stale={stale} sessionKey={safeString(data.sessionName)} />
+            </ShellBoundary>
+          ) : (
+            <EmptyState type="empty" message="Waiting for data" height={120} />
+          )}
+
+          <p className="mt-pw-3 text-xs text-ink-3">Live feed, refreshes every 2 seconds</p>
+        </div>
+      )}
     </PageWrapper>
   )
 }
