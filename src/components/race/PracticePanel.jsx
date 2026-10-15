@@ -10,7 +10,6 @@ import { racesApi } from '../../services/api'
 import { useMediaQuery } from '../../hooks/useMediaQuery'
 
 const KEYS = ['fp1', 'fp2', 'fp3']
-const SHOWN = 10
 const STATUS_WORD = { live: 'Live', done: 'Done', upcoming: 'Upcoming', next: 'Upcoming' }
 
 /** One practice session: header with time and status, then the live-timing classification when the backend saved one. */
@@ -39,13 +38,10 @@ function Session({ session, season, round, defaultOpen, tz }) {
   if (loading) body = <VizSkeleton variant="rows" name={`${session.label} classification`} count={5} />
   else if (classification.length) {
     body = (
-      <>
-        <SessionTable
-          kind="snapshot" rows={snapshotRows({ ...current.data, classification: classification.slice(0, SHOWN) }, { column: 'bestLap' })}
-          wide={wide} label={`${session.label} classification`} lastLabel="Best lap"
-        />
-        {classification.length > SHOWN && <p className="px-pw-3 py-pw-2 text-xs text-ink-3">And {classification.length - SHOWN} more drivers.</p>}
-      </>
+      <SessionTable
+        kind="snapshot" rows={snapshotRows(current.data, { column: 'bestLap' })}
+        wide={wide} label={`${session.label} classification`} lastLabel="Best lap"
+      />
     )
   } else {
     body = (
