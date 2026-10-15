@@ -252,6 +252,17 @@ describe('TrackTrace / LapProgress / TeamBar', () => {
     rerender(<TrackTrace coords={[...ring.slice(0, 7), [NaN, 1]]} />)
     expect(container.firstChild).toBeNull()
   })
+  it('laps a car around the outline after the draw-in, never on static outlines', () => {
+    const { container, rerender } = render(<TrackTrace coords={ring} />)
+    const cars = container.querySelectorAll('[data-track-car]')
+    expect(cars).toHaveLength(3)
+    const pathId = container.querySelector('path').getAttribute('id')
+    expect(pathId).toBeTruthy()
+    expect(cars[0].querySelector('mpath').getAttribute('href')).toBe(`#${pathId}`)
+    expect(cars[0].querySelector('animateMotion')).toHaveAttribute('repeatCount', 'indefinite')
+    rerender(<TrackTrace coords={ring} animate={false} />)
+    expect(container.querySelector('[data-track-car]')).toBeNull()
+  })
   it('LapProgress exposes text and hides for unknown laps', () => {
     const { container, rerender } = render(<LapProgress lap={31} total={70} />)
     expect(screen.getByText('Lap 31 of 70')).toHaveClass('sr-only')
