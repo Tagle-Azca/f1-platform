@@ -58,18 +58,21 @@ const chip = 'rounded-pill border border-edge px-pw-3 text-sm no-underline'
  * Connections: nothing loads until "Show network" is tapped (at every breakpoint) - no graph chunk and no ego request.
  * The frame has one fixed height (320/400/480) before and after, so nothing shifts. The visible "Connected" list is the
  * keyboard and screen-reader path and the cross-link set.
+ * `autoShow` (the Rivalries Network view) skips the tap: the network loads as soon as the section mounts.
  * @param {'driver'|'constructor'} type
  */
-export default function ConnectionsSection({ type, id, name }) {
+export default function ConnectionsSection({ type, id, name, autoShow = false }) {
   const reduced = useReducedMotion()
   const coarse = useMediaQuery('(pointer: coarse)')
-  const [shown, setShown] = useState(false)
+  const [shown, setShown] = useState(autoShow)
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState({ key: '', status: 'idle', payload: null })
   const [exploring, setExploring] = useState(false)
   const listRef = useRef(null)
   const viaKeyboard = useRef(false)
   const key = `${type}|${id}|${attempt}`
+
+  useEffect(() => { if (autoShow) loadCanvas() }, [autoShow])
 
   useEffect(() => {
     if (!shown) return undefined

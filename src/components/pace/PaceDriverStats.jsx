@@ -1,38 +1,40 @@
-import Panel from '../ui/Panel'
+import { formatLapTime } from './paceModel'
 
-function formatTime(secs) {
-  if (!secs || secs <= 0) return '—'
-  const m = Math.floor(secs / 60)
-  const s = (secs % 60).toFixed(3).padStart(6, '0')
-  return `${m}:${s}`
+function Stripe({ color, dashed }) {
+  return (
+    <svg aria-hidden="true" focusable="false" width="3" height="16" className="shrink-0">
+      <rect width="3" height="16" rx="1.5" fill={color} fillOpacity={dashed ? 0.55 : 1} />
+    </svg>
+  )
 }
 
-export default function PaceDriverStats({ driverMeta, isMobile }) {
+/** Best lap, median, consistency and lap count for every selected driver, one block each. */
+export default function PaceDriverStats({ driverMeta }) {
   if (!driverMeta.length) return null
-
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${driverMeta.length}, 1fr)`, gap: '0.6rem', marginBottom: '0.75rem' }}>
+    <ul className="grid list-none grid-cols-1 gap-pw-3 sm:grid-cols-2 lg:grid-cols-3" aria-label="Pace summary">
       {driverMeta.map(d => (
-        <Panel key={d.driverId} padding="sm" className="card" style={{ borderTop: `3px solid ${d.color}`, background: `linear-gradient(135deg, ${d.color}10, transparent)` }}>
-          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '1.1rem', fontWeight: 900, color: d.color, marginBottom: '0.5rem' }}>
-            {d.acronym}
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: '0.4rem', fontWeight: 400 }}>{d.teamName}</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem 0.75rem' }}>
+        <li key={d.driverId} className="min-w-0 rounded-md border border-edge bg-panel p-pw-3">
+          <p className="flex min-w-0 items-center gap-pw-2">
+            <Stripe color={d.color} dashed={d.dashed} />
+            <span className="font-display text-base font-semibold text-ink">{d.acronym}</span>
+            {d.teamName && <span className="min-w-0 truncate text-xs text-ink-3">{d.teamName}</span>}
+          </p>
+          <dl className="m-0 mt-pw-3 grid grid-cols-2 gap-x-pw-4 gap-y-pw-2">
             {[
-              { label: 'Best Lap',    value: formatTime(d.best) },
-              { label: 'Median',      value: formatTime(d.median) },
-              { label: 'Consistency', value: `±${d.consistency.toFixed(2)}s` },
-              { label: 'Laps',        value: d.laps.length },
-            ].map(({ label, value }) => (
+              ['Best lap', formatLapTime(d.best)],
+              ['Median', formatLapTime(d.median)],
+              ['Consistency', `±${d.consistency.toFixed(2)} s`],
+              ['Laps', String(d.laps.length)],
+            ].map(([label, value]) => (
               <div key={label}>
-                <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>{label}</div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+                <dt className="text-xs text-ink-3">{label}</dt>
+                <dd className="num m-0 text-sm text-ink">{value}</dd>
               </div>
             ))}
-          </div>
-        </Panel>
+          </dl>
+        </li>
       ))}
-    </div>
+    </ul>
   )
 }

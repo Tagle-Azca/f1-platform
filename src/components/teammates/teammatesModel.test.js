@@ -136,3 +136,15 @@ describe('misc', () => {
     expect(JSON.stringify([MATCHUPS, FEATURED])).not.toMatch(/#[0-9a-f]{3,8}/i)
   })
 })
+
+describe('networkStats', () => {
+  it('splits six figures into four primary and two secondary, dropping the ones the API lacks', async () => {
+    const { networkStats } = await import('./teammatesModel')
+    const all = networkStats({ races: 70, wins: 11, podiums: 30, points: 900, poles: 12, fastestLaps: 6 })
+    expect(all.primary.map((p) => p.key)).toEqual(['races', 'wins', 'podiums', 'points'])
+    expect(all.secondary).toEqual([{ key: 'poles', label: 'Poles', text: '12' }, { key: 'fastestLaps', label: 'Fastest laps', text: '6' }])
+    const some = networkStats({ races: 5, poles: null, fastestLaps: 'x' })
+    expect(some.primary).toHaveLength(1)
+    expect(some.secondary).toEqual([])
+  })
+})

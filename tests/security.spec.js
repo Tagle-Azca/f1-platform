@@ -75,7 +75,7 @@ test('S5: no request to Google Fonts for IBM Plex Mono; the font is served local
   expect(loaded).toBe(true)
 })
 
-test('S10: one malformed /api/dashboard field does not send /, /next-race or /live to the Red Flag page', async ({ page }) => {
+test('S10: one malformed /api/dashboard field does not send /, /next-race, the race weekend page or /live to the Red Flag page', async ({ page }) => {
   await installMockApi(page)
   const hostile = (mutate) => async (route) => {
     const d = JSON.parse(JSON.stringify(dashboardFixture()))
@@ -90,7 +90,7 @@ test('S10: one malformed /api/dashboard field does not send /, /next-race or /li
   ]
   for (const mutate of variants) {
     await page.route('**/api/dashboard', hostile(mutate))
-    for (const path of ['/', '/next-race', '/live']) {
+    for (const path of ['/', '/next-race', '/races/2026/13', '/live']) {
       await page.goto(path)
       await page.waitForSelector('main#main')
       await page.waitForTimeout(400)

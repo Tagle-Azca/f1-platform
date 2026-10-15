@@ -1,4 +1,6 @@
 import Select from '../ui/Select'
+import { buttonVariants } from '../ui/button-variants'
+import { cn } from '@/lib/utils'
 
 function Field({ id, label, busy, className = '', children }) {
   return (
@@ -18,10 +20,10 @@ const driverOption = (d, favoriteDriverId, withTeam) => {
   return `${fav ? '★ ' : ''}${name}${fav ? ' (your driver)' : withTeam && d.teamName ? `, ${d.teamName}` : ''}`
 }
 
+/** Driver pickers and the Load button. Season and race live in the Race analysis page header. */
 export default function TelemetryControls({
-  year, onYearChange, allYears,
   isHistorical,
-  raceId, onRaceChange, racesOfYear,
+  raceId,
   driverId, onDriverChange,
   histDrivers, cassDrivers, loadingDrivers, loadingHist,
   driverIdB, onDriverBChange, laps, loadingB,
@@ -38,19 +40,6 @@ export default function TelemetryControls({
       onSubmit={e => { e.preventDefault(); if (canLoad) onLoad() }}
       aria-label="Telemetry selection"
     >
-      <Field id="tel-season" label="Season" className="md:w-28">
-        <Select id="tel-season" value={year} onChange={onYearChange} options={allYears.map(y => ({ value: y, label: y }))} />
-      </Field>
-
-      {!isHistorical && (
-        <Field id="tel-race" label="Race" className="md:w-72">
-          <Select
-            id="tel-race" value={raceId} onChange={onRaceChange} placeholder="Select a race"
-            options={racesOfYear.map(r => ({ value: r.raceId, label: r.raceName }))}
-          />
-        </Field>
-      )}
-
       <Field id="tel-driver" label="Driver" busy={loadingDrivers || loadingHist} className="md:w-72">
         <Select
           id="tel-driver" value={driverId} onChange={onDriverChange} placeholder="Select a driver"
@@ -72,7 +61,7 @@ export default function TelemetryControls({
         </Field>
       )}
 
-      <button type="submit" className="btn btn--primary btn--sentence min-h-11 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-9" disabled={!canLoad}>
+      <button type="submit" className={cn(buttonVariants(), 'min-h-11 disabled:cursor-not-allowed disabled:opacity-50 md:min-h-9')} disabled={!canLoad}>
         {busy ? 'Loading' : isHistorical ? 'Load season' : 'Load telemetry'}
       </button>
     </form>

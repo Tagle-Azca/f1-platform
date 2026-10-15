@@ -251,7 +251,7 @@ test('detail page sections, order, links and a single draw-in', async ({ page })
   await installMockApi(page, { counters })
   await page.goto('/circuits/monza')
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-  await expect(page.getByRole('link', { name: 'Compare laps at Autodromo Nazionale di Monza' })).toHaveAttribute('href', '/telemetry?race=2025_9912')
+  await expect(page.getByRole('link', { name: 'Compare laps at Autodromo Nazionale di Monza' })).toHaveAttribute('href', '/analysis?view=telemetry&race=2025_9912')
   await expect(page.getByRole('link', { name: /Wikipedia/ })).toHaveAttribute('rel', 'noopener noreferrer')
   await expect(page.getByText('Lap length')).toBeVisible()
   const table = page.getByRole('table', { name: /Results at/ })
@@ -296,7 +296,7 @@ test('not found: unknown and invalid ids show the designed state; the invalid id
   expect(Object.keys(counters).filter((p) => p.startsWith('/api/circuits') || p.startsWith('/api/stats/circuit'))).toEqual([])
 })
 
-test('Compare laps lands on Telemetry with the race preselected', async ({ page }) => {
+test('Compare laps lands on Race analysis (Telemetry view) with the race preselected', async ({ page }) => {
   await installMockApi(page)
   await page.route('**/api/telemetry/races', (r) => r.fulfill({
     status: 200, contentType: 'application/json',
@@ -304,8 +304,9 @@ test('Compare laps lands on Telemetry with the race preselected', async ({ page 
   }))
   await page.goto('/circuits/monza')
   await page.getByRole('link', { name: /Compare laps at/ }).click()
-  await expect(page).toHaveURL(/\/telemetry\?race=2025_9912$/)
-  await expect(page.getByRole('combobox', { name: /Race/i }).first()).toContainText(/Italian|9912/)
+  await expect(page).toHaveURL(/\/analysis\?view=telemetry&race=2025_9912$/)
+  await expect(page.getByRole('tab', { name: 'Telemetry' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('#analysis-race')).toContainText(/Italian/)
 })
 
 test('Home makes no circuits list or calendar request', async ({ page }) => {

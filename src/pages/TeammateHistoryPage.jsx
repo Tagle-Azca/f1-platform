@@ -4,12 +4,14 @@ import { motion } from 'framer-motion'
 import PageWrapper from '../components/layout/PageWrapper'
 import PageHeader from '../components/layout/PageHeader'
 import EmptyState from '../components/ui/EmptyState'
+import SegmentedControl from '../components/ui/SegmentedControl'
 import VizSkeleton from '../components/viz/VizSkeleton'
 import { useDriverConnections } from '../hooks/useDriverConnections'
 import MatchupHero from '../components/teammates/MatchupHero'
 import StatCompare from '../components/teammates/StatCompare'
 import SameGarage from '../components/teammates/SameGarage'
 import DriverOverview from '../components/teammates/DriverOverview'
+import NetworkView from '../components/teammates/NetworkView'
 import MatchupPresets, { DriverChips } from '../components/teammates/MatchupPresets'
 import { SharedTeams, CommonTeammates } from '../components/teammates/MatchupLists'
 import { PRESET_NAMES } from '../components/teammates/constants'
@@ -18,6 +20,11 @@ import {
   slotColor, sharedTeams, commonTeammates, compareRows, comparisonSentence, surname,
 } from '../components/teammates/teammatesModel'
 import { riseProps, useReducedMotion } from '../styles/motion'
+
+const VIEW_OPTIONS = [{ value: 'compare', label: 'Compare' }, { value: 'network', label: 'Network' }]
+
+/** `view=network` rides along with the pair; Compare is the default and is not written. */
+const withView = (p, view) => { if (view === 'network') p.set('view', 'network'); return p }
 
 function slotStatus(id, conn) {
   if (!id) return 'empty'
@@ -30,11 +37,12 @@ export default function TeammateHistoryPage() {
   const reduced = useReducedMotion()
   const [params, setParams] = useSearchParams()
   const { a, b, fix } = parseMatchup(params)
+  const view = params.get('view') === 'network' ? 'network' : 'compare'
   const [labels, setLabels] = useState({}) // search-hit names by id (display only; the selection lives in the URL)
   const [focusSlot, setFocusSlot] = useState(null)
 
   // A malformed or duplicate id is corrected in place (replace), never pushed
-  useEffect(() => { if (fix) setParams(matchupParams(a, b), { replace: true }) }, [fix, a, b, setParams])
+  useEffect(() => { if (fix) setParams(withView(matchupParams(a, b), view), { replace: true }) }, [fix, a, b, view, setParams])
 
   const connA = useDriverConnections(a)
   const connB = useDriverConnections(b)
@@ -46,7 +54,8 @@ export default function TeammateHistoryPage() {
   ]
   const [sa, sb] = slots
 
-  const select = (na, nb) => setParams(matchupParams(na, nb)) // every user selection is a push, so Back steps through choices
+  const select = (na, nb) => setParams(withView(matchupParams(na, nb), view)) // every user selection is a push, so Back steps through choices
+  const onView = (v) => setParams(withView(matchupParams(a, b), v)) // a and b survive a view switch
 
   function onPick(slot, info) {
     if (info.name) setLabels((l) => ({ ...l, [info.driverId]: info.name }))
@@ -77,13 +86,29 @@ export default function TeammateHistoryPage() {
     : null
   const rise = (i) => (reduced ? { initial: false } : riseProps(i, false))
 
+  const netSlot = sa // parseMatchup moves a lone b into a, so slot a is the network driver
+  const network = view === 'network'
+  const netMessage = !netSlot.id ? '' : netSlot.status === 'loading' ? `Loading network for ${netSlot.name}` : netSlot.status === 'ready' ? `${netSlot.data.teammates.length} teammates for ${netSlot.name}` : ''
   const loadingBody = slots.some((s) => s.status === 'loading')
   const nothing = !a && !b
+  const onNetworkRemove = () => { setFocusSlot('a'); select('', '') }
 
   return (
     <PageWrapper stagger>
-      <PageHeader title="Rivalries" subtitle={`Compare any two drivers. Pitwall data covers ${DATA_RANGE}.`} />
+      <PageHeader title="Rivalries" subtitle={`Compare any two drivers, or explore one driver's network. Pitwall data covers ${DATA_RANGE}.`} />
 
+      <SegmentedControl
+        role="tablist" aria-label="Rivalries view" options={VIEW_OPTIONS} value={view} onChange={onView}
+        controls="rivalries-panel" idPrefix="rivalries-tab" fill className="mb-pw-5 sm:w-64"
+      />
+
+      <div id="rivalries-panel" role="tabpanel" aria-labelledby={`rivalries-tab-${view}`} tabIndex={-1} className="outline-none">
+      {network ? (
+        <>
+          <div role="status" className="sr-only">{netMessage}</div>
+          <NetworkView slot={netSlot} onPick={(info) => onPick('a', info)} onRemove={onNetworkRemove} focusSlot={focusSlot} onChip={onChip} />
+        </>
+      ) : (
       <div className="flex flex-col gap-pw-6">
         <MatchupHero slots={slots} onPick={onPick} onRemove={onRemove} onSwap={onSwap} focusSlot={focusSlot} />
 
@@ -136,6 +161,8 @@ export default function TeammateHistoryPage() {
             <MatchupPresets heading={both ? 'Try another matchup' : 'Popular matchups'} exclude={[a, b]} />
           </motion.div>
         )}
+      </div>
+      )}
       </div>
     </PageWrapper>
   )

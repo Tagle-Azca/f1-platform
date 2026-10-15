@@ -27,7 +27,7 @@ function RemoveButton({ name, onRemove }) {
   )
 }
 
-function Filled({ slot, align, onRemove }) {
+export function Filled({ slot, align, onRemove }) {
   const { id, name, status, data, retry } = slot
   const team = latestTeam(data?.teams)
   const stats = data?.stats

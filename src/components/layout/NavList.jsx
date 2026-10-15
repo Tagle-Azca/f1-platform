@@ -1,7 +1,7 @@
 import { useId } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { getVisibleGroups } from '../../config/navConfig'
+import { getVisibleGroups, isItemActive } from '../../config/navConfig'
 import { useLiveStatus } from '../../contexts/LiveStatusContext'
 import { DUR, EASE_OUT, useReducedMotion } from '../../styles/motion'
 
@@ -12,13 +12,13 @@ function NavItem({ item, onNavigate, barId }) {
   const navigate = useNavigate()
   const { available: liveAvailable } = useLiveStatus() ?? {}
   const { path, label, icon: Icon } = item
-  const isActive = path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
+  const isActive = isItemActive(item, location.pathname)
   const showLive = item.live && liveAvailable
 
   return (
-    <NavLink
+    <Link
       to={path}
-      end={path === '/'}
+      aria-current={isActive ? 'page' : undefined}
       onClick={() => {
         onNavigate?.()
         if (isActive) {
@@ -26,36 +26,32 @@ function NavItem({ item, onNavigate, barId }) {
           navigate(path, { state: { reset: Date.now() } })
         }
       }}
-      className={({ isActive: a }) => [
+      className={[
         'relative flex items-center gap-pw-3 min-h-11 md:min-h-10 px-pw-3 rounded-md no-underline text-base transition-colors duration-[120ms]',
-        a ? 'bg-steel-soft text-ink font-semibold' : 'text-ink-2 font-medium [@media(hover:hover)]:hover:bg-hover [@media(hover:hover)]:hover:text-ink',
+        isActive ? 'bg-steel-soft text-ink font-semibold' : 'text-ink-2 font-medium [@media(hover:hover)]:hover:bg-hover [@media(hover:hover)]:hover:text-ink',
       ].join(' ')}
     >
-      {({ isActive: a }) => (
-        <>
-          {a && (
-            <motion.span
-              layoutId={barId}
-              aria-hidden="true"
-              className="absolute left-0 top-2 bottom-2 w-0.5 rounded-pill bg-steel"
-              transition={reduced ? { duration: 0 } : { duration: DUR.base, ease: EASE_OUT }}
-            />
-          )}
-          {Icon && <Icon aria-hidden="true" className="size-5 shrink-0" />}
-          <span className="flex-1 min-w-0 truncate">{label}</span>
-          {showLive && (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-ink">
-              <span aria-hidden="true" className="size-2 rounded-full bg-live" />
-              Live
-            </span>
-          )}
-        </>
+      {isActive && (
+        <motion.span
+          layoutId={barId}
+          aria-hidden="true"
+          className="absolute left-0 top-2 bottom-2 w-0.5 rounded-pill bg-steel"
+          transition={reduced ? { duration: 0 } : { duration: DUR.base, ease: EASE_OUT }}
+        />
       )}
-    </NavLink>
+      {Icon && <Icon aria-hidden="true" className="size-5 shrink-0" />}
+      <span className="flex-1 min-w-0 truncate">{label}</span>
+      {showLive && (
+        <span className="inline-flex items-center gap-1 text-xs font-bold text-ink">
+          <span aria-hidden="true" className="size-2 rounded-full bg-live" />
+          Live
+        </span>
+      )}
+    </Link>
   )
 }
 
-/** The 4 nav groups from navConfig (feature-flagged items filtered out). */
+/** The nav groups from navConfig (feature-flagged items filtered out). */
 export default function NavList({ onNavigate }) {
   const barId = `nav-bar-${useId()}`
   return (

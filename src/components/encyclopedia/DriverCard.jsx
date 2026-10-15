@@ -10,6 +10,17 @@ import { riseProps, useReducedMotion } from '../../styles/motion'
 
 const IMG = 'relative h-full w-auto max-w-full object-contain object-bottom [mask-image:linear-gradient(to_bottom,black_75%,transparent)]'
 
+/** Car number and driver code, shown where known (number text-ink-3 mono, code in the display face). */
+function Ident({ card }) {
+  if (!card.code && !card.number) return null
+  return (
+    <span className="flex items-center gap-pw-2 text-xs">
+      {card.code && <span className="font-display font-semibold tracking-[0.02em] text-ink-2">{card.code}</span>}
+      {card.number && <span className="num text-ink-3">#{card.number}</span>}
+    </span>
+  )
+}
+
 function Art({ card, className }) {
   const mark = teamMark(card.color, BASE.bg)
   // Number fallback chain: car number, then code, then initials (never a silhouette)
@@ -47,10 +58,11 @@ function DriverCard({ card, season, layout = 'portrait', favourite = false, inde
             <div className="flex min-w-0 flex-1 flex-col gap-pw-1">
               <div className="flex items-start justify-between gap-pw-2">
                 <span id={nameId} className="line-clamp-2 min-w-0 font-display text-[15px] font-semibold leading-[19px] text-ink [overflow-wrap:anywhere]">{card.name}</span>
-                <PositionChip position={card.position} />
+                {card.position != null && <PositionChip position={card.position} />}
               </div>
               {card.team && <p className="flex min-w-0 items-center gap-pw-2 text-[13px] text-ink-2">{stripe}<span className="truncate">{card.team}</span></p>}
-              <p className="num text-ink-2" aria-hidden="true">{card.points} pts · {card.wins} {card.wins === 1 ? 'win' : 'wins'}</p>
+              <span aria-hidden="true"><Ident card={card} /></span>
+              {card.points != null && <p className="num text-ink-2" aria-hidden="true">{card.points} pts · {card.wins} {card.wins === 1 ? 'win' : 'wins'}</p>}
               {favourite && <FavouriteChip className="self-start" />}
             </div>
           </>
@@ -58,7 +70,7 @@ function DriverCard({ card, season, layout = 'portrait', favourite = false, inde
           <>
             <div className="relative">
               <Art card={card} className="aspect-[5/4] w-full" />
-              <PositionChip position={card.position} className="absolute left-pw-2 top-pw-2" />
+              {card.position != null && <PositionChip position={card.position} className="absolute left-pw-2 top-pw-2" />}
               {favourite && <FavouriteChip className="absolute right-pw-2 top-pw-2" />}
             </div>
             <span id={nameId} className="sr-only">{card.name}</span>
@@ -66,6 +78,7 @@ function DriverCard({ card, season, layout = 'portrait', favourite = false, inde
               {card.given && <span className="block truncate text-xs text-ink-2">{card.given}</span>}
               <span className="block truncate font-display text-lg font-semibold leading-[22px] text-ink">{card.surname}</span>
               {card.team && <span className="mt-pw-1 flex min-w-0 items-center gap-pw-2 text-sm text-ink-2">{stripe}<span className="truncate">{card.team}</span></span>}
+              <span className="mt-pw-1 block"><Ident card={card} /></span>
             </div>
             <Footer points={card.points} wins={card.wins} />
           </>

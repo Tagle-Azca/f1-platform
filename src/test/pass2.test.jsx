@@ -272,7 +272,7 @@ const SRC = resolve(process.cwd(), 'src')
 const walk = (p) => (statSync(p).isDirectory() ? readdirSync(p).flatMap((f) => walk(join(p, f))) : [p])
 const SCOPE = [
   ...['components/layout', 'components/home', 'components/live', 'components/nextrace', 'components/viz', 'components/dashboard'].flatMap((d) => walk(join(SRC, d))),
-  ...['pages/HomePage.jsx', 'pages/LivePage.jsx', 'pages/NextRacePage.jsx', 'components/standings/StandingsSidebar.jsx'].map((f) => join(SRC, f)),
+  ...['pages/HomePage.jsx', 'pages/LivePage.jsx', 'pages/RaceWeekendPage.jsx', 'components/standings/StandingsSidebar.jsx'].map((f) => join(SRC, f)),
 ].filter((f) => /\.jsx?$/.test(f))
 
 const STANDINGS = [...walk(join(SRC, 'components/standings')), join(SRC, 'pages/StandingsPage.jsx'), join(SRC, 'components/ui/SegmentedControl.jsx'), join(SRC, 'components/viz/Sparkline.jsx')]

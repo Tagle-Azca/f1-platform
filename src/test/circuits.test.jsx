@@ -200,7 +200,7 @@ describe('Circuit detail page', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Name monza' })).toBeInTheDocument()
     expect(document.title).toBe('Name monza · Pitwall')
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
-    expect(screen.getByRole('link', { name: 'Compare laps at Name monza' })).toHaveAttribute('href', '/telemetry?race=2025_9912')
+    expect(screen.getByRole('link', { name: 'Compare laps at Name monza' })).toHaveAttribute('href', '/analysis?view=telemetry&race=2025_9912')
     expect(screen.getByRole('link', { name: /Wikipedia/ })).toHaveAttribute('rel', 'noopener noreferrer')
     expect(screen.getByRole('link', { name: /All circuits/ })).toHaveAttribute('href', '/circuits?type=permanent')
     expect(screen.getByText('Lap length')).toBeInTheDocument()

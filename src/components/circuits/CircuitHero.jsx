@@ -59,7 +59,7 @@ export default function CircuitHero({ circuit, span, lastRace, cassandraRaceId, 
           </motion.p>
           <motion.div {...heroChildProps(5, reduced)} className="flex flex-wrap gap-pw-3">
             {cassandraRaceId && (
-              <Link to={`/telemetry?race=${cassandraRaceId}`} aria-label={`Compare laps at ${name}`} className={cn(buttonVariants({ size: 'lg' }), 'no-underline')}>Compare laps</Link>
+              <Link to={`/analysis?view=telemetry&race=${cassandraRaceId}`} aria-label={`Compare laps at ${name}`} className={cn(buttonVariants({ size: 'lg' }), 'no-underline')}>Compare laps</Link>
             )}
             {wiki && (
               <a href={wiki} target="_blank" rel="noopener noreferrer" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'no-underline')}>

@@ -7,7 +7,7 @@ import { installMockApi } from './helpers/mockApi.js'
 
 test.skip(!process.env.SCOPE_SHOTS, 'set SCOPE_SHOTS=1 to run the out-of-scope visual guard')
 
-const PAGES = [['telemetry', '/telemetry'], ['drivers', '/drivers'], ['teammates', '/teammates'], ['encyclopedia', '/encyclopedia']]
+const PAGES = [['analysis', '/analysis?view=telemetry'], ['drivers-teams', '/drivers'], ['teammates', '/teammates']]
 const VIEWPORTS = [['375', { width: 375, height: 812 }], ['1440', { width: 1440, height: 900 }]]
 
 for (const [vn, vp] of VIEWPORTS) {

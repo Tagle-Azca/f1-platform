@@ -3,9 +3,11 @@ import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { installMockApi } from './helpers/mockApi.js'
 
-const PAGES = [['/', 'dashboard'], ['/live', 'live'], ['/next-race', 'next-race'], ['/standings', 'standings'], ['/standings?view=constructors', 'standings-constructors'],
+const PAGES = [['/', 'dashboard'], ['/live', 'live'], ['/races/2026/13', 'weekend-preview'], ['/races/2025/1', 'weekend-results'], ['/calendar', 'calendar'], ['/standings', 'standings'], ['/standings?view=constructors', 'standings-constructors'],
   ['/circuits', 'circuits-grid'], ['/circuits?view=map', 'circuits-map'], ['/circuits/monza', 'circuit-detail'],
-  ['/encyclopedia', 'encyclopedia'], ['/drivers/norris', 'driver-profile'], ['/constructors/mclaren', 'constructor-profile']]
+  ['/drivers', 'drivers-teams'], ['/drivers?season=1988', 'drivers-teams-1988'], ['/teammates?view=network&a=norris', 'rivalries-network'],
+  ['/analysis', 'analysis-pace'], ['/analysis?view=tyres', 'analysis-tyres'], ['/analysis?view=telemetry', 'analysis-telemetry'], ['/analysis?season=2019', 'analysis-pre-2023'],
+  ['/drivers/norris', 'driver-profile'], ['/constructors/mclaren', 'constructor-profile']]
 const VIEWPORTS = [['375', { width: 375, height: 812 }], ['1440', { width: 1440, height: 900 }]]
 
 for (const [vn, vp] of VIEWPORTS) {

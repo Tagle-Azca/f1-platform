@@ -2,7 +2,8 @@
 import { test, expect } from '@playwright/test'
 import { installMockApi } from './helpers/mockApi.js'
 
-const PAGES = [['/', {}], ['/live', { live: true, liveCount: 20 }], ['/next-race', { rich: true }],
+const PAGES = [['/', {}], ['/live', { live: true, liveCount: 20 }], ['/races/2026/13', { rich: true }], ['/races/2025/1', { rich: true }], ['/calendar', {}], ['/drivers', {}], ['/drivers?season=1988', {}],
+  ['/teammates?view=network&a=norris', {}], ['/analysis', {}], ['/analysis?view=tyres', {}], ['/analysis?view=telemetry', {}],
   ['/circuits', { rich: true }], ['/circuits?view=map&c=monza', { rich: true }], ['/circuits/monza', { rich: true }], ['/circuits/sepang', { rich: true }], ['/circuits/imola', { rich: true }]]
 const WIDTHS = [[320, 568], [375, 812], [640, 450]]
 

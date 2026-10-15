@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import { installMockApi } from './helpers/mockApi.js'
 
-const PAGES = [['/', {}], ['/live', { live: true, liveCount: 12 }], ['/next-race', { rich: true }], ['/circuits', { rich: true }], ['/circuits/monza', { rich: true }]]
+const PAGES = [['/', {}], ['/live', { live: true, liveCount: 12 }], ['/races/2026/13', { rich: true }], ['/circuits', { rich: true }], ['/circuits/monza', { rich: true }]]
 const animating = (page) => page.evaluate(() => document.getAnimations().map((a) => a.effect?.target?.className?.toString?.() ?? String(a.effect?.target?.localName)))
 
 for (const [path, opts] of PAGES) {
@@ -40,7 +40,7 @@ test('live polls never replay entrance motion or add animations', async ({ page 
 
 test('pages only animate transform/opacity-class properties (no layout properties)', async ({ page }) => {
   await installMockApi(page, { rich: true })
-  await page.goto('/next-race')
+  await page.goto('/races/2026/13')
   await page.waitForTimeout(300)
   const props = await page.evaluate(() => document.getAnimations().flatMap((a) => (a.effect?.getKeyframes?.() ?? []).flatMap((k) => Object.keys(k))))
   const banned = props.filter((p) => ['width', 'height', 'top', 'left', 'right', 'bottom', 'margin', 'padding'].includes(p))

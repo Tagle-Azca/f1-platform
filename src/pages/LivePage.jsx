@@ -19,6 +19,9 @@ import { formatEta } from '../utils/eta'
 import { asObjectArray } from '../utils/safeArray'
 import { safeString, safeText } from '../utils/safeText'
 import ShellBoundary from '../components/layout/ShellBoundary'
+import { buttonVariants } from '../components/ui/button-variants'
+import { weekendPathFor } from '../utils/weekendPath'
+import { cn } from '@/lib/utils'
 
 const POLL_MS = 2000
 const fmtTime = (iso) => {
@@ -38,7 +41,7 @@ function NoLiveSession() {
           Next: {featured.label} <span className="text-ink">{formatEta(featured.dateTime, now)}</span>
         </p>
       )}
-      <Link to="/next-race" className="btn btn--primary mt-pw-4 no-underline">See the weekend schedule</Link>
+      <Link to={weekendPathFor(nextRace)} className={cn(buttonVariants(), 'mt-pw-4 min-h-11 no-underline')}>See the weekend schedule</Link>
     </div>
   )
 }

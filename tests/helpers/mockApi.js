@@ -309,6 +309,78 @@ export function teamPaceFixture(year, raceId) {
   }
 }
 
+// ── Race weekend + Race analysis fixtures (navigation 14 -> 8) ──────────────────────────────────────────
+const ANALYSIS_RACES = [
+  { raceId: '2026_9913', raceName: 'Hungarian Grand Prix', round: 13, date: '2026-07-26T13:00:00Z', circuitId: 'hungaroring' },
+  { raceId: '2026_9906', raceName: 'Monaco Grand Prix', round: 6, date: '2026-05-24T13:00:00Z', circuitId: 'monaco' },
+  { raceId: '2025_9912', raceName: 'Italian Grand Prix', round: 14, date: '2025-09-07T13:00:00Z', circuitId: 'monza' },
+  { raceId: '2025_9911', raceName: 'Dutch Grand Prix', round: 15, date: '2025-08-31T13:00:00Z', circuitId: 'zandvoort' },
+]
+const CASS_DRIVERS = [
+  { driverId: '1', acronym: 'VER', fullName: 'Max Verstappen', teamName: 'Red Bull Racing' },
+  { driverId: '4', acronym: 'NOR', fullName: 'Lando Norris', teamName: 'McLaren' },
+  { driverId: '81', acronym: 'PIA', fullName: 'Oscar Piastri', teamName: 'McLaren' },
+  { driverId: '16', acronym: 'LEC', fullName: 'Charles Leclerc', teamName: 'Ferrari' },
+  { driverId: '44', acronym: 'HAM', fullName: 'Lewis Hamilton', teamName: 'Ferrari' },
+  { driverId: '63', acronym: 'RUS', fullName: 'George Russell', teamName: 'Mercedes' },
+]
+
+/** GET /api/telemetry/races */
+export function analysisRacesFixture() { return ANALYSIS_RACES.map((r) => ({ ...r })) }
+/** GET /api/telemetry/drivers/:raceId */
+export function analysisDriversFixture() { return CASS_DRIVERS.map((d) => ({ ...d })) }
+/** GET /api/telemetry/pace/:raceId?drivers=a,b */
+export function analysisPaceFixture(ids) {
+  return ids.map((driverId, k) => ({ driverId, laps: Array.from({ length: 40 }, (_, i) => ({ lap: i + 1, time: 90 + k * 0.3 + (i % 4) * 0.15, isPit: i === 19 + k })) }))
+}
+/** GET /api/telemetry/positions/:raceId */
+export function analysisPositionsFixture() {
+  const ids = CASS_DRIVERS.map((d) => d.driverId)
+  const laps = Array.from({ length: 40 }, (_, i) => Object.fromEntries([['lap', i + 1], ...ids.map((id, k) => [id, ((k + Math.floor(i / 13)) % ids.length) + 1])]))
+  return { totalLaps: 40, drivers: CASS_DRIVERS.map((d) => ({ driverId: d.driverId, acronym: d.acronym, pitLaps: [20], dnf: false, dns: false, lastLap: 40 })), laps }
+}
+/** GET /api/telemetry/strategy/:raceId */
+export function analysisStrategyFixture() {
+  return CASS_DRIVERS.map((d, k) => ({ ...d, stints: [{ compound: 'MEDIUM', lapStart: 1, lapEnd: 19 + k, tyreAge: 0 }, { compound: k % 2 ? 'HARD' : 'SOFT', lapStart: 20 + k, lapEnd: 40, tyreAge: 0 }] }))
+}
+/** GET /api/telemetry/laps/:raceId/:driverId */
+export function analysisLapsFixture() {
+  return Array.from({ length: 40 }, (_, i) => ({ lap_number: i + 1, lap_time: 90 + (i % 4) * 0.2, compound: i < 20 ? 'MEDIUM' : 'HARD', sector1: 28 + (i % 3) * 0.1, sector2: 35 + (i % 2) * 0.1, sector3: 27 + (i % 5) * 0.05 }))
+}
+
+/**
+ * GET /api/races/:season/:round. Rounds 1-12 of a season are done (with results and a qualifying order); round 13 of 2026 is the
+ * dashboard's upcoming Hungarian GP (schedule relative to `base`); round 99 does not exist. Seasons before 2022 have no circuit or schedule.
+ */
+export function raceRoundFixture(season, round, base = null) {
+  BASE = base
+  const s = Number(season), r = Number(round)
+  if (!Number.isInteger(s) || !Number.isInteger(r) || r < 1 || r > 30) return null
+  if (s === 2026 && r === 13) {
+    const d = dashboardFixture(base).nextRace
+    return { season: '2026', round: '13', raceName: d.raceName, date: d.schedule.race.date, time: d.schedule.race.time, Circuit: { circuitId: 'hungaroring', circuitName: 'Hungaroring', Location: { locality: 'Budapest', country: 'Hungary', lat: '47.5789', long: '19.2486' } }, schedule: d.schedule, Results: [] }
+  }
+  const race = raceAt(s, r, `Round ${r} Grand Prix`, r)
+  race.Results = race.Results.map((x, i) => ({ ...x, points: String(GP_POINTS[i] ?? 0), Time: { time: i === 0 ? '1:31:44.2' : `+${(i * 4.3).toFixed(1)}s` }, Driver: { ...x.Driver, code: x.Driver.familyName.slice(0, 3).toUpperCase(), permanentNumber: String(i + 1) } }))
+  race.QualifyingResults = race.Results.map((x, i) => ({ position: String(i + 1), Q1: `1:2${i}.1`, Q2: `1:1${9 - Math.min(i, 8)}.4`, Q3: i < 5 ? `1:1${8 - i}.9` : '', Driver: x.Driver, Constructor: x.Constructor }))
+  if (s >= 2022) {
+    race.Circuit = { circuitId: 'monza', circuitName: 'Autodromo Nazionale di Monza', Location: { locality: 'Monza', country: 'Italy', lat: '45.62', long: '9.28' } }
+    const day = (n) => `${s}-0${1 + (r % 8)}-${String(10 + n).padStart(2, '0')}`
+    race.schedule = { fp1: { date: day(0), time: '11:30:00Z' }, fp2: { date: day(0), time: '15:00:00Z' }, fp3: { date: day(1), time: '10:30:00Z' }, qualifying: { date: day(1), time: '14:00:00Z' }, race: { date: day(2), time: '13:00:00Z' } }
+    race.date = day(2)
+  } else race.date = `${s}-05-${String(10 + (r % 15)).padStart(2, '0')}`
+  return race
+}
+
+/** GET /api/drivers/featured?season= : a short line-up per season (seasons before the standings data). */
+export function featuredDriversFixture(season) {
+  return [
+    { driverId: 'senna', givenName: 'Ayrton', familyName: 'Senna', constructorId: 'mclaren', constructorName: 'McLaren', permanentNumber: '12', code: 'SEN', nationality: 'Brazilian' },
+    { driverId: 'prost', givenName: 'Alain', familyName: 'Prost', constructorId: 'ferrari', constructorName: 'Ferrari', permanentNumber: '1', code: 'PRO', nationality: 'French' },
+    { driverId: 'alesi', givenName: 'Jean', familyName: 'Alesi', constructorId: 'ferrari', constructorName: 'Ferrari', code: 'ALE', nationality: 'French', season: String(season) },
+  ]
+}
+
 export function liveFixture(overrides = {}, count = 5) {
   const mk = (n, pos, acronym, full, team, color, extra = {}) => ({
     driverNum: String(n), position: pos, acronym, fullName: full, teamName: team, teamColor: color,
@@ -390,6 +462,21 @@ export async function installMockApi(page, opts = {}) {
       const body = constructorStatsFixture(decodeURIComponent(p.split('/').pop()))
       return body ? json(body) : json({ message: 'Constructor not found' }, 404)
     }
+    if (p === '/api/races/2026/99' || /^\/api\/races\/\d+\/\d+$/.test(p)) {
+      const [, , , season, round] = p.split('/')
+      const body = raceRoundFixture(season, round, opts.base ?? null)
+      return body ? json(body) : json({ message: 'Race not found' }, 404)
+    }
+    if (p === '/api/drivers/featured') return json(featuredDriversFixture(url.searchParams.get('season')))
+    if (p === '/api/telemetry/races') return json(analysisRacesFixture())
+    if (p.startsWith('/api/telemetry/drivers/')) return json(analysisDriversFixture())
+    if (p.startsWith('/api/telemetry/pace/')) return json(analysisPaceFixture((url.searchParams.get('drivers') ?? '').split(',').filter(Boolean)))
+    if (p.startsWith('/api/telemetry/positions/')) return json(analysisPositionsFixture())
+    if (p.startsWith('/api/telemetry/strategy/')) return json(analysisStrategyFixture())
+    if (p.startsWith('/api/telemetry/safety-car/')) return json([])
+    if (p.startsWith('/api/telemetry/race-info/')) return json({ totalLaps: 40, driverStatuses: {} })
+    if (p.startsWith('/api/telemetry/laps/')) return json(analysisLapsFixture())
+    if (p.startsWith('/api/telemetry/pitstops/')) return json([{ stop_number: 1, lap: 20, duration: 22.4 }])
     if (p === '/api/dashboard/h2h') return json({ driverName: url.searchParams.get('driver'), teammateName: 'Oscar Piastri', season: url.searchParams.get('season'), racesCompared: 16, qualiCompared: 15, race: { driver: 9, teammate: 7 }, quali: { driver: 6, teammate: 9 } })
     if (p === '/api/search') return json(searchFixture(url.searchParams.get('q') ?? ''))
     if (p.startsWith('/api/graph/driver/') && p.endsWith('/ego')) return json(egoFixture(p.split('/')[4], false))

@@ -147,3 +147,14 @@ export function filterMatchups(list, filter, exclude = []) {
   const open = (m) => Boolean(x && y) && ((m.a === x && m.b === y) || (m.a === y && m.b === x))
   return list.filter((m) => (filter === 'all' || m.filter === filter) && !open(m))
 }
+
+const finite = (v) => (Number.isFinite(v) ? v : null)
+
+/** Six career figures: four primary, poles and fastest laps below. A figure the API does not have is left out. */
+export function networkStats(stats) {
+  const primary = [['races', 'Races'], ['wins', 'Wins'], ['podiums', 'Podiums'], ['points', 'Points']]
+    .filter(([k]) => finite(stats?.[k]) !== null).map(([k, label]) => ({ key: k, label, value: stats[k] }))
+  const secondary = [['poles', 'Poles'], ['fastestLaps', 'Fastest laps']]
+    .filter(([k]) => finite(stats?.[k]) !== null).map(([k, label]) => ({ key: k, label, text: String(stats[k]) }))
+  return { primary, secondary }
+}

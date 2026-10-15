@@ -67,7 +67,7 @@ test('Load map mounts the OpenStreetMap iframe only on request', async ({ page }
   await installMockApi(page, { rich: true })
   const osm = []
   page.on('request', (r) => { if (r.url().includes('openstreetmap.org')) osm.push(r.url()) })
-  await page.goto('/next-race')
+  await page.goto('/races/2026/13')
   await page.waitForTimeout(1500)
   expect(osm).toEqual([])
   await page.getByRole('button', { name: 'Load map' }).click()

@@ -1,4 +1,4 @@
-// Screenshot baselines (DoD-4): Dashboard, Live (live mock) and Next race, in success / loading / error states, plus Standings (drivers, constructors),
+// Screenshot baselines (DoD-4): Dashboard, Live (live mock) and the Race weekend page, in success / loading / error states, plus Standings (drivers, constructors),
 // at 375x812 and 1440x900. Clock frozen (page.clock), fonts ready, CSS animations disabled, rich mock
 // (non-empty trackCoords + Open-Meteo fixture). Update with: npx playwright test tests/screens.spec.js --update-snapshots
 import { test, expect } from '@playwright/test'
@@ -17,9 +17,9 @@ const SCENES = [
   ['circuits', 'grid', '/circuits', {}],
   ['circuits', 'map', '/circuits?view=map&c=monza', {}],
   ['circuit-detail', 'monza', '/circuits/monza', {}],
-  ['next-race', 'success', '/next-race', {}],
-  ['next-race', 'loading', '/next-race', { hang: ['/api/dashboard'] }],
-  ['next-race', 'error', '/next-race', { fail: ['/api/dashboard'] }],
+  ['weekend', 'success', '/races/2026/13', {}],
+  ['weekend', 'loading', '/races/2026/13', { hang: ['/api/races/2026/13'] }],
+  ['weekend', 'error', '/races/2026/13', { fail: ['/api/races/2026/13'] }],
 ]
 
 for (const [vn, vp] of VIEWPORTS) {

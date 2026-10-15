@@ -2,18 +2,18 @@
 export const ENTITY_ID_RE = /^[a-z0-9_]{1,40}$/
 export const isValidEntityId = (id) => typeof id === 'string' && ENTITY_ID_RE.test(id)
 
-const FROM_RE = /^\/(?:encyclopedia|standings)(?:\?[\w%+=&.~*'(),:@-]{0,300})?$/
+const FROM_RE = /^\/(?:drivers|standings)(?:\?[\w%+=&.~*'(),:@-]{0,300})?$/
 
 /**
  * Back link for a profile. `from` comes from router history state, so it is untrusted: only an in-app
- * /encyclopedia or /standings URL is followed; anything else falls back to the hub tab for this entity type.
+ * /drivers or /standings URL is followed; anything else falls back to the hub tab for this entity type.
  */
 export function backTarget(from, type = 'drivers') {
-  const tab = type === 'constructors' || type === 'circuits' ? type : 'drivers'
+  const tab = type === 'constructors' ? type : 'drivers'
   if (typeof from === 'string' && FROM_RE.test(from)) {
-    return { to: from, label: from.startsWith('/standings') ? 'Standings' : 'Encyclopedia' }
+    return { to: from, label: from.startsWith('/standings') ? 'Standings' : 'Drivers & teams' }
   }
-  return { to: `/encyclopedia?view=${tab}`, label: 'Encyclopedia' }
+  return { to: `/drivers?view=${tab}`, label: 'Drivers & teams' }
 }
 
 /** Initials of a name, at most 3 letters, for art fallbacks. */

@@ -10,24 +10,20 @@ import ScrollFade        from './components/ui/ScrollFade'
 import HomePage          from './pages/HomePage'
 import ConstructorStandingsRedirect from './components/standings/ConstructorStandingsRedirect'
 
-const EncyclopediaPage         = lazy(() => import('./pages/EncyclopediaPage'))
-const DriversPage              = lazy(() => import('./pages/DriversPage'))
+const DriversTeamsPage         = lazy(() => import('./pages/DriversTeamsPage'))
 const DriverProfilePage        = lazy(() => import('./pages/DriverProfilePage'))
 const ConstructorProfilePage   = lazy(() => import('./pages/ConstructorProfilePage'))
-const RacesPage                = lazy(() => import('./pages/RacesPage'))
-const RaceDetailPage           = lazy(() => import('./pages/RaceDetailPage'))
+const RaceWeekendPage          = lazy(() => import('./pages/RaceWeekendPage'))
 const CircuitsPage             = lazy(() => import('./pages/CircuitsPage'))
 const CircuitDetailPage        = lazy(() => import('./pages/CircuitDetailPage'))
-const TelemetryPage            = lazy(() => import('./pages/TelemetryPage'))
+const RaceAnalysisPage         = lazy(() => import('./pages/RaceAnalysisPage'))
 const StandingsPage            = lazy(() => import('./pages/StandingsPage'))
 const TeammateHistoryPage      = lazy(() => import('./pages/TeammateHistoryPage'))
+const NextRaceRedirect         = lazy(() => import('./components/race/NextRaceRedirect'))
+const LegacyRedirect           = lazy(() => import('./components/layout/LegacyRedirect'))
 const CalendarPage             = lazy(() => import('./pages/CalendarPage'))
-const TireStrategyPage         = lazy(() => import('./pages/TireStrategyPage'))
-const RacePacePage             = lazy(() => import('./pages/RacePacePage'))
-const NextRacePage             = lazy(() => import('./pages/NextRacePage'))
 const LivePage                 = lazy(() => import('./pages/LivePage'))
 const NotFoundPage             = lazy(() => import('./pages/NotFoundPage'))
-const GraphPage                = lazy(() => import('./pages/GraphPage'))
 const RegisterPage             = lazy(() => import('./pages/RegisterPage'))
 
 function App() {
@@ -47,24 +43,25 @@ function App() {
         <AppShell>
           <Routes>
             <Route path="/"                      element={<HomePage />}                />
-            <Route path="/encyclopedia"          element={<EncyclopediaPage />}        />
-            <Route path="/drivers"               element={<DriversPage />}             />
+            <Route path="/encyclopedia"          element={<LegacyRedirect />}          />
+            <Route path="/drivers"               element={<DriversTeamsPage />}        />
             <Route path="/drivers/:id"           element={<DriverProfilePage />}       />
             <Route path="/constructors/:constructorId" element={<ConstructorProfilePage />} />
-            <Route path="/races"                 element={<RacesPage />}               />
-            <Route path="/races/:season/:round"  element={<RaceDetailPage />}          />
+            <Route path="/races"                 element={<LegacyRedirect />}          />
+            <Route path="/races/:season/:round"  element={<RaceWeekendPage />}         />
             <Route path="/calendar"              element={<CalendarPage />}            />
             <Route path="/circuits"              element={<CircuitsPage />}            />
             <Route path="/circuits/:circuitId"   element={<CircuitDetailPage />}       />
-            <Route path="/telemetry"             element={<TelemetryPage />}           />
+            <Route path="/analysis"              element={<RaceAnalysisPage />}        />
+            <Route path="/telemetry"             element={<LegacyRedirect />}          />
             <Route path="/standings"             element={<StandingsPage />}           />
             <Route path="/constructor-standings" element={<ConstructorStandingsRedirect />}/>
             <Route path="/teammates"             element={<TeammateHistoryPage />}     />
-            <Route path="/tire-strategy"         element={<TireStrategyPage />}        />
-            <Route path="/race-pace"             element={<RacePacePage />}            />
-            <Route path="/next-race"             element={<NextRacePage />}            />
+            <Route path="/tire-strategy"         element={<LegacyRedirect />}          />
+            <Route path="/race-pace"             element={<LegacyRedirect />}          />
+            <Route path="/next-race"             element={<NextRaceRedirect />}        />
             <Route path="/live"                  element={<LivePage />}                />
-            <Route path="/graph"                 element={<GraphPage />}               />
+            <Route path="/graph"                 element={<LegacyRedirect />}          />
             <Route path="/register"              element={<RegisterPage />}            />
             <Route path="*"                      element={<NotFoundPage />}            />
           </Routes>

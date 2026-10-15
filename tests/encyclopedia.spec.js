@@ -1,52 +1,66 @@
-// Encyclopedia hub, search, profiles, Connections gate, not-found, 375px (mock API: no backend needed).
+// Drivers & teams hub (formerly the Encyclopedia), search, profiles, Connections gate, not-found, 375px (mock API: no backend needed).
 import { test, expect } from '@playwright/test'
 import { installMockApi } from './helpers/mockApi.js'
 
-const HUB = '/encyclopedia'
+const HUB = '/drivers'
 
-test('hub: tabs and season are in the URL, Back restores them, invalid values are dropped', async ({ page }) => {
+test('hub: views and season are in the URL, Back restores them, invalid values are dropped', async ({ page }) => {
   await installMockApi(page, { standings: 'rich' })
   await page.goto(HUB)
   await page.waitForSelector('[data-hub-grid="drivers"]')
+  await expect(page.getByRole('heading', { level: 1, name: 'Drivers & teams' })).toBeVisible()
+  await expect(page.getByRole('tab')).toHaveText(['Drivers', 'Constructors'])
   await page.getByRole('tab', { name: 'Constructors' }).click()
   await expect(page).toHaveURL(/view=constructors/)
   await expect(page.locator('[data-constructor-card]').first()).toBeVisible()
-  await page.getByRole('tab', { name: 'Circuits' }).click()
-  await expect(page).toHaveURL(/view=circuits/)
-  await expect(page.locator('[data-circuit-card]').first()).toBeVisible()
+  await page.getByRole('tab', { name: 'Drivers' }).click()
+  await expect(page).toHaveURL(/view=drivers/)
   await page.goBack()
   await expect(page).toHaveURL(/view=constructors/)
   await expect(page.getByRole('tab', { name: 'Constructors' })).toHaveAttribute('aria-selected', 'true')
 
   const before = await page.evaluate(() => history.length)
-  await page.goto(`${HUB}?view=nope&season=1950`)
+  await page.goto(`${HUB}?view=nope&season=abc`)
   await page.waitForSelector('[data-hub-grid="drivers"]')
-  await expect(page).toHaveURL(/\/encyclopedia$/)
+  await expect(page).toHaveURL(/\/drivers$/)
   expect(await page.evaluate(() => history.length)).toBeLessThanOrEqual(before + 1)
 })
 
-test('hub: season Select lists only seasons with data and nothing before 2022', async ({ page }) => {
+test('hub: the season Select runs from 1950 to now and an older season lists its line-up by surname', async ({ page }) => {
   await installMockApi(page, { standings: 'rich' })
   await page.goto(HUB)
   await page.waitForSelector('[data-hub-grid="drivers"]')
-  await page.locator('#enc-season').click()
+  await page.locator('#drivers-season').click()
   const opts = await page.getByRole('option').allTextContents()
-  expect(opts).toEqual(['2026', '2025', '2024', '2023', '2022'])
-  await page.keyboard.press('Escape')
-  await expect(page.locator('main').getByText(/19\d\d/)).toHaveCount(0)
+  const year = new Date().getFullYear()
+  expect(opts[0]).toBe(String(year))
+  expect(opts.at(-1)).toBe('1950')
+  expect(opts).toHaveLength(year - 1950 + 1)
+  await page.getByRole('option', { name: '1988' }).click()
+  await expect(page).toHaveURL(/season=1988/)
+  await expect(page.locator('[data-driver-card]')).toHaveCount(3)
+  await expect(page.locator('[data-driver-card]').first()).toHaveAttribute('data-driver-card', 'alesi')
+  await expect(page.getByText(/Line-ups before \d{4} are listed by surname; points are not shown/)).toBeVisible()
+  await page.getByRole('tab', { name: 'Constructors' }).click()
+  await expect(page.getByText(/Team standings cover \d{4}–\d{4}/)).toBeVisible()
+  await page.getByRole('button', { name: /^Show \d{4}$/ }).click()
+  await expect(page).toHaveURL(new RegExp(`season=${year}`))
 })
 
-test('hub: no PageHint, native select or carousel; the Circuits tab fetches only when opened', async ({ page }) => {
+test('hub: no PageHint, native select, name filter or circuits tab; a Circuits link and no circuits request', async ({ page }) => {
   const counters = {}
   await installMockApi(page, { standings: 'rich', counters })
   await page.goto(HUB)
   await page.waitForSelector('[data-hub-grid="drivers"]')
   await page.waitForTimeout(500)
   await expect(page.locator('select')).toHaveCount(0)
+  await expect(page.getByRole('tab', { name: 'Circuits' })).toHaveCount(0)
+  await expect(page.locator('main input')).toHaveCount(1) // the search combobox only
   expect(counters['/api/circuits'] ?? 0).toBe(0)
-  await page.getByRole('tab', { name: 'Circuits' }).click()
-  await expect(page.locator('[data-circuit-card]').first()).toBeVisible()
-  expect(counters['/api/circuits']).toBe(1)
+  const link = page.getByRole('link', { name: 'Circuits', exact: true }).last()
+  expect((await link.boundingBox()).height).toBeGreaterThanOrEqual(44)
+  await link.click()
+  await expect(page).toHaveURL(/\/circuits$/)
 })
 
 test('search: combobox keys, groups and navigation to a canonical page', async ({ page }) => {
@@ -187,7 +201,7 @@ test('drawer: slim summary with a working full-profile link', async ({ page }) =
 
 test.describe('375px', () => {
   test.use({ viewport: { width: 375, height: 812 } })
-  for (const path of [HUB, `${HUB}?view=constructors`, `${HUB}?view=circuits`, '/drivers/norris', '/constructors/mclaren']) {
+  for (const path of [HUB, `${HUB}?view=constructors`, `${HUB}?season=1988`, '/drivers/norris', '/constructors/mclaren']) {
     test(`no horizontal scroll ${path}`, async ({ page }) => {
       await installMockApi(page, { standings: 'rich' })
       await page.goto(path)

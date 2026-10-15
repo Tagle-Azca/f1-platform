@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   parseHubParams, cleanHubParams, splitName, buildDriverCards, buildConstructorCards, matchFavorites,
-  describeCard, resultLine, groupSearchResults, flattenGroups, splitMatch,
+  describeCard, resultLine, buildFeaturedDriverCards, groupSearchResults, flattenGroups, splitMatch,
 } from './encyclopediaModel'
 
 const sp = (s) => new URLSearchParams(s)
@@ -11,10 +11,10 @@ describe('parseHubParams / cleanHubParams', () => {
     expect(parseHubParams(sp(''), { currentYear: 2026 })).toEqual({ view: 'drivers', season: null, dirty: false })
   })
   it('reads valid values', () => {
-    expect(parseHubParams(sp('view=circuits&season=2024'), { currentYear: 2026 })).toEqual({ view: 'circuits', season: 2024, dirty: false })
+    expect(parseHubParams(sp('view=constructors&season=1988'), { currentYear: 2026 })).toEqual({ view: 'constructors', season: 1988, dirty: false })
   })
   it('flags invalid values and the cleaned copy drops them', () => {
-    for (const q of ['view=nope', 'season=abc', 'season=1950', 'season=2099', 'season=20260', 'season=', 'view=DRIVERS']) {
+    for (const q of ['view=nope', 'view=circuits', 'season=abc', 'season=1949', 'season=2099', 'season=20260', 'season=', 'view=DRIVERS']) {
       const p = parseHubParams(sp(q), { currentYear: 2026 })
       expect(p.dirty).toBe(true)
       expect(cleanHubParams(sp(q), p).toString()).toBe('')
@@ -114,7 +114,7 @@ describe('matchFavorites', () => {
   it('pins nothing when absent, empty, or the wrong tab', () => {
     expect(matchFavorites(cards, { favoriteDriver: 'Nobody' }, 'drivers').pinned).toEqual([])
     expect(matchFavorites(cards, { favoriteDriver: '  ' }, 'drivers').pinned).toEqual([])
-    expect(matchFavorites(cards, { favoriteDriver: 'Cee' }, 'circuits')).toEqual({ pinned: [], rest: cards })
+    expect(matchFavorites(cards, { favoriteDriver: 'Cee' }, 'constructors')).toEqual({ pinned: [], rest: cards })
     expect(matchFavorites(null, null, 'drivers')).toEqual({ pinned: [], rest: [] })
     expect(matchFavorites(cards, { favoriteTeam: 5 }, 'constructors').pinned).toEqual([])
   })
@@ -131,8 +131,6 @@ describe('describeCard / resultLine', () => {
     expect(resultLine('drivers', { count: 22, season: 2026, roundsDone: 16, current: true })).toEqual({ head: '22 drivers', note: 'Order shows the standings after round 16.' })
     expect(resultLine('drivers', { count: 1, season: 2024 })).toEqual({ head: '1 driver', note: 'Order shows the final 2024 standings.' })
     expect(resultLine('constructors', { count: 11, season: 2026, current: true, roundsDone: 0 }).note).toBe('')
-    expect(resultLine('circuits', { count: 24, season: 2026 })).toEqual({ head: '24 circuits', note: '24 circuits on the 2026 calendar, in race order.' })
-    expect(resultLine('circuits', { count: 1, season: 2026 }).head).toBe('1 circuit')
   })
 })
 
@@ -178,5 +176,29 @@ describe('splitMatch', () => {
     expect(splitMatch('Ferrari', 'zz')).toEqual(['Ferrari', '', ''])
     expect(splitMatch('Ferrari', '')).toEqual(['Ferrari', '', ''])
     expect(splitMatch(null, 'x')).toEqual(['', '', ''])
+  })
+})
+
+describe('buildFeaturedDriverCards (seasons before the standings data)', () => {
+  const rows = [
+    { driverId: 'senna', givenName: 'Ayrton', familyName: 'Senna', constructorId: 'mclaren', constructorName: 'McLaren', permanentNumber: '12', code: 'SEN', photoUrl: 'https://x.test/s.png' },
+    { driverId: 'alesi', givenName: 'Jean', familyName: 'Alesi', constructorId: 'ferrari', constructorName: 'Ferrari' },
+    { driverId: 'alesi', givenName: 'Dup', familyName: 'Alesi' },
+    { driverId: '../x', givenName: 'Bad', familyName: 'Id' },
+    null,
+  ]
+  it('orders by surname, drops bad and duplicate ids, and carries no standings data', () => {
+    const cards = buildFeaturedDriverCards(rows)
+    expect(cards.map((c) => c.id)).toEqual(['alesi', 'senna'])
+    expect(cards[1]).toMatchObject({ name: 'Ayrton Senna', given: 'Ayrton', surname: 'Senna', team: 'McLaren', number: '12', code: 'SEN', position: null, points: null, wins: null })
+    expect(cards[0].code).toBe('ALE')
+    expect(cards[0].photoUrl).toBeNull()
+  })
+  it('returns an empty list for a non-array payload', () => {
+    expect(buildFeaturedDriverCards(null)).toEqual([])
+    expect(buildFeaturedDriverCards({})).toEqual([])
+  })
+  it('describeCard has no standings sentence without a position', () => {
+    expect(describeCard({ position: null, points: null, wins: null, team: 'McLaren' }, { kind: 'driver', season: 1991 })).toBe('1991 season. McLaren.')
   })
 })

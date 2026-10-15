@@ -1,54 +1,41 @@
-import StatCard from '../ui/StatCard'
-import { ctorColor } from '../../utils/teamColors'
+import { statCards } from './resultsModel'
+import { teamMark, BASE } from '../../styles/vizPalette'
 
-export default function RaceStatCards({ results, qualifyingResults, raceSnapshot, isMobile }) {
-  const winner     = results.find(r => r.position === '1') || results[0]
-  const pole       = qualifyingResults[0] ?? results.find(r => r.grid === '1')
-  const fastestLap = results.find(r => r.FastestLap?.rank != null && String(r.FastestLap.rank) === '1')
-  const dnfCount   = results.filter(r => r.status !== 'Finished' && !r.status?.startsWith('+')).length
-  const totalLaps  = winner?.laps ? `${winner.laps} laps` : null
-
-  // Fallback to live timing snapshot when Jolpica results aren't published yet
-  const snapWinner = !winner && raceSnapshot?.classification?.[0]
-  const snapLaps   = !winner && raceSnapshot?.totalLaps ? `${raceSnapshot.totalLaps} laps` : null
-
-  const winnerValue = winner
-    ? `${winner.Driver.givenName} ${winner.Driver.familyName}`
-    : snapWinner ? (snapWinner.fullName || snapWinner.acronym) : '—'
-  const winnerSub   = winner?.Constructor?.name || snapWinner?.teamName
-  const winnerColor = winner
-    ? ctorColor(winner.Constructor?.constructorId)
-    : snapWinner?.teamColor ? `#${snapWinner.teamColor}` : undefined
-
+function Cell({ label, value, sub, color }) {
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-      gap: '0.75rem',
-      marginBottom: '1.25rem',
-    }}>
-      <StatCard
-        label="Winner"
-        value={winnerValue}
-        sub={winnerValue !== '—' ? (winnerSub || (snapWinner ? 'Live Timing' : undefined)) : undefined}
-        accent={winnerColor}
-      />
-      <StatCard
-        label="Pole Position"
-        value={pole ? `${pole.Driver.givenName} ${pole.Driver.familyName}` : '—'}
-        sub={pole?.Constructor?.name}
-        accent={pole ? ctorColor(pole.Constructor?.constructorId) : undefined}
-      />
-      <StatCard
-        label="Fastest Lap"
-        value={fastestLap ? `${fastestLap.Driver.givenName} ${fastestLap.Driver.familyName}` : '—'}
-        sub={fastestLap?.FastestLap?.Time?.time}
-      />
-      <StatCard
-        label={dnfCount > 0 ? 'DNFs' : 'Race Laps'}
-        value={dnfCount > 0 ? String(dnfCount) : (totalLaps || snapLaps || '—')}
-        sub={dnfCount > 0 ? (totalLaps || `${results.length} classified`) : (results.length ? `${results.length} classified` : (snapWinner ? 'Live Timing' : undefined))}
-      />
+    <div className="flex min-w-0 flex-col bg-bg px-pw-4 py-pw-3">
+      <dt className="order-2 mt-pw-1 text-xs text-ink-3">{label}</dt>
+      <dd className="order-1 m-0 min-w-0">
+        <span className="block truncate font-display text-base font-semibold text-ink">{value}</span>
+        {sub && (
+          <span className="mt-pw-1 flex min-w-0 items-center gap-pw-2 text-xs text-ink-2">
+            {color && (
+              <svg aria-hidden="true" focusable="false" width="3" height="12" className="shrink-0"><rect width="3" height="12" rx="1.5" fill={teamMark(color, BASE.bg)} /></svg>
+            )}
+            <span className="num truncate">{sub}</span>
+          </span>
+        )}
+      </dd>
     </div>
+  )
+}
+
+/** Winner, pole, fastest lap and DNFs of the race: two columns on a phone, four from md. Missing facts show a dash. */
+export default function RaceStatCards({ results, qualifyingResults, raceSnapshot }) {
+  const c = statCards(results, qualifyingResults, raceSnapshot)
+  const dnf = c.dnfs.count > 0
+  return (
+    <section className="section" aria-label="Race facts">
+      <dl className="m-0 grid grid-cols-2 gap-px bg-edge-soft md:grid-cols-4" data-stat-cards>
+        <Cell label="Winner" value={c.winner?.value || '-'} sub={c.winner?.sub} color={c.winner?.color} />
+        <Cell label="Pole position" value={c.pole?.value || '-'} sub={c.pole?.sub} color={c.pole?.color} />
+        <Cell label="Fastest lap" value={c.fastest?.value || '-'} sub={c.fastest?.sub} color={c.fastest?.color} />
+        <Cell
+          label={dnf ? 'Did not finish' : 'Race laps'}
+          value={dnf ? String(c.dnfs.count) : (c.dnfs.laps || '-')}
+          sub={dnf ? (c.dnfs.laps || `${c.dnfs.classified} classified`) : (c.dnfs.classified ? `${c.dnfs.classified} classified` : '')}
+        />
+      </dl>
+    </section>
   )
 }

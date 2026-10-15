@@ -2,65 +2,72 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ReferenceArea, ResponsiveContainer,
 } from 'recharts'
-import Panel from '../ui/Panel'
-import EmptyState from '../ui/EmptyState'
+import { AXIS_TICK_NUM, AXIS_LINE, GRID, animationProps } from '../../styles/chartTheme'
+import { useReducedMotion } from '../../styles/motion'
+import { formatLapTime } from './paceModel'
 
-function formatTime(secs) {
-  if (!secs || secs <= 0) return '—'
-  const m = Math.floor(secs / 60)
-  const s = (secs % 60).toFixed(3).padStart(6, '0')
-  return `${m}:${s}`
+const BOX = 'min-w-40 rounded-md border border-edge bg-raise px-pw-3 py-pw-2 shadow-lg'
+
+function Swatch({ color, dashed }) {
+  return (
+    <svg aria-hidden="true" width="18" height="4" className="shrink-0">
+      <line x1="0" y1="2" x2="18" y2="2" stroke={color} strokeWidth="2" strokeDasharray={dashed ? '6 3' : undefined} />
+    </svg>
+  )
 }
 
-function PaceTooltip({ active, payload, label }) {
+function PaceTooltip({ active, payload, label, meta }) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: 'rgba(8,8,8,0.97)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.65rem 0.9rem', minWidth: 160 }}>
-      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 6 }}>Lap {label}</p>
-      {payload.map(p => (
-        <div key={p.dataKey} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 3 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
-          <span style={{ fontSize: '0.75rem', color: '#fff', flex: 1 }}>{p.name}</span>
-          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: p.color, fontVariantNumeric: 'tabular-nums' }}>{formatTime(p.value)}</span>
-        </div>
-      ))}
+    <div className={BOX}>
+      <p className="mb-pw-1 text-xs font-semibold text-ink">Lap {label}</p>
+      <div className="flex flex-col gap-pw-1">
+        {payload.map(p => {
+          const m = meta.get(p.dataKey)
+          return (
+            <div key={p.dataKey} className="flex items-center gap-pw-2 text-xs">
+              <Swatch color={m?.color ?? p.color} dashed={m?.dashed} />
+              <span className="flex-1 text-ink-2">{p.name}</span>
+              <span className="num text-ink">{formatLapTime(p.value)}</span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
-export default function PaceChart({ chartData, driverMeta, pitLines, scPeriods, loading, isMobile }) {
+/** Lap-time lines for the selected drivers: fastest at the top, pit laps dashed, safety-car runs shaded. */
+export default function PaceChart({ chartData, driverMeta, pitLines, scPeriods, isMobile, animationId }) {
+  const reduced = useReducedMotion()
+  const meta = new Map(driverMeta.map(d => [d.driverId, d]))
   return (
-    <Panel padding="none" className="card" style={{ padding: '1.25rem 1rem 1rem', overflow: isMobile ? 'auto' : 'visible' }}>
-      {loading ? (
-        <EmptyState type="loading" message="Loading pace data..." height={420} />
-      ) : !chartData.length ? (
-        <EmptyState type="empty" message="Select a race and drivers to compare" height={420} />
-      ) : (
-        <>
-          <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginBottom: '0.5rem', letterSpacing: '0.06em' }}>
-            DASHED LINES = pit stop laps · anomalous laps (SC/pit in-out) hidden for clarity
-          </div>
-          <div style={{ minWidth: isMobile ? 520 : 0 }}>
-            <ResponsiveContainer width="100%" height={isMobile ? 320 : 420}>
-              <LineChart data={chartData} margin={{ top: 5, right: 16, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                <XAxis dataKey="lap" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }} tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,0.08)' }} label={{ value: 'Lap', position: 'insideBottomRight', offset: -5, fill: 'rgba(255,255,255,0.3)', fontSize: 10 }} />
-                <YAxis reversed tickFormatter={formatTime} tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }} tickLine={false} axisLine={false} width={52} domain={['auto', 'auto']} />
-                <Tooltip content={<PaceTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} wrapperStyle={{ zIndex: 9999 }} />
-                {scPeriods.map(({ x1, x2 }) => (
-                  <ReferenceArea key={`sc-${x1}`} x1={x1} x2={x2} fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.3)" strokeWidth={1} label={{ value: 'SC/VSC', position: 'insideTop', fill: 'rgba(245,158,11,0.75)', fontSize: 9, fontWeight: 700 }} />
-                ))}
-                {pitLines.map(lap => (
-                  <ReferenceLine key={`pit-${lap}`} x={lap} stroke="rgba(255,255,255,0.12)" strokeDasharray="4 3" label={{ value: 'PIT', position: 'top', fill: 'rgba(255,255,255,0.2)', fontSize: 8 }} />
-                ))}
-                {driverMeta.map(d => (
-                  <Line key={d.driverId} type="monotone" dataKey={d.driverId} name={d.acronym} stroke={d.color} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: d.color }} connectNulls isAnimationActive={false} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </>
-      )}
-    </Panel>
+    <div role="img" aria-label={`Lap times for ${driverMeta.map(d => d.acronym).join(', ')}, laps 1 to ${chartData.length}. The summary above lists best lap and median.`}>
+      <ResponsiveContainer width="100%" height={isMobile ? 280 : 380}>
+        <LineChart data={chartData} margin={{ top: 16, right: 8, left: 0, bottom: 4 }}>
+          <CartesianGrid {...GRID} />
+          <XAxis dataKey="lap" tick={AXIS_TICK_NUM} tickLine={false} axisLine={AXIS_LINE} minTickGap={12} />
+          <YAxis reversed tickFormatter={formatLapTime} tick={AXIS_TICK_NUM} tickLine={false} axisLine={false} width={64} domain={['auto', 'auto']} />
+          <Tooltip content={<PaceTooltip meta={meta} />} cursor={{ stroke: 'var(--viz-baseline)' }} />
+          {scPeriods.map(({ x1, x2 }) => (
+            <ReferenceArea
+              key={`sc-${x1}`} x1={x1} x2={x2} fill="var(--viz-flash-neutral)" fillOpacity={1} stroke="none"
+              label={{ value: 'Safety car', position: 'insideTop', fill: 'var(--pw-ink-2)', fontSize: 11 }}
+            />
+          ))}
+          {pitLines.map(lap => (
+            <ReferenceLine key={`pit-${lap}`} x={lap} stroke="var(--viz-now)" strokeDasharray="4 3" strokeOpacity={0.5} />
+          ))}
+          {driverMeta.map(d => (
+            <Line
+              key={d.driverId} type="monotone" dataKey={d.driverId} name={d.acronym}
+              stroke={d.color} strokeWidth={2} strokeDasharray={d.dashed ? '6 3' : undefined}
+              dot={false} activeDot={{ r: 4, strokeWidth: 0, fill: d.color }} connectNulls
+              {...animationProps(reduced, `${animationId}-${d.driverId}`)}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   )
 }

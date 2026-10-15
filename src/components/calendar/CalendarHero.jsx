@@ -92,7 +92,7 @@ export default function CalendarHero({ hero, season, tz, now }) {
               </ul>
             </>
           )}
-          <Link to="/next-race" className={`${CTA} mt-pw-4`}>Open race weekend</Link>
+          {resultsPath(season, race.round) && <Link to={resultsPath(season, race.round)} className={`${CTA} mt-pw-4`}>Open race weekend</Link>}
         </div>
       </div>
     </motion.section>

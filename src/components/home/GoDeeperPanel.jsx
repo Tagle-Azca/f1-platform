@@ -2,10 +2,10 @@ import { Link } from 'react-router-dom'
 import { Activity, Gauge, CircleDot, Network, ChevronRight } from 'lucide-react'
 
 const LINKS = [
-  { to: '/telemetry',     title: 'Telemetry',      note: 'Speed, throttle and brake traces', icon: Activity },
-  { to: '/race-pace',     title: 'Race pace',      note: 'Stint averages and degradation',   icon: Gauge },
-  { to: '/tire-strategy', title: 'Tire strategy',  note: 'Compound plans across the grid',   icon: CircleDot },
-  { to: '/graph',         title: 'Graph explorer', note: 'Drivers and teams as a network',   icon: Network },
+  { to: '/analysis?view=pace',      title: 'Race pace',       note: 'Lap times and position changes',   icon: Gauge },
+  { to: '/analysis?view=tyres',     title: 'Tyre strategy',   note: 'Compound plans across the grid',   icon: CircleDot },
+  { to: '/analysis?view=telemetry', title: 'Telemetry',       note: 'Compare two drivers lap by lap',   icon: Activity },
+  { to: '/teammates?view=network',  title: 'Driver network',  note: 'Teams and teammates as a network', icon: Network },
 ]
 
 /** One hairline list; two columns from md (single column below 768px). */

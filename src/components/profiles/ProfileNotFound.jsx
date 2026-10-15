@@ -34,7 +34,7 @@ export default function ProfileNotFound({ type = 'driver', id, from }) {
         We couldn&apos;t find that {c.what} in Pitwall data for 2022–2026.
         {isValidEntityId(id) && <> The id was <span className="num [overflow-wrap:anywhere]">{id}</span>.</>}
       </p>
-      <Link to={`/encyclopedia?view=${c.tab}`} className={cn(buttonVariants({ size: 'lg' }), 'mt-pw-4 no-underline')}>{c.cta}</Link>
+      <Link to={`/drivers?view=${c.tab}`} className={cn(buttonVariants({ size: 'lg' }), 'mt-pw-4 no-underline')}>{c.cta}</Link>
     </PageWrapper>
   )
 }

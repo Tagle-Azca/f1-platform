@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import CircuitLink from '../circuits/CircuitLink'
 import CalendarFlag from './CalendarFlag'
 import StatusChip from './StatusChip'
@@ -28,11 +28,11 @@ export default function RoundRow({ row, season, tz, now, current, defaultOpen = 
   const winner = status === 'done' ? winnerName(race.winner) : ''
   const expandable = current && hasSchedule(race)
   const emphasis = status === 'next' || status === 'live'
-  const to = status === 'done' || race.hasResults ? resultsPath(season, race.round) : emphasis && current ? '/next-race' : null
+  const to = resultsPath(season, race.round)
 
   const nameCls = status === 'done' ? 'text-ink-2' : 'text-ink'
   const nameNode = to
-    ? <Link id={nameId} to={to} className={`${LINK} ${nameCls}`}><span className="truncate">{name}</span></Link>
+    ? <Link id={nameId} to={to} className={`${LINK} ${nameCls}`}><span className="truncate">{name}</span><ChevronRight aria-hidden="true" className="ml-pw-1 hidden size-4 shrink-0 text-ink-3 md:block" /></Link>
     : <span id={nameId} className={`inline-flex min-h-11 items-center font-display text-base font-semibold leading-5 ${nameCls}`}><span className="truncate">{name}</span></span>
 
   return (

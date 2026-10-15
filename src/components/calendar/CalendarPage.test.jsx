@@ -48,7 +48,7 @@ describe('CalendarPage current season', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Mexico City Grand Prix' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Season calendar' })).toBeInTheDocument()
     expect(screen.getByText('Round 3 of 4, Mexico City')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open race weekend' })).toHaveAttribute('href', '/next-race')
+    expect(screen.getByRole('link', { name: 'Open race weekend' })).toHaveAttribute('href', '/races/2026/3')
     expect(screen.getByLabelText('Season')).toBeInTheDocument()
     expect(screen.getByLabelText('Times in')).toBeInTheDocument()
     const months = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
@@ -66,13 +66,13 @@ describe('CalendarPage current season', () => {
     expect(document.getElementById('round-2')).not.toHaveTextContent('Sprint')
   })
 
-  it('links done rounds to results, the next round to /next-race, later rounds nowhere (DoD-8)', async () => {
+  it('links every round to its race weekend page (DoD-8)', async () => {
     mount()
     await screen.findByRole('heading', { level: 2, name: 'Mexico City Grand Prix' })
     expect(within(document.getElementById('round-1')).getByRole('link', { name: 'Australian Grand Prix' })).toHaveAttribute('href', '/races/2026/1')
-    expect(within(document.getElementById('round-3')).getByRole('link', { name: 'Mexico City Grand Prix' })).toHaveAttribute('href', '/next-race')
+    expect(within(document.getElementById('round-3')).getByRole('link', { name: 'Mexico City Grand Prix' })).toHaveAttribute('href', '/races/2026/3')
     expect(within(document.getElementById('round-3')).getByRole('link', { name: 'Autodromo Hermanos Rodriguez' })).toHaveAttribute('href', '/circuits/rodriguez')
-    expect(within(document.getElementById('round-4')).queryByRole('link', { name: 'Brazilian Grand Prix' })).toBeNull()
+    expect(within(document.getElementById('round-4')).getByRole('link', { name: 'Brazilian Grand Prix' })).toHaveAttribute('href', '/races/2026/4')
     expect(within(document.getElementById('round-4')).queryByRole('button')).toBeNull()
   })
 

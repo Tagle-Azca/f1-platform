@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { dashboard, seasonStandings, ctorStandings } from './fixtures'
 
@@ -39,20 +39,35 @@ beforeEach(() => {
 const at = (path, ui) => render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>)
 
 describe('NavList / Sidebar', () => {
-  it('renders 4 groups, 14 links, aria-current on the active one and live text', () => {
+  it('renders 3 groups, 8 links, aria-current on the active one and live text (DoD-1)', () => {
     liveState.available = true
     at('/live', <NavList />)
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4)
-    expect(screen.getAllByRole('link')).toHaveLength(14)
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Race weekend', 'Championship', 'Analysis'])
+    expect(screen.getAllByRole('link').map((l) => l.querySelector('.truncate').textContent)).toEqual([
+      'Dashboard', 'Live timing', 'Calendar', 'Circuits', 'Standings', 'Drivers & teams', 'Rivalries', 'Race analysis',
+    ])
     expect(screen.getByRole('link', { name: /Live timing/ })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: /Dashboard/ })).not.toHaveAttribute('aria-current')
   })
   it('clicking the active link scrolls to top and calls onNavigate', () => {
     const onNavigate = vi.fn()
-    at('/telemetry', <NavList onNavigate={onNavigate} />)
-    fireEvent.click(screen.getByRole('link', { name: /Telemetry/ }))
+    at('/analysis', <NavList onNavigate={onNavigate} />)
+    fireEvent.click(screen.getByRole('link', { name: /Race analysis/ }))
     expect(onNavigate).toHaveBeenCalled()
     expect(window.scrollTo).toHaveBeenCalled()
+  })
+  it('a race weekend page highlights Calendar; team and driver profiles highlight Drivers & teams', () => {
+    const { unmount } = at('/races/2026/3', <NavList />)
+    expect(screen.getByRole('link', { name: /Calendar/ })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getAllByRole('link').filter((l) => l.getAttribute('aria-current') === 'page')).toHaveLength(1)
+    unmount()
+    for (const path of ['/drivers/norris', '/constructors/mclaren', '/drivers?view=constructors']) {
+      const view = at(path.split('?')[0], <NavList />)
+      expect(screen.getByRole('link', { name: /Drivers & teams/ })).toHaveAttribute('aria-current', 'page')
+      view.unmount()
+    }
+    at('/circuits/monza', <NavList />)
+    expect(screen.getByRole('link', { name: /Circuits/ })).toHaveAttribute('aria-current', 'page')
   })
   it('Sidebar has a Primary nav and sign-in', () => {
     at('/', <Sidebar />)
@@ -63,8 +78,9 @@ describe('NavList / Sidebar', () => {
 
 describe('MobileNav', () => {
   it('shows 4 tabs plus More; More opens a dialog that closes on Escape and the close button', async () => {
-    at('/next-race', <><MobileNav /><main id="main" tabIndex={-1} /></>)
-    expect(screen.getByRole('link', { name: /Next race/ })).toHaveAttribute('aria-current', 'page')
+    at('/races/2026/13', <><MobileNav /><main id="main" tabIndex={-1} /></>)
+    expect(within(screen.getByRole('navigation', { name: 'Mobile' })).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/', '/live', '/calendar', '/standings'])
+    expect(screen.getByRole('link', { name: /Calendar/ })).toHaveAttribute('aria-current', 'page')
     const more = screen.getByRole('button', { name: 'More' })
     fireEvent.click(more)
     expect(await screen.findByRole('dialog', { name: 'Main menu' })).toBeInTheDocument()

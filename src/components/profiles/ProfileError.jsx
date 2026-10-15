@@ -15,7 +15,7 @@ export default function ProfileError({ type = 'driver', from, onRetry }) {
         <p className="mt-pw-2 text-sm text-ink-2">Check your connection and try again.</p>
         <div className="mt-pw-4 flex flex-wrap items-center gap-pw-3">
           <button type="button" onClick={onRetry} className={cn(buttonVariants({ size: 'lg' }))}>Try again</button>
-          <Link to={`/encyclopedia?view=${type === 'constructor' ? 'constructors' : 'drivers'}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-steel no-underline hover:text-steel-hi">Back to the encyclopedia</Link>
+          <Link to={`/drivers?view=${type === 'constructor' ? 'constructors' : 'drivers'}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-steel no-underline hover:text-steel-hi">Back to Drivers &amp; teams</Link>
         </div>
       </div>
     </PageWrapper>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { features, isFeatureOn } from './features'
-import { NAV_GROUPS, getVisibleGroups, getMobilePrimaryItems } from './navConfig'
+import { NAV_GROUPS, getVisibleGroups, getMobilePrimaryItems, isItemActive } from './navConfig'
 import { WIDGET_REGISTRY, getDashboardWidgets } from '../components/dashboard/widgetRegistry'
 
 describe('feature flags (DoD-12)', () => {
@@ -18,9 +18,24 @@ describe('feature flags (DoD-12)', () => {
 })
 
 describe('navConfig', () => {
-  it('keeps 4 groups and all 14 routes visible with the current flags', () => {
-    expect(getVisibleGroups()).toHaveLength(4)
-    expect(getVisibleGroups().flatMap(g => g.items)).toHaveLength(14)
+  it('has 3 groups and 8 destinations in the agreed order with the current flags (DoD-1)', () => {
+    expect(getVisibleGroups()).toHaveLength(3)
+    expect(getVisibleGroups().map(g => g.items.map(i => i.label))).toEqual([
+      ['Dashboard', 'Live timing', 'Calendar', 'Circuits'],
+      ['Standings', 'Drivers & teams', 'Rivalries'],
+      ['Race analysis'],
+    ])
+    expect(getVisibleGroups().flatMap(g => g.items).map(i => i.path)).toEqual(['/', '/live', '/calendar', '/circuits', '/standings', '/drivers', '/teammates', '/analysis'])
+  })
+  it('isItemActive honours activePrefixes (weekend pages highlight Calendar, constructor profiles highlight Drivers & teams)', () => {
+    const item = (path) => NAV_GROUPS.flatMap(g => g.items).find(i => i.path === path)
+    expect(isItemActive(item('/calendar'), '/races/2026/3')).toBe(true)
+    expect(isItemActive(item('/calendar'), '/calendar')).toBe(true)
+    expect(isItemActive(item('/drivers'), '/constructors/mclaren')).toBe(true)
+    expect(isItemActive(item('/drivers'), '/drivers/norris')).toBe(true)
+    expect(isItemActive(item('/'), '/live')).toBe(false)
+    expect(isItemActive(item('/'), '/')).toBe(true)
+    expect(isItemActive(item('/circuits'), '/races/2026/3')).toBe(false)
   })
   it('does not render items whose featureFlag is off, and drops empty groups', () => {
     const groups = [
@@ -32,8 +47,8 @@ describe('navConfig', () => {
     expect(visible[0].items.map(i => i.path)).toEqual(['/a'])
     expect(getVisibleGroups(groups, { ...features, social: true, deepAnalysis: true }).flatMap(g => g.items)).toHaveLength(3)
   })
-  it('exposes the 4 mobile primary tabs in order', () => {
-    expect(getMobilePrimaryItems().map(i => i.path)).toEqual(['/', '/live', '/next-race', '/standings'])
+  it('exposes the 4 mobile primary tabs in order (DoD-1)', () => {
+    expect(getMobilePrimaryItems().map(i => i.path)).toEqual(['/', '/live', '/calendar', '/standings'])
   })
   it('every item has an icon and a path starting with /', () => {
     for (const g of NAV_GROUPS) for (const i of g.items) { expect(i.icon).toBeTruthy(); expect(i.path.startsWith('/')).toBe(true) }

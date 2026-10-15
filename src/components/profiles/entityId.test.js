@@ -11,19 +11,19 @@ describe('isValidEntityId', () => {
 })
 
 describe('backTarget', () => {
-  it('follows only encyclopedia and standings URLs', () => {
-    expect(backTarget('/encyclopedia?view=circuits&season=2025', 'drivers')).toEqual({ to: '/encyclopedia?view=circuits&season=2025', label: 'Encyclopedia' })
+  it('follows only /drivers and standings URLs', () => {
+    expect(backTarget('/drivers?view=constructors&season=2025', 'drivers')).toEqual({ to: '/drivers?view=constructors&season=2025', label: 'Drivers & teams' })
     expect(backTarget('/standings?view=constructors', 'drivers')).toEqual({ to: '/standings?view=constructors', label: 'Standings' })
-    expect(backTarget('/encyclopedia', 'drivers').to).toBe('/encyclopedia')
+    expect(backTarget('/drivers', 'drivers').to).toBe('/drivers')
   })
   it('drops anything else', () => {
-    for (const f of ['https://evil.test/', '//evil.test', '/encyclopedia/../x', '/encyclopediaX', '/admin', 'javascript:alert(1)', '/encyclopedia?x=<', 7, null, undefined, {}]) {
-      expect(backTarget(f, 'constructors')).toEqual({ to: '/encyclopedia?view=constructors', label: 'Encyclopedia' })
+    for (const f of ['https://evil.test/', '//evil.test', '/drivers/../x', '/driversX', '/encyclopedia', '/admin', 'javascript:alert(1)', '/drivers?x=<', 7, null, undefined, {}]) {
+      expect(backTarget(f, 'constructors')).toEqual({ to: '/drivers?view=constructors', label: 'Drivers & teams' })
     }
   })
   it('defaults an unknown type to drivers', () => {
-    expect(backTarget(undefined, 'weird').to).toBe('/encyclopedia?view=drivers')
-    expect(backTarget(undefined, 'circuits').to).toBe('/encyclopedia?view=circuits')
+    expect(backTarget(undefined, 'weird').to).toBe('/drivers?view=drivers')
+    expect(backTarget(undefined, 'circuits').to).toBe('/drivers?view=drivers')
   })
 })
 

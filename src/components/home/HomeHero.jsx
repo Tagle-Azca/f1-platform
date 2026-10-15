@@ -21,6 +21,7 @@ import { cleanCoords } from '../viz/trackCoords'
 import { buttonVariants } from '../ui/button-variants'
 import { cn } from '@/lib/utils'
 import { safeString } from '../../utils/safeText'
+import { weekendPathFor } from '../../utils/weekendPath'
 import { heroChildProps, useReducedMotion, DUR } from '../../styles/motion'
 
 /**
@@ -47,6 +48,7 @@ export default function HomeHero({ race, loading, error, onRetry }) {
   const tz = getInitialTZ()
   const now = useNow(60000)
   const isLg = useMediaQuery('(min-width: 1024px)')
+  const weekendTo = weekendPathFor(race)
   const featured = race ? getFeaturedSession(race.schedule, race.currentSession) : null
   const ladder   = race ? buildSessionList(race.schedule, race.currentSession) : []
   const countdown = useCountdown(featured?.dateTime ?? null)
@@ -73,7 +75,7 @@ export default function HomeHero({ race, loading, error, onRetry }) {
       <Panel as="section" aria-labelledby="hero-title">
         <h2 id="hero-title" className="text-heading mb-pw-2 text-ink">Next session</h2>
         <p className="text-base text-ink-2 mb-pw-3">No upcoming session.</p>
-        <Link to="/races" className="inline-flex min-h-11 items-center text-steel font-semibold hover:text-steel-hi">Browse races</Link>
+        <Link to="/calendar" className="inline-flex min-h-11 items-center text-steel font-semibold hover:text-steel-hi">Browse races</Link>
       </Panel>
     )
   }
@@ -119,10 +121,10 @@ export default function HomeHero({ race, loading, error, onRetry }) {
           {liveAvailable ? (
             <>
               <Link to="/live" className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto no-underline')}>Open live timing</Link>
-              <Link to="/next-race" className={cn(buttonVariants({ variant: 'secondary', size: 'lg' }), 'w-full sm:w-auto no-underline text-ink')}>Weekend schedule</Link>
+              <Link to={weekendTo} className={cn(buttonVariants({ variant: 'secondary', size: 'lg' }), 'w-full sm:w-auto no-underline text-ink')}>Weekend schedule</Link>
             </>
           ) : (
-            <Link to="/next-race" className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto no-underline')}>Weekend schedule</Link>
+            <Link to={weekendTo} className={cn(buttonVariants({ size: 'lg' }), 'w-full sm:w-auto no-underline')}>Weekend schedule</Link>
           )}
         </motion.div>
       </div>

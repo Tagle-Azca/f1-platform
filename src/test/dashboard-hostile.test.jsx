@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { dashboard } from './fixtures'
 
 const api = vi.hoisted(() => ({
@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   statsApi: { getSeasonStandings: vi.fn(), getConstructorStandings: vi.fn(), circuitHistory: vi.fn() },
   telemetryApi: { getTimingTower: vi.fn() },
   circuitsApi: { getById: vi.fn() },
+  racesApi: { getByRound: vi.fn(), getBySeason: vi.fn(), getSessionSnapshot: vi.fn() },
 }))
 vi.mock('../services/api', () => api)
 vi.mock('../contexts/LiveStatusContext', () => ({ useLiveStatus: () => ({ available: false }) }))
@@ -19,7 +20,9 @@ vi.mock('../components/circuit/CircuitSilhouette', async (orig) => ({ ...(await 
 import { buildSessionList, getFeaturedSession } from '../utils/sessionSchedule'
 import { normalizeDashboard, normalizeNextRace, normalizeSchedule } from '../utils/normalizeDashboard'
 import HomePage from '../pages/HomePage'
-import NextRacePage from '../pages/NextRacePage'
+import RaceWeekendPage from '../pages/RaceWeekendPage'
+import NextRaceRedirect from '../components/race/NextRaceRedirect'
+import { resetRaceWeekendCache } from '../hooks/useRaceWeekend'
 import LivePage from '../pages/LivePage'
 import { RaceProvider } from '../contexts/RaceContext'
 import TitleFightCard from '../components/home/TitleFightCard'
@@ -54,6 +57,8 @@ const hostileVariants = () => {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  resetRaceWeekendCache()
+  api.racesApi.getBySeason.mockResolvedValue([])
   api.statsApi.getSeasonStandings.mockResolvedValue(null)
   api.statsApi.getConstructorStandings.mockResolvedValue(null)
   api.statsApi.circuitHistory.mockResolvedValue(null)
@@ -98,16 +103,37 @@ describe('S10: pages survive every hostile /api/dashboard shape', () => {
       unmount()
     }
   })
-  it('NextRacePage survives every hostile shape', async () => {
+  it('RaceWeekendPage survives every hostile race and dashboard shape', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     for (const d of hostileVariants()) {
       api.dashboardApi.get.mockResolvedValue(d)
-      const { unmount, container } = at(<NextRacePage />)
+      api.racesApi.getByRound.mockResolvedValue({
+        season: '2026', round: '13', raceName: d.nextRace.raceName, schedule: d.nextRace.schedule,
+        Circuit: { circuitId: 'hungaroring', circuitName: d.nextRace.circuit, Location: { locality: d.nextRace.locality, country: d.nextRace.country } },
+      })
+      resetRaceWeekendCache()
+      const { unmount, container } = render(
+        <MemoryRouter initialEntries={['/races/2026/13']}><Routes><Route path="/races/:season/:round" element={<RaceWeekendPage />} /></Routes></MemoryRouter>,
+      )
       await screen.findByRole('heading', { level: 1 })
+      await screen.findByRole('navigation', { name: 'Race weekend navigation' })
       expect(container.textContent).not.toContain('[object Object]')
       unmount()
     }
     spy.mockRestore()
+  })
+  it('NextRaceRedirect survives every hostile dashboard shape (lands on a weekend or the calendar, never crashes)', async () => {
+    const Where = () => <output data-testid="where">{useLocation().pathname}</output>
+    for (const d of hostileVariants()) {
+      api.dashboardApi.get.mockResolvedValue(d)
+      resetRaceWeekendCache()
+      const { unmount } = render(
+        <MemoryRouter initialEntries={['/next-race']}><Routes><Route path="/next-race" element={<NextRaceRedirect />} /><Route path="*" element={<Where />} /></Routes></MemoryRouter>,
+      )
+      const where = await screen.findByTestId('where')
+      expect(where.textContent).toMatch(/^(\/calendar|\/races\/\d{1,4}\/\d{1,4})$/)
+      unmount()
+    }
   })
   it('LivePage empty state (NoLiveSession) survives hostile schedules via the shared race context', async () => {
     for (const d of hostileVariants().slice(0, 7)) {

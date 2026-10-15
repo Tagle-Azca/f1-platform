@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test'
 import { installMockApi } from './helpers/mockApi.js'
 
 test.use({ viewport: { width: 375, height: 812 } })
-const PAGES = ['/', '/live', '/next-race', '/standings', '/standings?view=constructors', '/circuits', '/circuits/monza', '/encyclopedia', '/drivers/norris', '/constructors/mclaren']
+const PAGES = ['/', '/live', '/races/2026/13', '/races/2025/1', '/calendar', '/standings', '/standings?view=constructors', '/circuits', '/circuits/monza', '/drivers', '/drivers?season=1988',
+  '/teammates?view=network&a=norris', '/analysis', '/analysis?view=tyres', '/analysis?view=telemetry', '/drivers/norris', '/constructors/mclaren']
 
 for (const path of PAGES) {
   test(`mobile layout ${path}`, async ({ page }) => {

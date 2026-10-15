@@ -8,8 +8,9 @@ import { useNow } from '../../hooks/useNow'
 /**
  * Weekend schedule section: a SessionTimeline plus per-day forecast (Open-Meteo daily data, keyed by date).
  * `weather` is null while loading or when the request failed; `weatherFailed` shows one quiet line.
+ * `bare` leaves out the section heading (the page wraps it in its own titled disclosure).
  */
-export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey, weather, weatherFailed = false, loading = false }) {
+export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey, weather, weatherFailed = false, loading = false, bare = false }) {
   const [tz, setTz] = useTimezone()
   const now = useNow(60000)
 
@@ -24,9 +25,9 @@ export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey
   }))
 
   return (
-    <section className="section" aria-labelledby="schedule-h">
-      <div className="flex flex-col gap-pw-2 md:flex-row md:items-center md:justify-between">
-        <h2 id="schedule-h" className="text-heading text-ink">Weekend schedule</h2>
+    <section className="section" aria-labelledby={bare ? undefined : 'schedule-h'} aria-label={bare ? 'Weekend schedule' : undefined}>
+      <div className={`flex flex-col gap-pw-2 md:flex-row md:items-center ${bare ? 'md:justify-end' : 'md:justify-between'}`}>
+        {!bare && <h2 id="schedule-h" className="text-heading text-ink">Weekend schedule</h2>}
         <label className="flex flex-col gap-1 text-xs text-ink-2 md:flex-row md:items-center md:gap-pw-2">
           Times in
           <select

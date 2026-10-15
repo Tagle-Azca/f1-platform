@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { dashboard, nextRace, live, tower, seasonStandings, ctorStandings } from './fixtures'
 
 const liveState = { available: false, sessionName: null }
@@ -10,6 +10,7 @@ vi.mock('../services/api', () => ({
   statsApi: { getSeasonStandings: vi.fn(), getConstructorStandings: vi.fn(), circuitHistory: vi.fn() },
   telemetryApi: { getTimingTower: vi.fn(), getCarPositions: vi.fn(), getCarData: vi.fn(), getWinnerStrategy: vi.fn(), getSafetyCar: vi.fn(), getAvailableRaces: vi.fn() },
   circuitsApi: { getById: vi.fn() },
+  racesApi: { getByRound: vi.fn(), getBySeason: vi.fn(), getSessionSnapshot: vi.fn() },
 }))
 vi.mock('../components/ui/DriverDrawer', () => ({ default: ({ driver }) => (driver ? <p>drawer:{driver.name}</p> : null) }))
 vi.mock('../components/ui/ConstructorDrawer', () => ({ default: ({ constructor: c }) => (c ? <p>cdrawer:{c.name}</p> : null) }))
@@ -17,10 +18,12 @@ vi.mock('../components/home/CircuitRadarCanvas', () => ({ default: () => <div da
 vi.mock('../components/circuits/CircuitDNAPanel', () => ({ default: () => <p>dna</p> }))
 vi.mock('../components/circuit/CircuitSilhouette', async (orig) => ({ ...(await orig()), default: () => <svg data-testid="sil" /> }))
 
-import { dashboardApi, statsApi, telemetryApi, circuitsApi } from '../services/api'
+import { dashboardApi, statsApi, telemetryApi, circuitsApi, racesApi } from '../services/api'
 import HomePage from '../pages/HomePage'
 import LivePage from '../pages/LivePage'
-import NextRacePage from '../pages/NextRacePage'
+import RaceWeekendPage from '../pages/RaceWeekendPage'
+import NextRaceRedirect from '../components/race/NextRaceRedirect'
+import { resetRaceWeekendCache } from '../hooks/useRaceWeekend'
 import { RaceProvider } from '../contexts/RaceContext'
 import LiveRacePanel from '../components/home/LiveRacePanel'
 import LiveConsoleDashboard from '../components/home/LiveConsoleDashboard'
@@ -50,6 +53,7 @@ const flush = () => act(async () => { await Promise.resolve() })
 
 beforeEach(() => {
   vi.clearAllMocks()
+  resetRaceWeekendCache()
   liveState.available = false; liveState.sessionName = null
   const mem = new Map()
   vi.stubGlobal('localStorage', { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) })
@@ -66,7 +70,16 @@ beforeEach(() => {
   telemetryApi.getSafetyCar.mockResolvedValue([{ type: 'SC' }, { type: 'VSC' }])
   telemetryApi.getAvailableRaces.mockResolvedValue([])
   circuitsApi.getById.mockResolvedValue({ circuitName: 'Hungaroring', Location: { lat: '47.5', long: '19.2' }, trackCoords: [[1, 2], [2, 3]] })
+  racesApi.getBySeason.mockResolvedValue([{ round: '12', raceName: 'Belgian Grand Prix' }, { round: '13', raceName: 'Hungarian Grand Prix' }, { round: '14', raceName: 'Dutch Grand Prix' }])
+  racesApi.getByRound.mockImplementation(async () => weekendRace())
 })
+
+// The Hungarian GP weekend as GET /api/races/:season/:round answers it (no results yet)
+const weekendRace = (over = {}) => {
+  const n = nextRace()
+  return { season: n.season, round: n.round, raceName: n.raceName, date: n.schedule.race.date, Circuit: { circuitId: n.circuitId, circuitName: 'Hungaroring', Location: { locality: n.locality, country: n.country, lat: '47.5', long: '19.2' } }, schedule: n.schedule, ...over }
+}
+const atWeekend = (url = '/races/2026/13') => render(<MemoryRouter initialEntries={[url]}><Routes><Route path="/races/:season/:round" element={<RaceWeekendPage />} /></Routes></MemoryRouter>)
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
 describe('HomePage', () => {
@@ -232,7 +245,7 @@ describe('LivePage', () => {
     at(<RaceProvider><LivePage /></RaceProvider>)
     expect(await screen.findByText('No live session')).toBeInTheDocument()
     expect(await screen.findByText(/Next: /)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /schedule/ })).toHaveAttribute('href', '/next-race')
+    expect(screen.getByRole('link', { name: /schedule/ })).toHaveAttribute('href', '/races/2026/13')
     expect(dashboardApi.getLive).not.toHaveBeenCalled()
   })
   it('live: renders tower, banner, polls every 2s and shows interruption banner on failure', async () => {
@@ -262,27 +275,98 @@ describe('LivePage', () => {
   })
 })
 
-describe('NextRacePage and panels', () => {
-  it('loading, then hero + schedule + disclosure sections', async () => {
-    at(<NextRacePage />)
+describe('RaceWeekendPage (preview) and panels', () => {
+  it('loading, then hero + schedule + circuit sections in preview order (DoD-4, DoD-16)', async () => {
+    atWeekend()
     expect(document.querySelector('[aria-busy="true"]')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { level: 1, name: 'Hungarian Grand Prix' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Calendar 2026' })).toHaveAttribute('href', '/calendar?season=2026')
     expect(screen.getByRole('heading', { name: 'Weekend schedule' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Track map' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Track map' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Load map' })).toBeInTheDocument()
     expect(document.querySelector('iframe')).toBeNull() // nothing third-party until the user asks
     expect(screen.getByText('Done')).toBeInTheDocument()
     expect(screen.getByText('Next')).toBeInTheDocument()
     expect(circuitsApi.getById).toHaveBeenCalledWith('hungaroring')
+    expect(statsApi.circuitHistory).toHaveBeenCalledWith('hungaroring')
+    expect(document.querySelector('[data-phase="preview"]')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist', { name: 'Session results' })).toBeNull()
   })
-  it('season complete and error states', async () => {
-    dashboardApi.get.mockResolvedValue({ nextRace: null })
-    const { unmount } = at(<NextRacePage />)
-    expect(await screen.findByText(/Season complete/)).toBeInTheDocument()
+  it('previous and next round links come from the season calendar and are absent at the ends', async () => {
+    atWeekend()
+    expect(await screen.findByRole('link', { name: 'Previous round, Belgian Grand Prix' })).toHaveAttribute('href', '/races/2026/12')
+    expect(screen.getByRole('link', { name: 'Next round, Dutch Grand Prix' })).toHaveAttribute('href', '/races/2026/14')
+  })
+  it('a round without a next or previous neighbour hides that link', async () => {
+    racesApi.getBySeason.mockResolvedValue([{ round: '13', raceName: 'Hungarian Grand Prix' }, { round: '14', raceName: 'Dutch Grand Prix' }])
+    atWeekend()
+    await screen.findByRole('link', { name: /Next round/ })
+    expect(screen.queryByRole('link', { name: /Previous round/ })).toBeNull()
+  })
+  it('invalid params and unknown rounds show the not-found state with a calendar link', async () => {
+    atWeekend('/races/abc/1')
+    expect(await screen.findByText('That race weekend does not exist')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to the calendar' })).toHaveAttribute('href', '/calendar')
+    expect(racesApi.getByRound).not.toHaveBeenCalled()
+  })
+  it('an API failure shows Retry and a calendar link; Retry recovers', async () => {
+    racesApi.getByRound.mockRejectedValueOnce(new Error('x'))
+    atWeekend()
+    expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load this race weekend")
+    expect(screen.getByRole('link', { name: 'Back to the calendar' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Hungarian Grand Prix' })).toBeInTheDocument()
+  })
+  it('a completed round leads with the result tables, then stat cards, schedule in a collapsed disclosure (DoD-16, DoD-17)', async () => {
+    const res = (pos, id, fam, team, grid) => ({ position: pos, grid, points: '25', status: 'Finished', Time: { time: '1:31:44.2' }, Driver: { driverId: id, givenName: 'G', familyName: fam, code: fam.slice(0, 3).toUpperCase() }, Constructor: { constructorId: team, name: team } })
+    racesApi.getByRound.mockResolvedValue(weekendRace({
+      Results: [res('1', 'a', 'Alpha', 'mclaren', '2'), res('2', 'b', 'Bravo', 'ferrari', '1')],
+      QualifyingResults: [{ position: '1', Q1: '1:20.0', Q2: '1:19.5', Q3: '1:19.1', Driver: { driverId: 'b', givenName: 'G', familyName: 'Bravo' }, Constructor: { constructorId: 'ferrari', name: 'Ferrari' } }],
+      SprintResults: [res('1', 'b', 'Bravo', 'ferrari', '1')],
+    }))
+    telemetryApi.getAvailableRaces.mockResolvedValue([{ raceId: '2026_9912', round: 13, raceName: 'Hungarian Grand Prix' }])
+    atWeekend()
+    expect(await screen.findByRole('tablist', { name: 'Session results' })).toBeInTheDocument()
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Race', 'Qualifying', 'Sprint', 'Practice'])
+    expect(screen.getByRole('tab', { name: 'Race' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'weekend-tab-race')
+    expect(screen.getByRole('list', { name: 'Race classification' }).querySelectorAll('li')).toHaveLength(2)
+    const facts = document.querySelector('[data-stat-cards]')
+    const panel = document.getElementById('weekend-results-panel')
+    expect(panel.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const toggle = screen.getByRole('button', { name: 'Weekend schedule' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(await screen.findByRole('link', { name: 'Analyse this race' })).toHaveAttribute('href', '/analysis?race=2026_9912')
+    fireEvent.click(screen.getByRole('tab', { name: 'Qualifying' }))
+    expect(screen.getByRole('list', { name: 'Qualifying classification' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Qualifying' })).toHaveAttribute('aria-selected', 'true')
+  })
+  it('live state: Live now and a live timing link', async () => {
+    const n = nextRace()
+    dashboardApi.get.mockResolvedValue({ ...dashboard(), nextRace: { ...n, currentSession: { isLive: true, key: 'fp2', label: 'Practice 2' } } })
+    atWeekend()
+    expect(await screen.findByText('Live now')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open live timing' })).toHaveAttribute('href', '/live')
+  })
+  it('/next-race resolves the next round and replaces the URL; no next race goes to the calendar (DoD-3)', async () => {
+    const Where = () => <output data-testid="where">{useLocation().pathname}</output>
+    const go = () => render(<MemoryRouter initialEntries={['/next-race']}><Routes><Route path="/next-race" element={<NextRaceRedirect />} /><Route path="*" element={<Where />} /></Routes></MemoryRouter>)
+    const { unmount } = go()
+    expect(await screen.findByTestId('where')).toHaveTextContent('/races/2026/13')
     unmount()
+    resetRaceWeekendCache()
+    dashboardApi.get.mockResolvedValue({ nextRace: null })
+    const second = go()
+    expect(await screen.findByTestId('where')).toHaveTextContent('/calendar')
+    second.unmount()
+    resetRaceWeekendCache()
     dashboardApi.get.mockRejectedValue(new Error('x'))
-    at(<NextRacePage />)
+    go()
     expect(await screen.findByRole('alert')).toHaveTextContent('Race data is unavailable')
+    expect(screen.getByRole('link', { name: 'Open the calendar' })).toHaveAttribute('href', '/calendar')
+    dashboardApi.get.mockResolvedValue(dashboard())
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByTestId('where')).toHaveTextContent('/races/2026/13')
   })
   it('live session shows Live now in the hero', () => {
     const r = nextRace(); const liveSess = { key: 'race', label: 'Race', isLive: true }

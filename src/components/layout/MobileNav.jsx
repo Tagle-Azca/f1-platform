@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
-import { getMobilePrimaryItems } from '../../config/navConfig'
+import { getMobilePrimaryItems, isItemActive } from '../../config/navConfig'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import NavList from './NavList'
 import GuestProfile from '../auth/GuestProfile'
@@ -101,13 +101,13 @@ export default function MobileNav() {
       >
         {items.map(item => {
           const Icon = item.icon
-          const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path)
+          const active = isItemActive(item, location.pathname)
           return (
-            <NavLink key={item.path} to={item.path} end={item.path === '/'} className={() => tabCls(active)}>
+            <Link key={item.path} to={item.path} aria-current={active ? 'page' : undefined} className={tabCls(active)}>
               {active && <span aria-hidden="true" className="absolute top-0 inset-x-4 h-0.5 rounded-pill bg-steel" />}
               <Icon aria-hidden="true" className="size-[22px]" />
               <span className="truncate max-w-full px-1">{item.label}</span>
-            </NavLink>
+            </Link>
           )
         })}
         <button

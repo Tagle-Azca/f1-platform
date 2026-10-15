@@ -6,13 +6,12 @@ import { codeFromName } from '../../utils/driverCode'
 import { CTOR_COLORS, ctorColor, ctorCode } from '../../utils/teamColors'
 import { isValidEntityId, initialsOf } from '../profiles/entityId'
 
-export const VIEWS = ['drivers', 'constructors', 'circuits']
+export const VIEWS = ['drivers', 'constructors']
 export const VIEW_OPTIONS = [
   { value: 'drivers', label: 'Drivers' },
   { value: 'constructors', label: 'Constructors' },
-  { value: 'circuits', label: 'Circuits' },
 ]
-export const FIRST_PLAUSIBLE_SEASON = 2000
+export const FIRST_PLAUSIBLE_SEASON = 1950
 
 const fin = (v) => (typeof v === 'number' && Number.isFinite(v) ? v + 0 : null) // "+ 0" turns -0 into 0
 const hasOwn = (o, k) => typeof k === 'string' && Object.hasOwn(o, k)
@@ -93,6 +92,36 @@ export function buildDriverCards(payload, photos) {
   return rank(cards)
 }
 
+/**
+ * Driver cards for a season without standings data (GET /api/drivers/featured?season=): ordered by surname, no
+ * position, points or wins. Rows without a valid id are dropped. `official: null` keeps the shape of buildDriverCards.
+ * @returns {{ id, name, given, surname, team, teamId, color, position: null, points: null, wins: null, number, code, photoUrl }[]}
+ */
+export function buildFeaturedDriverCards(list) {
+  const seen = new Set()
+  const cards = []
+  for (const e of asObjectArray(list)) {
+    const id = safeString(e.driverId)
+    if (!isValidEntityId(id) || seen.has(id)) continue
+    seen.add(id)
+    const given = safeString(e.givenName).trim()
+    const surname = safeString(e.familyName).trim()
+    const name = [given, surname].filter(Boolean).join(' ') || 'Unknown'
+    const teamId = safeString(e.constructorId)
+    cards.push({
+      id, name, given, surname: surname || splitName(name).surname,
+      team: safeString(e.constructorName),
+      teamId,
+      color: ctorColor(hasOwn(CTOR_COLORS, teamId) ? teamId : ''),
+      position: null, points: null, wins: null,
+      number: safeString(e.permanentNumber),
+      code: safeString(e.code) || codeFromName(name),
+      photoUrl: safeString(e.photoUrl) || null,
+    })
+  }
+  return cards.sort((a, b) => collator.compare(a.surname, b.surname) || collator.compare(a.given, b.given))
+}
+
 /** @returns {{ id, name, code, color, position, points, wins }[]} */
 export function buildConstructorCards(payload) {
   const seen = new Set()
@@ -148,16 +177,20 @@ const plural = (n, one, many) => (n === 1 ? one : many)
 
 /** Sentence read by screen readers for a driver or constructor card. */
 export function describeCard(card, { kind, season, favourite = false }) {
-  const parts = [`${ordinal(card.position)} in the ${season} ${kind === 'driver' ? 'standings' : "constructors' standings"} with ${card.points} ${plural(card.points, 'point', 'points')} and ${card.wins} ${plural(card.wins, 'win', 'wins')}.`]
+  const parts = []
+  if (card.position != null) {
+    parts.push(`${ordinal(card.position)} in the ${season} ${kind === 'driver' ? 'standings' : "constructors' standings"} with ${card.points} ${plural(card.points, 'point', 'points')} and ${card.wins} ${plural(card.wins, 'win', 'wins')}.`)
+  } else {
+    parts.push(`${season} season.`)
+  }
   if (kind === 'driver' && card.team) parts.push(`${card.team}.`)
   return `${favourite ? 'Favourite. ' : ''}${parts.join(' ')}`
 }
 
 /** The count line and the ordering note under the controls. */
 export function resultLine(view, { count, season, roundsDone = 0, current = false }) {
-  const noun = view === 'drivers' ? plural(count, 'driver', 'drivers') : view === 'constructors' ? plural(count, 'constructor', 'constructors') : plural(count, 'circuit', 'circuits')
+  const noun = view === 'drivers' ? plural(count, 'driver', 'drivers') : plural(count, 'constructor', 'constructors')
   const head = `${count} ${noun}`
-  if (view === 'circuits') return { head, note: `${count} ${plural(count, 'circuit', 'circuits')} on the ${season} calendar, in race order.` }
   if (current) return { head, note: roundsDone > 0 ? `Order shows the standings after round ${roundsDone}.` : '' }
   return { head, note: `Order shows the final ${season} standings.` }
 }

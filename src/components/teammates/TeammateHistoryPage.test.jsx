@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import { MemoryRouter, useLocation } from 'react-router-dom'
 
 vi.mock('../../services/api', () => ({
-  graphApi: { getDriverConnections: vi.fn() },
+  graphApi: { getDriverConnections: vi.fn(), getDriverEgoGraph: vi.fn() },
   dashboardApi: { getTeammateH2H: vi.fn() },
   searchApi: { search: vi.fn() },
   driversApi: { getAll: vi.fn() },
@@ -11,6 +11,7 @@ vi.mock('../../services/api', () => ({
 import { graphApi, dashboardApi, searchApi, driversApi } from '../../services/api'
 import { resetDriverConnectionsCache } from '../../hooks/useDriverConnections'
 import { resetTeammateH2HCache } from '../../hooks/useTeammateH2H'
+vi.mock('../profiles/ConnectionsCanvas', () => ({ default: () => <div data-testid="canvas" /> }))
 import TeammateHistoryPage from '../../pages/TeammateHistoryPage'
 
 const stats = (o) => ({ races: 70, wins: 11, podiums: 30, points: 900, poles: 12, fastestLaps: 6, seasons: 4, firstSeason: '2023', lastSeason: '2026', ...o })
@@ -149,5 +150,54 @@ describe('Rivalries page', () => {
     mount('/teammates?a=norris&b=piastri')
     await screen.findByText('Teammates, McLaren 2023-2025')
     expect(await screen.findByText('Season comparison unavailable.')).toBeInTheDocument()
+  })
+})
+
+describe('Rivalries Network view (DoD-7, DoD-21)', () => {
+  const EGO = { nodes: [{ id: 'driver_norris', type: 'Driver', name: 'Lando Norris', isSelf: true }, { id: 'team_mclaren', type: 'Team', name: 'McLaren', seasons: ['2023'] }, { id: 'teammate_piastri', type: 'Teammate', name: 'Oscar Piastri', seasons: ['2023'] }], links: [] }
+  beforeEach(() => { graphApi.getDriverEgoGraph.mockResolvedValue(EGO) })
+
+  it('Compare | Network tablist sits above the body and a view switch keeps a and b', async () => {
+    mount('/teammates?a=norris&b=piastri')
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs.map((t) => t.textContent)).toEqual(['Compare', 'Network'])
+    expect(screen.getByRole('tab', { name: 'Compare' })).toHaveAttribute('aria-selected', 'true')
+    fireEvent.click(screen.getByRole('tab', { name: 'Network' }))
+    await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/teammates?a=norris&b=piastri&view=network'))
+    expect(screen.getByRole('tab', { name: 'Network' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'rivalries-tab-network')
+    fireEvent.click(screen.getByRole('tab', { name: 'Compare' }))
+    await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent(/^\/teammates\?a=norris&b=piastri$/))
+  })
+
+  it('network: six stats, the canvas without a Show network tap, teams and teammates lists', async () => {
+    mount('/teammates?view=network&a=norris')
+    expect(await screen.findByTestId('canvas')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Show network' })).toBeNull()
+    expect(graphApi.getDriverEgoGraph).toHaveBeenCalledWith('norris')
+    for (const label of ['Races', 'Wins', 'Podiums', 'Points', 'Poles', 'Fastest laps']) expect(screen.getByText(label)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^Teams/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^Teammates/ })).toBeInTheDocument()
+  })
+
+  it('"Compare with" sets b, drops the view and keeps a', async () => {
+    mount('/teammates?view=network&a=norris')
+    const link = await screen.findByRole('link', { name: 'Compare with Piastri' })
+    expect(link).toHaveAttribute('href', '/teammates?a=norris&b=piastri')
+  })
+
+  it('without a driver: picker, empty state and chips; picking pushes a keeping the view', async () => {
+    mount('/teammates?view=network')
+    expect(screen.getByText('Pick a driver to see their network')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Driver' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Lando Norris/ }))
+    await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/teammates?a=norris&view=network'))
+  })
+
+  it('shows a retry when the connections fail', async () => {
+    mount('/teammates?view=network&a=mystery')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent("We couldn't load Mystery.")
+    expect(within(alert).getByRole('button', { name: 'Try again' })).toBeInTheDocument()
   })
 })
