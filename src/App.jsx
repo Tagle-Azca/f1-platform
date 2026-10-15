@@ -21,6 +21,7 @@ const CircuitDetailPage        = lazy(() => import('./pages/CircuitDetailPage'))
 const TelemetryPage            = lazy(() => import('./pages/TelemetryPage'))
 const StandingsPage            = lazy(() => import('./pages/StandingsPage'))
 const TeammateHistoryPage      = lazy(() => import('./pages/TeammateHistoryPage'))
+const CalendarPage             = lazy(() => import('./pages/CalendarPage'))
 const TireStrategyPage         = lazy(() => import('./pages/TireStrategyPage'))
 const RacePacePage             = lazy(() => import('./pages/RacePacePage'))
 const NextRacePage             = lazy(() => import('./pages/NextRacePage'))
@@ -52,6 +53,7 @@ function App() {
             <Route path="/constructors/:constructorId" element={<ConstructorProfilePage />} />
             <Route path="/races"                 element={<RacesPage />}               />
             <Route path="/races/:season/:round"  element={<RaceDetailPage />}          />
+            <Route path="/calendar"              element={<CalendarPage />}            />
             <Route path="/circuits"              element={<CircuitsPage />}            />
             <Route path="/circuits/:circuitId"   element={<CircuitDetailPage />}       />
             <Route path="/telemetry"             element={<TelemetryPage />}           />

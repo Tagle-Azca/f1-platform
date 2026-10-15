@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import SessionTimeline from '../viz/SessionTimeline'
 import VizSkeleton from '../viz/VizSkeleton'
-import { TZ_OPTIONS, getInitialTZ, saveTZ } from '../../utils/timezone'
+import { TZ_OPTIONS } from '../../utils/timezone'
+import { useTimezone } from '../../hooks/useTimezone'
 import { buildSessionList } from '../../utils/sessionSchedule'
 import { useNow } from '../../hooks/useNow'
 
@@ -10,12 +10,11 @@ import { useNow } from '../../hooks/useNow'
  * `weather` is null while loading or when the request failed; `weatherFailed` shows one quiet line.
  */
 export default function WeekendSchedulePanel({ schedule, liveKey, nextSessionKey, weather, weatherFailed = false, loading = false }) {
-  const [tz, setTz] = useState(getInitialTZ)
+  const [tz, setTz] = useTimezone()
   const now = useNow(60000)
 
   function selectTz(e) {
     setTz(e.target.value)
-    saveTZ(e.target.value)
   }
 
   // The page knows the live and next keys exactly; trust them over the clock-derived status.

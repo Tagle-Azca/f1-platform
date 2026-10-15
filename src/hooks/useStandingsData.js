@@ -45,10 +45,11 @@ const getConstructors = (year, currentYear) => cached(ctorCache, year, currentYe
  */
 export const getConstructorStandingsCached = (year, currentYear) => getConstructors(year, currentYear)
 
-function getPhotos() {
+/** Driver headshots by id (photoUrl, number, code), cached per session; resolves to an empty Map on failure. */
+export function getDriverPhotos() {
   if (!photoCache) {
     photoCache = Promise.resolve()
-      .then(() => driversApi.getAll())
+      .then(() => driversApi.getAll({ limit: 500 })) // the API pages at 100 by default; 500 is its cap
       .then(list => {
         const map = new Map()
         for (const d of asObjectArray(list)) {
@@ -125,7 +126,7 @@ export function useStandingsData({ requested = null, currentYear }) {
   useEffect(() => {
     if (!isCurrent) return
     let alive = true
-    getPhotos().then(m => { if (alive) setPhotos(m) })
+    getDriverPhotos().then(m => { if (alive) setPhotos(m) })
     return () => { alive = false }
   }, [isCurrent])
 

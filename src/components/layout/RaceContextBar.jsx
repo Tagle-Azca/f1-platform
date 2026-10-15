@@ -7,7 +7,8 @@ import { useNow } from '../../hooks/useNow'
 import { Check } from 'lucide-react'
 import { countryFlag, countryCode } from '../../utils/flags'
 import { buildSessionList, getFeaturedSession } from '../../utils/sessionSchedule'
-import { TZ_OPTIONS, getInitialTZ, saveTZ, tzAbbr } from '../../utils/timezone'
+import { TZ_OPTIONS, tzAbbr } from '../../utils/timezone'
+import { useTimezone } from '../../hooks/useTimezone'
 import { features } from '../../config/features'
 import LivePill from '../ui/LivePill'
 import { Skeleton } from '../ui/skeleton'
@@ -54,7 +55,7 @@ function SessionState({ loaded, failed, nextRace, now }) {
 }
 
 function TimezonePicker() {
-  const [tz, setTz] = useState(getInitialTZ)
+  const [tz, setTz] = useTimezone()
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
   const btnRef = useRef(null)
@@ -91,7 +92,7 @@ function TimezonePicker() {
               <button
                 type="button"
                 aria-pressed={tz === opt.value}
-                onClick={() => { setTz(opt.value); saveTZ(opt.value); setOpen(false); btnRef.current?.focus() }}
+                onClick={() => { setTz(opt.value); setOpen(false); btnRef.current?.focus() }}
                 className={[
                   'w-full text-left min-h-11 px-pw-3 border-0 border-b border-edge-soft text-sm cursor-pointer',
                   tz === opt.value ? 'bg-steel-soft text-steel font-semibold' : 'bg-transparent text-ink-2 hover:text-ink',

@@ -18,9 +18,9 @@ describe('feature flags (DoD-12)', () => {
 })
 
 describe('navConfig', () => {
-  it('keeps 4 groups and all 13 routes visible with the current flags', () => {
+  it('keeps 4 groups and all 14 routes visible with the current flags', () => {
     expect(getVisibleGroups()).toHaveLength(4)
-    expect(getVisibleGroups().flatMap(g => g.items)).toHaveLength(13)
+    expect(getVisibleGroups().flatMap(g => g.items)).toHaveLength(14)
   })
   it('does not render items whose featureFlag is off, and drops empty groups', () => {
     const groups = [

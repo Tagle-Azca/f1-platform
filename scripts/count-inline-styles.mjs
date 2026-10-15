@@ -11,7 +11,7 @@ const TARGETS = [
   'components/nextrace', 'components/dashboard', 'components/live', 'components/auth/LoginModal.jsx', 'components/auth/GuestProfile.jsx',
   'components/ui/DataRow.jsx', 'components/ui/Meter.jsx', 'components/ui/SectionHeader.jsx', 'components/ui/Disclosure.jsx', 'components/ui/StatLine.jsx',
   'components/ui/TyreBadge.jsx', 'components/ui/Panel.jsx', 'components/ui/TabBar.jsx', 'components/ui/StatCard.jsx', 'components/ui/LivePill.jsx',
-  'components/ui/CountdownDisplay.jsx', 'components/ui/EmptyState.jsx', 'components/ui/BackendError.jsx', 'pages/HomePage.jsx', 'pages/LivePage.jsx', 'pages/NextRacePage.jsx',
+  'components/ui/CountdownDisplay.jsx', 'components/ui/EmptyState.jsx', 'components/ui/BackendError.jsx', 'pages/HomePage.jsx', 'pages/TeammateHistoryPage.jsx', 'components/teammates', 'pages/CalendarPage.jsx', 'components/calendar', 'hooks/useTimezone.js', 'pages/LivePage.jsx', 'pages/NextRacePage.jsx',
 ]
 function walk(p) {
   const abs = join(root, p)

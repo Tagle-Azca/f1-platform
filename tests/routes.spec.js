@@ -2,7 +2,7 @@
 import { test, expect } from '@playwright/test'
 import { installMockApi } from './helpers/mockApi.js'
 
-const ROUTES = ['/', '/encyclopedia', '/encyclopedia?view=circuits', '/drivers', '/drivers/norris', '/drivers/not_a_driver', '/drivers/%3Cscript%3E', '/constructors/ferrari', '/constructors/not_a_team', '/races', '/races/2025/1', '/circuits', '/circuits/monza', '/circuits/not_a_circuit', '/circuits/%3Cscript%3E', '/telemetry',
+const ROUTES = ['/', '/encyclopedia', '/encyclopedia?view=circuits', '/drivers', '/drivers/norris', '/drivers/not_a_driver', '/drivers/%3Cscript%3E', '/constructors/ferrari', '/constructors/not_a_team', '/races', '/races/2025/1', '/calendar', '/calendar?season=2023', '/calendar?season=abc', '/circuits', '/circuits/monza', '/circuits/not_a_circuit', '/circuits/%3Cscript%3E', '/telemetry',
   '/standings', '/constructor-standings', '/teammates', '/tire-strategy', '/race-pace', '/next-race', '/live', '/graph', '/register', '/no-such-page']
 
 for (const r of ROUTES) {

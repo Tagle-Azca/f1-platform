@@ -39,11 +39,11 @@ beforeEach(() => {
 const at = (path, ui) => render(<MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>)
 
 describe('NavList / Sidebar', () => {
-  it('renders 4 groups, 13 links, aria-current on the active one and live text', () => {
+  it('renders 4 groups, 14 links, aria-current on the active one and live text', () => {
     liveState.available = true
     at('/live', <NavList />)
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(4)
-    expect(screen.getAllByRole('link')).toHaveLength(13)
+    expect(screen.getAllByRole('link')).toHaveLength(14)
     expect(screen.getByRole('link', { name: /Live timing/ })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: /Dashboard/ })).not.toHaveAttribute('aria-current')
   })

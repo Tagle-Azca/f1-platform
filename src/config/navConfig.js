@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Radio, Flag, MapPin, Trophy, Users, Swords,
-  Activity, Gauge, CircleDot, Network, BookOpen, History,
+  Activity, Gauge, CircleDot, Network, BookOpen, History, CalendarDays,
 } from 'lucide-react'
 import { features, isFeatureOn } from './features'
 
@@ -18,6 +18,7 @@ export const NAV_GROUPS = [
       { path: '/',          label: 'Dashboard',   icon: LayoutDashboard, mobilePrimary: true },
       { path: '/live',      label: 'Live timing', icon: Radio, live: true, mobilePrimary: true },
       { path: '/next-race', label: 'Next race',   icon: Flag, mobilePrimary: true },
+      { path: '/calendar',  label: 'Calendar',    icon: CalendarDays },
       { path: '/circuits',  label: 'Circuits',    icon: MapPin },
     ],
   },
