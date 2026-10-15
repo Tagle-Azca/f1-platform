@@ -45,14 +45,27 @@ const getConstructors = (year, currentYear) => cached(ctorCache, year, currentYe
  */
 export const getConstructorStandingsCached = (year, currentYear) => getConstructors(year, currentYear)
 
+const DRIVER_PAGE = 500 // the API's per-request cap
+const MAX_DRIVER_PAGES = 10
+
+/** Every driver, paged with `skip`: one page of 500 cut current drivers who sort late (Norris, Russell, Verstappen). */
+async function fetchAllDrivers() {
+  const all = []
+  for (let page = 0; page < MAX_DRIVER_PAGES; page++) {
+    const batch = asObjectArray(await driversApi.getAll({ limit: DRIVER_PAGE, skip: page * DRIVER_PAGE }))
+    all.push(...batch)
+    if (batch.length < DRIVER_PAGE) break
+  }
+  return all
+}
+
 /** Driver headshots by id (photoUrl, number, code), cached per session; resolves to an empty Map on failure. */
 export function getDriverPhotos() {
   if (!photoCache) {
-    photoCache = Promise.resolve()
-      .then(() => driversApi.getAll({ limit: 500 })) // the API pages at 100 by default; 500 is its cap
+    photoCache = fetchAllDrivers()
       .then(list => {
         const map = new Map()
-        for (const d of asObjectArray(list)) {
+        for (const d of list) {
           const id = safeString(d.driverId)
           if (id) map.set(id, { photoUrl: safeString(d.photoUrl) || null, number: safeString(d.permanentNumber), code: safeString(d.code) })
         }
@@ -122,13 +135,12 @@ export function useStandingsData({ requested = null, currentYear }) {
   }, [season, attempt, currentYear])
 
   const ctorResult = season != null ? ctors[season] : null
-  const isCurrent = season === currentYear
+  // Headshots are the drivers' latest ones, shown for every season so past seasons keep their faces.
   useEffect(() => {
-    if (!isCurrent) return
     let alive = true
     getDriverPhotos().then(m => { if (alive) setPhotos(m) })
     return () => { alive = false }
-  }, [isCurrent])
+  }, [])
 
   // Each view loads and fails on its own: `status` covers the drivers payload, `ctorStatus` the constructors one
   const ctorStatus = status !== 'ready' ? status : !ctorResult ? 'loading' : ctorResult.ok ? 'ready' : 'error'
@@ -144,9 +156,8 @@ export function useStandingsData({ requested = null, currentYear }) {
     status, ctorStatus, season, seasons, missing,
     drivers,
     constructors: ctorResult?.ok ? ctorResult.payload : null,
-    photos: isCurrent ? photos : EMPTY_PHOTOS,
+    photos,
     retry,
   }
 }
 
-const EMPTY_PHOTOS = new Map()

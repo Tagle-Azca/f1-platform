@@ -64,7 +64,7 @@ describe('useStandingsData', () => {
     rerender({ requested: 2023, currentYear: 2026 })
     await waitFor(() => expect(result.current.status).toBe('ready'))
     expect(result.current.season).toBe(2023)
-    expect(result.current.photos.size).toBe(0) // photos are for the current season only
+    expect(result.current.photos.get('a')).toMatchObject({ photoUrl: 'https://x.test/a.png' }) // headshots carry over to past seasons
     expect(statsApi.getSeasonStandings).toHaveBeenCalledTimes(8)
     expect(statsApi.getConstructorStandings).toHaveBeenCalledTimes(2)
     rerender({ requested: 2026, currentYear: 2026 })
