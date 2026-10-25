@@ -10,6 +10,10 @@ const api = vi.hoisted(() => ({
   telemetryApi: { getTimingTower: vi.fn() },
 }))
 vi.mock('../services/api', () => api)
+vi.mock('../config/features', async (importOriginal) => {
+  const m = await importOriginal()
+  return { ...m, features: Object.freeze({ ...m.features, liveTiming: true }) }   // these tests cover the live-on behaviour
+})
 vi.mock('../contexts/PreferencesContext', () => ({ usePreferences: () => ({ prefs: {} }) }))
 const auth = vi.hoisted(() => ({ user: null, loading: false, login: vi.fn(), loginWithGoogle: vi.fn() }))
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => auth }))

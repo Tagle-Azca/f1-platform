@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { safeText } from '../utils/safeText'
+import { features } from '../config/features'
 
 const LiveStatusContext = createContext(null)
 // eslint-disable-next-line react-refresh/only-export-components -- hook shares the context defined here
@@ -18,6 +19,7 @@ export function LiveStatusProvider({ children }) {
   const [status, setStatus] = useState(DEFAULT_STATUS)
 
   useEffect(() => {
+    if (!features.liveTiming) return   // flag off: no stream, status stays unavailable everywhere
     const es = new EventSource(`${BASE_URL}/api/dashboard/live/status`)
 
     es.onmessage = (event) => {

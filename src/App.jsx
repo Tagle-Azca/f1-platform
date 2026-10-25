@@ -1,6 +1,7 @@
 import { lazy, useEffect } from 'react'
 import { Analytics } from '@vercel/analytics/react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { features } from './config/features'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider }        from './contexts/AuthContext'
 import { PreferencesProvider } from './contexts/PreferencesContext'
@@ -60,7 +61,7 @@ function App() {
             <Route path="/tire-strategy"         element={<LegacyRedirect />}          />
             <Route path="/race-pace"             element={<LegacyRedirect />}          />
             <Route path="/next-race"             element={<NextRaceRedirect />}        />
-            <Route path="/live"                  element={<LivePage />}                />
+            <Route path="/live"                  element={features.liveTiming ? <LivePage /> : <Navigate to="/" replace />} />
             <Route path="/graph"                 element={<LegacyRedirect />}          />
             <Route path="/register"              element={<RegisterPage />}            />
             <Route path="*"                      element={<NotFoundPage />}            />

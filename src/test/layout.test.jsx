@@ -5,6 +5,10 @@ import { dashboard, seasonStandings, ctorStandings } from './fixtures'
 
 const liveState = { available: false, sessionName: null }
 vi.mock('../contexts/LiveStatusContext', () => ({ useLiveStatus: () => liveState }))
+vi.mock('../config/features', async (importOriginal) => {
+  const m = await importOriginal()
+  return { ...m, features: Object.freeze({ ...m.features, liveTiming: true }) }   // these tests cover the live-on behaviour
+})
 vi.mock('../services/api', () => ({
   dashboardApi: { get: vi.fn(), getLive: vi.fn() },
   statsApi: { getSeasonStandings: vi.fn(), getConstructorStandings: vi.fn() },

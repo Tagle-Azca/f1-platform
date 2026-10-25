@@ -5,7 +5,7 @@ import { WIDGET_REGISTRY, getDashboardWidgets } from '../components/dashboard/wi
 
 describe('feature flags (DoD-12)', () => {
   it('reserves myPitwall, deepAnalysis and social, all off', () => {
-    expect(features).toEqual({ myPitwall: false, deepAnalysis: false, social: false })
+    expect(features).toEqual({ myPitwall: false, deepAnalysis: false, social: false, liveTiming: false })
   })
   it('is frozen so it cannot be toggled at runtime', () => {
     expect(Object.isFrozen(features)).toBe(true)
@@ -18,14 +18,19 @@ describe('feature flags (DoD-12)', () => {
 })
 
 describe('navConfig', () => {
-  it('has 3 groups and 8 destinations in the agreed order with the current flags (DoD-1)', () => {
+  it('has 3 groups and 7 destinations in the agreed order with the current flags, live timing hidden (DoD-1)', () => {
     expect(getVisibleGroups()).toHaveLength(3)
     expect(getVisibleGroups().map(g => g.items.map(i => i.label))).toEqual([
-      ['Dashboard', 'Live timing', 'Calendar', 'Circuits'],
+      ['Dashboard', 'Calendar', 'Circuits'],
       ['Standings', 'Drivers & teams', 'Rivalries'],
       ['Race analysis'],
     ])
-    expect(getVisibleGroups().flatMap(g => g.items).map(i => i.path)).toEqual(['/', '/live', '/calendar', '/circuits', '/standings', '/drivers', '/teammates', '/analysis'])
+    expect(getVisibleGroups().flatMap(g => g.items).map(i => i.path)).toEqual(['/', '/calendar', '/circuits', '/standings', '/drivers', '/teammates', '/analysis'])
+  })
+  it('shows Live timing second when the liveTiming flag is on', () => {
+    const on = { ...features, liveTiming: true }
+    expect(getVisibleGroups(undefined, on).flatMap(g => g.items).map(i => i.path)).toEqual(['/', '/live', '/calendar', '/circuits', '/standings', '/drivers', '/teammates', '/analysis'])
+    expect(getMobilePrimaryItems(undefined, on).map(i => i.path)).toEqual(['/', '/live', '/calendar', '/standings'])
   })
   it('isItemActive honours activePrefixes (weekend pages highlight Calendar, constructor profiles highlight Drivers & teams)', () => {
     const item = (path) => NAV_GROUPS.flatMap(g => g.items).find(i => i.path === path)
@@ -47,8 +52,8 @@ describe('navConfig', () => {
     expect(visible[0].items.map(i => i.path)).toEqual(['/a'])
     expect(getVisibleGroups(groups, { ...features, social: true, deepAnalysis: true }).flatMap(g => g.items)).toHaveLength(3)
   })
-  it('exposes the 4 mobile primary tabs in order (DoD-1)', () => {
-    expect(getMobilePrimaryItems().map(i => i.path)).toEqual(['/', '/live', '/calendar', '/standings'])
+  it('exposes the 3 mobile primary tabs in order while live timing is hidden (DoD-1)', () => {
+    expect(getMobilePrimaryItems().map(i => i.path)).toEqual(['/', '/calendar', '/standings'])
   })
   it('every item has an icon and a path starting with /', () => {
     for (const g of NAV_GROUPS) for (const i of g.items) { expect(i.icon).toBeTruthy(); expect(i.path.startsWith('/')).toBe(true) }

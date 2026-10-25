@@ -15,7 +15,7 @@ export const NAV_GROUPS = [
     label: 'Race weekend',
     items: [
       { path: '/',         label: 'Dashboard',   icon: LayoutDashboard, mobilePrimary: true },
-      { path: '/live',     label: 'Live timing', icon: Radio, live: true, mobilePrimary: true },
+      { path: '/live',     label: 'Live timing', icon: Radio, live: true, mobilePrimary: true, featureFlag: 'liveTiming' },
       { path: '/calendar', label: 'Calendar',    icon: CalendarDays, mobilePrimary: true, activePrefixes: ['/races/'] },
       { path: '/circuits', label: 'Circuits',    icon: MapPin },
     ],
