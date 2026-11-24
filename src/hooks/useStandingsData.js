@@ -45,6 +45,9 @@ const getConstructors = (year, currentYear) => cached(ctorCache, year, currentYe
  */
 export const getConstructorStandingsCached = (year, currentYear) => getConstructors(year, currentYear)
 
+/** Drivers' season standings (per-round cumulative points) through the same per-session cache; resolves to `{ ok, payload }`, never rejects. */
+export const getSeasonStandingsCached = (year, currentYear) => getProbe(year, currentYear)
+
 const DRIVER_PAGE = 500 // the API's per-request cap
 const MAX_DRIVER_PAGES = 10
 

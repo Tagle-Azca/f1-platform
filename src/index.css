@@ -41,6 +41,8 @@
     --pw-violet: #c9a0e8;  /* fastest lap */
     --pw-yellow: #f5c518;  /* yellow flag / safety car / leader marker */
     --pw-orange: #fb923c;  /* in pit */
+    --pw-gold:   #d4af37;  /* locked champion */
+    --pw-gold-soft: rgba(212,175,55,.16);  /* champion chip fill */
     --pw-mono:   'IBM Plex Mono', ui-monospace, monospace;
     --pw-display: 'Geist Variable', 'Geist Fallback', Arial, sans-serif;
 
