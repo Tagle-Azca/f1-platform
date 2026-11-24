@@ -49,6 +49,7 @@ export default {
         live:      { DEFAULT: 'var(--pw-red)', soft: 'var(--pw-red-soft)' },
         violet:    'var(--pw-violet)',
         signal:    { yellow: 'var(--pw-yellow)', orange: 'var(--pw-orange)' },
+        gold:      { DEFAULT: 'var(--pw-gold)', soft: 'var(--pw-gold-soft)' },
       },
       fontSize: {
         '2xs':  ['var(--text-2xs)', { lineHeight: '1rem' }],

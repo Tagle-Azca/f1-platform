@@ -69,7 +69,7 @@ function Column({ ref, row, slot, kind, hero, color, photo, datasetKey, settled,
   const reduced = useReducedMotion()
   const geo = SLOT[slot]
   const pts = useTweenedNumber(row.pts, { datasetKey, startAt: settled ? row.pts : 0 })
-  const isLeader = slot === 1
+  const isLeader = slot === 1, gold = isLeader && (kind === 'champion' || Boolean(hero.clinched)) // gold once the title is locked
   const numeral = row.kind === 'constructor' ? String(slot) : (row.number || safeNumber(photo) || String(slot))
   const photoUrl = row.kind === 'driver' ? safeHttpsUrl(photo?.photoUrl) : null
   const shows = hero.inPlay > 0 || kind === 'champion'
@@ -84,14 +84,14 @@ function Column({ ref, row, slot, kind, hero, color, photo, datasetKey, settled,
     <motion.li ref={ref} layout={layout} transition={layout ? { duration: 0.32, ease: EASE_OUT } : undefined} className="m-0 flex min-w-0 list-none flex-col items-center">
       <motion.div className="flex w-full min-w-0 flex-col items-center" {...enter}>
         {isLeader && kind === 'champion' && (
-          <span className="mb-pw-1 inline-flex min-h-6 items-center rounded-pill bg-steel-soft px-pw-3 text-xs font-medium text-steel">Champion</span>
+          <span className="mb-pw-1 inline-flex min-h-6 items-center rounded-pill bg-gold-soft px-pw-3 text-xs font-medium text-gold">Champion</span>
         )}
         <DriverPortrait
           photoUrl={photoUrl} number={numeral} color={color}
           className={cn('relative flex w-full items-end justify-center', geo.box)}
           imgClassName={cn('relative object-contain object-bottom [mask-image:linear-gradient(to_bottom,black_72%,transparent)]', geo.img)}
         />
-        <NameControl row={row} onOpen={onOpen} className={cn('mt-pw-2 max-w-full font-display font-bold leading-tight text-ink hover:text-steel-hi [overflow-wrap:normal] [hyphens:none]', geo.name)}>
+        <NameControl row={row} onOpen={onOpen} className={cn('mt-pw-2 max-w-full font-display font-bold leading-tight hover:text-steel-hi [overflow-wrap:normal] [hyphens:none]', gold ? 'text-gold' : 'text-ink', geo.name)}>
           {nameOf(row)}
         </NameControl>
         <span className="mt-pw-1 flex max-w-full items-center gap-pw-2 text-xs text-ink-2">
@@ -99,12 +99,12 @@ function Column({ ref, row, slot, kind, hero, color, photo, datasetKey, settled,
           <span className="truncate">{row.kind === 'driver' ? row.team : `${row.wins} ${row.wins === 1 ? 'win' : 'wins'}`}</span>
         </span>
         {/* The counting number is decorative; the sr-only sentence states the points */}
-        <span aria-hidden="true" className={cn('mt-pw-2 text-ink', geo.pts)}>
+        <span aria-hidden="true" className={cn('mt-pw-2', gold ? 'text-gold' : 'text-ink', geo.pts)}>
           {pts}<span className="ml-1 text-sm font-medium text-ink-3">pts</span>
         </span>
         <div className="mt-pw-1 flex w-full min-w-0 flex-col items-center gap-pw-1" aria-hidden="true">
           {isLeader ? (
-            <span className="text-xs text-ink-3">{kind === 'champion' ? 'Champion' : 'Leader'}</span>
+            <span className={cn('text-xs', gold ? 'text-gold' : 'text-ink-3')}>{gold ? 'Champion' : 'Leader'}</span>
           ) : (
             <>
               <span className="num text-ink">{gapLabel(row.gap)}</span>
@@ -144,15 +144,15 @@ export default function StandingsHero({ view, season, hero, photos, datasetKey, 
   const fight = kind === 'fight'
   const teammates = !isCtor && Boolean(first.teamKey) && first.teamKey === second.teamKey
   const thirdGap = third ? first.pts - third.pts : null
-
+  const clinched = fight && Boolean(hero.clinched) // title decided, the rest of the season is the fight for P2
   let verdict
-  if (!fight) verdict = `${nameOf(first)} won the title by ${gap} points over ${nameOf(second)}.`
+  if (clinched) verdict = third ? `${nameOf(second)} holds P2, ${second.pts - third.pts} points ahead of ${nameOf(third)}.` : `${nameOf(second)} holds P2.`
+  else if (!fight) verdict = `${nameOf(first)} won the title by ${gap} points over ${nameOf(second)}.`
   else if (decided && inPlay > 0) verdict = `${nameOf(first)} can no longer be caught on points alone.`
   else if (inPlay === 0) verdict = `${nameOf(first)} leads by ${gap} points.`
   else verdict = `Still open: ${inPlay} points in play against a ${gap}-point gap.`
-  const reach = fight && inPlay > 0 && third && thirdGap < inPlay ? ` ${nameOf(third)} is still in reach, ${thirdGap} behind.` : ''
-
-  const caption = fight && remaining > 0
+  const reach = fight && !clinched && inPlay > 0 && third && thirdGap < inPlay ? ` ${nameOf(third)} is still in reach, ${thirdGap} behind.` : ''
+  const caption = fight && !clinched && remaining > 0
     ? `Counts ${perGp} points per remaining Grand Prix${isCtor ? ' (a one-two)' : ''}. Sprint points are not included.`
     : null
   // Bars share one scale: points in play for a fight; the third place gap for a champion.
@@ -179,7 +179,7 @@ export default function StandingsHero({ view, season, hero, photos, datasetKey, 
 
       <div className="relative">
         <div className="flex flex-wrap items-baseline justify-between gap-pw-2">
-          <h2 id="st-hero-h" className="text-heading text-ink">{fight ? 'Title fight' : 'Champion'}</h2>
+          <h2 id="st-hero-h" className="text-heading text-ink">{clinched ? 'Battle for P2' : fight ? 'Title fight' : 'Champion'}</h2>
           <span className="flex flex-wrap items-center gap-pw-2">
             {teammates && <span className="inline-flex min-h-6 items-center rounded-pill border border-edge px-pw-3 text-xs font-medium text-ink-2">Teammates</span>}
             <span className="text-xs text-ink-3">{fight ? `${remaining} ${remaining === 1 ? 'round' : 'rounds'} left` : season}</span>

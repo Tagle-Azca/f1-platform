@@ -3,19 +3,18 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Panel from '../ui/Panel'
 import VizSkeleton from '../viz/VizSkeleton'
-import DriverPortrait from '../viz/DriverPortrait'
 import { titleFightModel } from '../viz/pointsModel'
 import { buttonVariants } from '../ui/button-variants'
 import { cn } from '@/lib/utils'
 import { statsApi } from '../../services/api'
 import { ctorColor, teamMark } from '../../styles/vizPalette'
 import { DUR, EASE_OUT, useReducedMotion } from '../../styles/motion'
-import { safeString } from '../../utils/safeText'
-import { useCountUp } from '../../hooks/useCountUp'
 import { statRows, neededPerRound, pointsShare } from './titleFightVs'
-
-const surname = (name) => safeString(name).split(' ').pop() || 'The leader'
-const given = (name) => safeString(name).split(' ').slice(0, -1).join(' ')
+import { Contender, StatRow } from './TitleFightParts'
+import { surname } from './nameParts'
+import ClinchRecap from './ClinchRecap'
+import { useClinchHistory } from './useClinchHistory'
+import { clinchedLine, needsLine } from '../viz/clinchCopy'
 
 /** Season stats for both contenders; null until loaded, {} entries on failure. */
 function useContenderStats(season, idA, idB) {
@@ -32,86 +31,6 @@ function useContenderStats(season, idA, idB) {
   return res?.key === key ? res : null
 }
 
-/** Cut-out headshot over the car number (shared artwork, Dashboard sizing and entrance). */
-function Portrait({ driver, color, side, reduced }) {
-  return (
-    <DriverPortrait
-      photoUrl={driver.photoUrl} number={driver.permanentNumber} color={color}
-      className="relative flex h-32 w-full items-end justify-center md:h-48"
-      imgClassName="relative h-32 w-32 object-contain object-bottom [mask-image:linear-gradient(to_bottom,black_72%,transparent)] md:h-48 md:w-48"
-      motionProps={{
-        initial: reduced ? false : { opacity: 0, x: side === 'left' ? -32 : 32 },
-        animate: { opacity: 1, x: 0 },
-        transition: { duration: DUR.enter, ease: EASE_OUT },
-      }}
-    />
-  )
-}
-
-/** Name block; links to the driver profile when there is an id (accessible name = full name). */
-function NameLink({ driver, align }) {
-  const body = (
-    <>
-      <span className="truncate text-xs text-ink-2 md:text-sm">{given(driver.name)}</span>
-      <span className="font-display text-xl font-bold uppercase leading-tight text-ink [overflow-wrap:anywhere] md:text-3xl">{surname(driver.name)}</span>
-    </>
-  )
-  if (!driver.driverId) return <span className={`flex min-w-0 flex-col ${align}`}>{body}</span>
-  return (
-    <Link
-      to={`/drivers/${encodeURIComponent(driver.driverId)}`}
-      aria-label={safeString(driver.name)}
-      className={`flex min-h-11 min-w-0 flex-col justify-end no-underline hover:[&>span:last-child]:text-steel-hi ${align}`}
-    >
-      {body}
-    </Link>
-  )
-}
-
-function Contender({ driver, color, side, reduced }) {
-  const points = useCountUp(driver.points)
-  const align = side === 'left' ? 'items-start text-left md:items-center md:text-center' : 'items-end text-right md:items-center md:text-center'
-  return (
-    <div className="flex min-w-0 flex-col">
-      <Portrait driver={driver} color={color} side={side} reduced={reduced} />
-      <div className={`mt-pw-3 flex min-w-0 flex-col ${align}`}>
-        <NameLink driver={driver} align={align} />
-        <span className="mt-pw-1 flex items-center gap-pw-2 text-xs text-ink-2">
-          <svg aria-hidden="true" focusable="false" width="3" height="12"><rect width="3" height="12" rx="1.5" fill={color} /></svg>
-          {safeString(driver.team)}
-        </span>
-        {/* The counting number is decorative; the sr-only sentence above states the points */}
-        <span aria-hidden="true" className="text-count mt-pw-2 text-ink">{points}<span className="ml-1 text-sm font-medium text-ink-3">pts</span></span>
-      </div>
-    </div>
-  )
-}
-
-/** Mirrored comparison row: A's bar grows left from the label, B's grows right. */
-function StatRow({ row, colorA, colorB, reduced, index }) {
-  const max = Math.max(1, row.a ?? 0, row.b ?? 0)
-  const pa = ((row.a ?? 0) / max) * 100
-  const pb = ((row.b ?? 0) / max) * 100
-  const anim = (w) => (reduced ? { initial: false } : { initial: { width: 0 }, animate: { width: w }, transition: { duration: DUR.bars, ease: EASE_OUT, delay: 0.25 + index * 0.06 } })
-  const strong = (mine, other) => (mine != null && other != null && mine > other ? 'font-semibold text-ink' : 'text-ink-2')
-  return (
-    <li className="grid grid-cols-[2rem_minmax(0,1fr)_auto_minmax(0,1fr)_2rem] items-center gap-x-pw-2 py-pw-1 md:grid-cols-[2.5rem_minmax(0,1fr)_9rem_minmax(0,1fr)_2.5rem]">
-      <span className={`num text-left ${strong(row.a, row.b)}`}>{row.a ?? '–'}</span>
-      <svg aria-hidden="true" viewBox="0 0 100 6" preserveAspectRatio="none" className="h-1.5 w-full">
-        <rect width="100" height="6" rx="1" fill="var(--viz-track)" />
-        <g transform="translate(100 0) scale(-1 1)">
-          <motion.rect height="6" rx="1" fill={colorA} width={pa} {...anim(pa)} />
-        </g>
-      </svg>
-      <span className="px-pw-1 text-center text-xs text-ink-3">{row.label}</span>
-      <svg aria-hidden="true" viewBox="0 0 100 6" preserveAspectRatio="none" className="h-1.5 w-full">
-        <rect width="100" height="6" rx="1" fill="var(--viz-track)" />
-        <motion.rect height="6" rx="1" fill={colorB} width={pb} {...anim(pb)} />
-      </svg>
-      <span className={`num text-right ${strong(row.b, row.a)}`}>{row.b ?? '–'}</span>
-    </li>
-  )
-}
 
 export default function TitleFightCard({ data, loading, error, onRetry }) {
   const reduced = useReducedMotion()
@@ -121,6 +40,7 @@ export default function TitleFightCard({ data, loading, error, onRetry }) {
   // season arrives as a number or a string depending on the code path
   const season = Number.isFinite(Number(data?.season)) && data?.season !== '' && data?.season != null ? String(data.season) : ''
   const stats = useContenderStats(season, a?.driverId, b?.driverId)
+  const history = useClinchHistory(season, data?.totalRounds)
 
   if (loading) {
     return (
@@ -158,7 +78,11 @@ export default function TitleFightCard({ data, loading, error, onRetry }) {
   const thirdGap = third ? a.points - third.points : null
   const rows = stats ? statRows(stats.a, stats.b) : []
 
-  const verdict = final
+  const clinch = history?.clinch
+  const won = Boolean(clinch?.clinched && a.driverId && clinch.champion.id === a.driverId) // the history matches this leader
+  const verdict = won
+    ? `${a.name} is champion. ${clinchedLine(clinch)}.`
+    : final
     ? `${surname(a.name)} is champion.`
     : decided
       ? `${surname(a.name)} can no longer be caught on points alone.`
@@ -178,7 +102,7 @@ export default function TitleFightCard({ data, loading, error, onRetry }) {
 
       <div className="relative">
         <div className="flex flex-wrap items-baseline justify-between gap-pw-2">
-          <h2 id="title-fight-h" className="text-heading text-ink">Title fight</h2>
+          <h2 id="title-fight-h" className={cn('text-heading', won ? 'text-gold' : 'text-ink')}>{won ? 'Champion' : 'Title fight'}</h2>
           <span className="flex flex-wrap items-center gap-pw-2">
             {teammates && <span className="inline-flex min-h-6 items-center rounded-pill border border-edge px-pw-3 text-xs font-medium text-ink-2">Teammates</span>}
             <span className="text-xs text-ink-3">{remaining} rounds left</span>
@@ -192,7 +116,7 @@ export default function TitleFightCard({ data, loading, error, onRetry }) {
         </p>
 
         <div className="mt-pw-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-pw-2 md:gap-x-pw-6">
-          <Contender driver={a} color={colorA} side="left" reduced={reduced} />
+          <Contender driver={a} color={colorA} side="left" reduced={reduced} champion={won} />
           <motion.div
             aria-hidden="true"
             className="flex flex-col items-center gap-pw-1 self-center"
@@ -202,7 +126,7 @@ export default function TitleFightCard({ data, loading, error, onRetry }) {
           >
             <span className="font-display text-3xl font-black italic tracking-tight text-ink-3 md:text-5xl">VS</span>
             <span className="num whitespace-nowrap text-ink">{gap > 0 ? `${gap} pts` : 'Level'}</span>
-            <span className="text-xs text-ink-3">gap</span>
+            <span className="text-xs text-ink-3">{won ? 'final margin' : 'gap'}</span>
           </motion.div>
           <Contender driver={b} color={colorB} side="right" reduced={reduced} />
         </div>
@@ -237,10 +161,13 @@ export default function TitleFightCard({ data, loading, error, onRetry }) {
           </div>
         )}
 
+        {won && <ClinchRecap clinch={clinch} series={history.series} color={colorA} runnerLabel={surname(b.name)} championLabel={surname(a.name)} />}
+
         <div className="mt-pw-4 flex flex-col gap-pw-2 border-t border-edge-soft pt-pw-3 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-ink-2">
-            {need && !decided && <>{surname(b.name)} needs <span className="num text-ink">{need}</span> more points than {surname(a.name)} per round to draw level. </>}
-            {!final && third && thirdGap < inPlay && <>{surname(third.name)} is still in reach, {thirdGap} behind.</>}
+            {!won && need && !decided && <>{surname(b.name)} needs <span className="num text-ink">{need}</span> more points than {surname(a.name)} per round to draw level. </>}
+            {!won && !final && third && thirdGap < inPlay && <>{surname(third.name)} is still in reach, {thirdGap} behind. </>}
+            {!won && needsLine(clinch, surname(a.name))}
           </p>
           <Link to="/standings" className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-steel no-underline hover:text-steel-hi">
             Show full battle
