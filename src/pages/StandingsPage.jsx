@@ -9,7 +9,7 @@ import EmptyState from '../components/ui/EmptyState'
 import DriverDrawer from '../components/ui/DriverDrawer'
 import ConstructorDrawer from '../components/ui/ConstructorDrawer'
 import VizSkeleton from '../components/viz/VizSkeleton'
-import StandingsHero from '../components/standings/StandingsHero'
+import StandingsTop from '../components/standings/StandingsTop'
 import ReplayControls from '../components/standings/ReplayControls'
 import StandingsChart from '../components/standings/StandingsChart'
 import StandingsTable from '../components/standings/StandingsTable'
@@ -231,9 +231,9 @@ export default function StandingsPage() {
               className="flex flex-col gap-pw-7 lg:gap-pw-8"
             >
               <Rise index={1}>
-                <StandingsHero
-                  view={view} season={season} hero={hero} photos={data.photos} datasetKey={datasetKey}
-                  source={replay.source} onOpenConstructor={onOpenConstructor}
+                <StandingsTop
+                  view={view} season={season} hero={hero} photos={data.photos} datasetKey={datasetKey} source={replay.source}
+                  onOpenConstructor={onOpenConstructor} series={series} rounds={rounds} info={info} round={round}
                 />
               </Rise>
               {/* A direct child of the panel content so the sticky bar can stick for the whole panel height */}
@@ -251,7 +251,7 @@ export default function StandingsPage() {
               </Rise>
               <Rise index={4}>
                 <StandingsTable
-                  series={series} rows={rows} view={view} round={round} rounds={rounds} hero={hero} isWide={isWide}
+                  series={series} rows={rows} view={view} round={round} rounds={rounds} hero={hero} isWide={isWide} season={season} totalRounds={info.totalRounds}
                   open={open} onOpenChange={onOpenChange} hoverId={hoverId} onHover={onHover}
                   source={replay.source} reduced={reduced} entrance={!reduced} onOpenProfile={onOpenProfile}
                 />

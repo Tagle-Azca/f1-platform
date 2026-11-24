@@ -6,6 +6,8 @@ import { computePosChanges } from '../../utils/standingsUtils'
 import { useIsXl } from '../../hooks/useMediaQuery'
 import { usePreferences } from '../../contexts/PreferencesContext'
 import { features } from '../../config/features'
+import { championIdOf } from './railChampion'
+import { useSprintRounds } from './useSprintRounds'
 import { safeString } from '../../utils/safeText'
 import { asObjectArray } from '../../utils/safeArray'
 import ShellBoundary from '../layout/ShellBoundary'
@@ -40,9 +42,11 @@ function Rail() {
   const [drivers, setDrivers] = useState([])
   const [ctors,   setCtors]   = useState([])
   const [season,  setSeason]  = useState('')
+  const [raw,     setRaw]     = useState(null) // both payloads, for the locked-champion check
   const [loading, setLoading] = useState(true)
 
   const year = String(new Date().getFullYear())
+  const sprints = useSprintRounds(year)
 
   useEffect(() => {
     let cancelled = false
@@ -52,6 +56,7 @@ function Rail() {
     ])
       .then(([ds, cs]) => {
         if (cancelled) return
+        setRaw({ ds, cs })
         if (ds?.drivers && ds.rounds?.length) {
           const lastIdx = ds.rounds.length - 1
           const pts = (d, idx) => Math.round((d.cumulative?.[idx] ?? 0) * 10) / 10
@@ -83,6 +88,7 @@ function Rail() {
 
   const isDrivers = tab === 'drivers'
   const list = (isDrivers ? drivers : ctors).slice(0, ROWS)
+  const championId = raw ? championIdOf(isDrivers ? raw.ds : raw.cs, tab, year, sprints) : null
 
   return (
     <div className="hidden xl:block w-80 shrink-0 bg-sidebar border-l border-edge-soft">
@@ -117,6 +123,7 @@ function Rail() {
                     sub={isDrivers ? e.team : undefined}
                     value={e.points}
                     highlight={!!focus}
+                    champion={e.id === championId}
                   >
                     <Trend delta={e.posChange} />
                   </DataRow>

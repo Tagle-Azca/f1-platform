@@ -53,7 +53,7 @@ function ShareBar({ row, leaderPts, tick, height, index, animate }) {
 }
 
 function StandingsRow({
-  row, index, isWide, isLeader, leaderPts, showDelta, round, open, hovered, marksOut, isOut, tick, detail, rounds,
+  row, index, isWide, isLeader, isChampion, leaderPts, showDelta, round, open, hovered, marksOut, isOut, tick, detail, rounds,
   onToggle, onHover, onOpenProfile, flip, entrance,
 }) {
   const buttonId = `st-row-${row.id}`
@@ -64,10 +64,10 @@ function StandingsRow({
   const winsText = row.wins === 1 ? '1 win' : row.wins > 1 ? `${row.wins} wins` : ''
   const line2 = isCtor ? (winsText || 'No wins') : [row.team, winsText].filter(Boolean).join(', ')
   const outText = marksOut && isOut
-  const gapText = isLeader ? 'Leader' : gapLabel(row.gap)
+  const gapText = isChampion ? 'Champion' : isLeader ? 'Leader' : gapLabel(row.gap)
   const srName = [
     `${row.pos}`, row.name, isCtor ? '' : row.team, `${row.pts} points`,
-    isLeader ? 'Leader' : `${row.gap} behind the leader`, changeText(row.delta, showDelta, round - 1), outText ? 'Out of the title race' : '',
+    isChampion ? 'Champion' : isLeader ? 'Leader' : `${row.gap} behind the leader`, changeText(row.delta, showDelta, round - 1), outText ? 'Out of the title race' : '',
   ].filter(Boolean).join(', ')
 
   const motionProps = {
@@ -110,12 +110,12 @@ function StandingsRow({
             ? 'grid-cols-[1.5rem_2.5rem_4px_minmax(0,1.4fr)_3rem_8rem_4.5rem_1.25rem]'
             : 'grid-cols-[1.5rem_2.5rem_4px_minmax(0,1.4fr)_minmax(0,1fr)_3rem_8rem_4.5rem_1.25rem]')}
           >
-            <span className={cn('num text-right text-[15px] font-medium', isLeader ? 'text-ink' : 'text-ink-2')}>{row.pos}</span>
+            <span className={cn('num text-right text-[15px] font-medium', isChampion ? 'text-gold' : isLeader ? 'text-ink' : 'text-ink-2')}>{row.pos}</span>
             <Change delta={row.delta} show={showDelta} />
             <Stripe color={color} dash={row.dash} />
             <span className="flex min-w-0 items-baseline gap-pw-2">
               {!isCtor && <span className="w-10 shrink-0 font-display text-[15px] font-semibold tracking-[0.02em]">{row.code}</span>}
-              <span className={cn('truncate text-sm [overflow-wrap:anywhere]', isLeader ? 'font-semibold text-ink' : 'text-ink')}>{row.name}</span>
+              <span className={cn('truncate text-sm [overflow-wrap:anywhere]', isChampion ? 'font-semibold text-gold' : isLeader ? 'font-semibold text-ink' : 'text-ink')}>{row.name}</span>
             </span>
             {!isCtor && <span className="truncate text-sm text-ink-2">{row.team}</span>}
             <span className="num text-right text-ink-2">{row.wins}</span>
@@ -124,7 +124,7 @@ function StandingsRow({
               <span className="num w-10 shrink-0 text-xs text-ink-3">{isLeader ? '' : gapLabel(row.gap)}</span>
             </span>
             <span className="flex flex-col items-end">
-              <span className="num text-[15px] font-medium text-ink">{row.pts}</span>
+              <span className={cn('num text-[15px] font-medium', isChampion ? 'text-gold' : 'text-ink')}>{row.pts}</span>
               {outText && <span className="text-xs text-ink-3" title="Out of the title race">Out</span>}
             </span>
             <ChevronDown size={16} className={cn('text-ink-3 transition-transform duration-150 motion-reduce:transition-none', open && 'rotate-180')} />
@@ -132,18 +132,18 @@ function StandingsRow({
         ) : (
           <span aria-hidden="true" className="block">
             <span className="grid h-[53px] grid-cols-[1.5rem_2rem_4px_minmax(0,1fr)_auto_1.25rem] items-center gap-x-pw-2 px-pw-3">
-              <span className={cn('num text-right text-[15px] font-medium', isLeader ? 'text-ink' : 'text-ink-2')}>{row.pos}</span>
+              <span className={cn('num text-right text-[15px] font-medium', isChampion ? 'text-gold' : isLeader ? 'text-ink' : 'text-ink-2')}>{row.pos}</span>
               <Change delta={row.delta} show={showDelta} />
               <Stripe color={color} dash={row.dash} />
               <span className="flex min-w-0 flex-col">
                 <span className="flex min-w-0 items-baseline gap-pw-2">
                   {!isCtor && <span className="font-display text-[15px] font-semibold tracking-[0.02em]">{row.code}</span>}
-                  <span className={cn('truncate text-sm [overflow-wrap:anywhere]', isLeader ? 'font-semibold text-ink' : isCtor ? 'text-ink' : 'text-ink-2')}>{isCtor ? row.name : row.surname}</span>
+                  <span className={cn('truncate text-sm [overflow-wrap:anywhere]', isChampion ? 'font-semibold text-gold' : isLeader ? 'font-semibold text-ink' : isCtor ? 'text-ink' : 'text-ink-2')}>{isCtor ? row.name : row.surname}</span>
                 </span>
                 <span className="truncate text-xs text-ink-3">{line2}{outText ? `${line2 ? ', ' : ''}out of the title race` : ''}</span>
               </span>
               <span className="flex flex-col items-end">
-                <span className="num text-[15px] font-medium text-ink">{row.pts}</span>
+                <span className={cn('num text-[15px] font-medium', isChampion ? 'text-gold' : 'text-ink')}>{row.pts}</span>
                 <span className="num text-xs text-ink-3">{gapText}</span>
               </span>
               <ChevronDown size={16} className={cn('text-ink-3 transition-transform duration-150 motion-reduce:transition-none', open && 'rotate-180')} />

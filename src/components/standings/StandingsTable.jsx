@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import TelemetrySection from '../telemetry/TelemetrySection'
 import StandingsRow from './StandingsRow'
 import { rowDetail } from './standingsModel'
+import { useChampion } from './useChampion'
 
 /**
  * The full standings list (every entry, no truncation). Each row is a disclosure; one is open at a time.
@@ -9,7 +10,9 @@ import { rowDetail } from './standingsModel'
  */
 export default function StandingsTable({
   series, rows, view, round, rounds, hero, isWide, open, onOpenChange, hoverId, onHover, source, reduced, entrance, onOpenProfile, captionExtra,
+  season, totalRounds,
 }) {
+  const { champion } = useChampion({ series, rounds, totalRounds, season, view, round }) // gold row once the title is locked
   const isDrivers = view !== 'constructors'
   const leaderPts = rows[0]?.pts ?? 0
   const tick = hero.marksOut && leaderPts > 0 ? Math.min(1, Math.max(0, (leaderPts - hero.inPlay) / leaderPts)) : null
@@ -50,6 +53,7 @@ export default function StandingsTable({
             index={i}
             isWide={isWide}
             isLeader={row.pos === 1}
+            isChampion={champion?.id === row.id}
             leaderPts={leaderPts}
             showDelta={round > 1}
             round={round}
