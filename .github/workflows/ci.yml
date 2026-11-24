@@ -59,7 +59,7 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
       - name: Upload report
-        if: ${{ !cancelled() }}
+        if: always() # also after a timeout, when the run is cancelled
         uses: actions/upload-artifact@v5
         with:
           name: playwright-report
@@ -67,7 +67,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
       - name: Upload failure traces and screenshots
-        if: ${{ failure() }}
+        if: ${{ failure() || cancelled() }}
         uses: actions/upload-artifact@v5
         with:
           name: test-results
