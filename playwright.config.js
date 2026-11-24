@@ -20,9 +20,13 @@ export default defineConfig({
   testIgnore: ['**/example.spec.js', '**/__baseline__/**'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: [['list']],
+  // CI: one retry (a flake gets a second chance, a real failure is not run three times), two workers, and stop after
+  // 10 failures so a broken build ends in minutes instead of burning the job timeout.
+  retries: process.env.CI ? 1 : 0,
+  workers: process.env.CI ? 2 : undefined,
+  maxFailures: process.env.CI ? 10 : 0,
+  // CI also writes playwright-report/ (uploaded as an artifact); locally only the list.
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',

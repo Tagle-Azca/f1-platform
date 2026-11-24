@@ -84,6 +84,9 @@ afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
 describe('HomePage', () => {
   it('renders the widgets in order and opens the driver drawer', async () => {
+    // HomePage lazy-loads ConstructorDrawer. Resolve that import first: on a cold or loaded machine the first load
+    // can outlast findBy's 1000 ms window and the drawer assertion below would flake.
+    await import('../components/ui/ConstructorDrawer')
     at(<HomePage />)
     // Wait for the loaded card (the loading skeleton has its own heading node). Text and label queries are used on
     // purpose: getByRole computes accessible names for the whole page and, under coverage instrumentation, a single
@@ -97,9 +100,9 @@ describe('HomePage', () => {
     expect(screen.getByText('drawer:Max Verstappen')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Constructors', { selector: 'button' }))
     fireEvent.click(await screen.findByLabelText(/McLaren, position 1/))
-    expect(await screen.findByText('cdrawer:McLaren')).toBeInTheDocument()
+    expect(await screen.findByText('cdrawer:McLaren', {}, { timeout: 5000 })).toBeInTheDocument()
     fireEvent.click(screen.getAllByLabelText(/Lando Norris, position 1/)[0])
-  })
+  }, 20_000)
   it('error state shows per-widget retry that reloads', async () => {
     dashboardApi.get.mockRejectedValueOnce(new Error('x'))
     at(<HomePage />)
